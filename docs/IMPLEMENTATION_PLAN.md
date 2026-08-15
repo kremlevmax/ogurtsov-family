@@ -179,7 +179,8 @@ demo-данных из `features/people/fixtures.ts` — переключены 
 - ✅ `docs/BACKUP_AND_RESTORE.md` обновлён с целевого плана на
   описание реальной реализации, план восстановления уточнён.
 
-Не сделано на этом этапе намеренно: сам деплой на Vercel (создание
-аккаунта, подключение GitHub, ввод env-переменных) — по CLAUDE.md 21
-это выполняет владелец сайта, Claude Code только подготовил код и
-инструкцию.
+- ✅ сам деплой выполнен и проверен вживую: код на GitHub
+  (`github.com/kremlevmax/ogurtsov-family`), приложение на Vercel
+  (**https://ogurtsov-family.vercel.app**), CORS R2 и Supabase Redirect
+  URLs обновлены под прод-домен — вход редакторов и загрузка файлов
+  работают на проде. Прод-чеклист — `docs/DEPLOYMENT.md`.

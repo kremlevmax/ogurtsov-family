@@ -1,5 +1,14 @@
 # Развёртывание (Этап 6)
 
+## Статус
+
+Развёрнуто и проверено вживую: **https://ogurtsov-family.vercel.app**.
+Код на GitHub (`github.com/kremlevmax/ogurtsov-family`, через `gh` —
+push по HTTPS через `osxkeychain` зависал без объяснимой причины на
+этой машине, помогло `gh auth login` + `gh auth setup-git`, см.
+`docs/DECISIONS.md`). Ниже — исходная пошаговая инструкция, актуальна
+для повторного деплоя (например, второй машины) или отладки.
+
 Стек развёртывания зафиксирован в `CLAUDE.md`, раздел 5.5: Vercel Hobby
 (приложение), Supabase Free (база и Auth — тот же проект, что уже
 настроен в `docs/SETUP_SUPABASE.md`), Cloudflare R2 + Worker (файлы —
@@ -104,15 +113,15 @@ Cloudflare Worker (публичная отдача файлов) уже разв
 Перед тем как поделиться ссылкой с семьёй, сверьтесь с Definition of
 Done из `CLAUDE.md`, раздел 23, плюс специфичное для деплоя:
 
-- [ ] `npm run lint && npm run typecheck && npm run test && npm run build` проходят на последнем коммите;
-- [ ] сайт открывается на проде без входа, дерево строится, поиск работает;
-- [ ] оба редактора могут войти на проде (не только на `localhost`) — проверяет пункт 3 выше;
-- [ ] загрузка фото/документа работает на проде — проверяет пункт 4 выше;
-- [ ] `https://ваш-домен/sitemap.xml` и `/robots.txt` отдают реальный домен, а не `localhost:3000`;
-- [ ] `/login` и `/edit/*` не индексируются (`curl -s <домен>/edit | grep robots`);
-- [ ] `SUPABASE_SERVICE_ROLE_KEY` не задан в Vercel (приложению не нужен, см. шаг 2);
-- [ ] сделан хотя бы один `npm run backup:local` с реальными данными и `npm run backup:verify` его подтвердил — см. `docs/BACKUP_AND_RESTORE.md`;
-- [ ] `.env.local` не закоммичен (`git status`, `.gitignore` уже это закрывает).
+- [x] `npm run lint && npm run typecheck && npm run test && npm run build` проходят на последнем коммите;
+- [x] сайт открывается на проде без входа, дерево строится, поиск работает;
+- [x] оба редактора могут войти на проде (не только на `localhost`) — проверяет пункт 3 выше;
+- [x] загрузка фото/документа работает на проде — проверяет пункт 4 выше (потребовалось добавить прод-домен в CORS бакета);
+- [x] `https://ogurtsov-family.vercel.app/sitemap.xml` и `/robots.txt` отдают реальный домен, а не `localhost:3000` — проверено вживую;
+- [x] `/login` и `/edit/*` не индексируются — проверено вживую (`noindex, nofollow` на `/login`, `/edit` отдаёт 307 без сессии);
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` не задан в Vercel (приложению не нужен, см. шаг 2) — **проверьте сами** в Vercel → Settings → Environment Variables, снаружи это не проверить;
+- [x] сделан хотя бы один `npm run backup:local` с реальными данными и `npm run backup:verify` его подтвердил — см. `docs/BACKUP_AND_RESTORE.md`;
+- [x] `.env.local` не закоммичен (`git status`, `.gitignore` уже это закрывает).
 
 ## Особенности бесплатных планов
 
