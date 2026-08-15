@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens for the "warm archive" theme, derived from the
+ * owner's reference screenshots in docs/design-references/. See
+ * docs/DESIGN_SYSTEM.md for the full breakdown.
+ */
+:root {
+  --color-bg: #f1e9d8;
+  --color-bg-elevated: #faf6ec;
+  --color-bg-inset: #ece0c5;
+  --color-fg: #2b2118;
+  --color-fg-muted: #726048;
+  --color-border: #ddd0b4;
+  --color-accent: #9c4a2e;
+  --color-accent-fg: #ffffff;
+  --color-danger: #b3413a;
+  --color-danger-fg: #ffffff;
+
+  --font-heading: var(--font-playfair-display);
+  --font-body: var(--font-lora);
+  --font-label: var(--font-geist-mono);
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+
+  --shadow-sm: 0 1px 2px rgb(43 33 24 / 0.06);
+  --shadow-md: 0 4px 16px rgb(43 33 24 / 0.1);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+}
+
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-fg);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-heading);
+  --font-mono: var(--font-label);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body), serif;
+}
+
+h1,
+h2,
+h3,
+.font-heading {
+  font-family: var(--font-heading), serif;
+}
+
+/* Small-caps tracked label style used for eyebrows, nav and metadata. */
+.text-label {
+  font-family: var(--font-label), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Reskin React Flow's built-in zoom/fit-view controls to match the theme. */
+.react-flow__controls {
+  box-shadow: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  fill: var(--color-fg);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--color-bg);
+}
+
+.react-flow__attribution {
+  display: none;
+}

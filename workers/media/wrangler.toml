@@ -1,0 +1,13 @@
+# Cloudflare Worker: публичная отдача файлов из R2 (CLAUDE.md 5.4).
+# Развёртывается отдельно от основного приложения:
+#   npm run worker:deploy
+# (требует, чтобы владелец сначала вошёл через `wrangler login` и
+# создал R2-бакет — см. docs/SETUP_R2.md).
+
+name = "ogurtsov-family-media"
+main = "index.ts"
+compatibility_date = "2024-09-01"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "ogurtsov-family-media"

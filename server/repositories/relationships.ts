@@ -1,0 +1,67 @@
+import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/types";
+import type { Relationship } from "@/features/people/types";
+import type { RelationshipInput } from "@/lib/validation/person";
+
+type Client = SupabaseClient<Database>;
+
+/** All published (not soft-deleted) relationships, for the public tree/person pages. */
+export async function listRelationships(supabase: Client): Promise<Relationship[]> {
+  const { data, error } = await supabase
+    .from("relationships")
+    .select("id, from_person_id, to_person_id, relationship_type, parent_role")
+    .is("deleted_at", null);
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    fromPersonId: row.from_person_id,
+    toPersonId: row.to_person_id,
+    relationshipType: row.relationship_type,
+    parentRole: row.parent_role,
+  }));
+}
+
+export async function createRelationship(
+  supabase: Client,
+  input: RelationshipInput,
+  editorId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("relationships")
+    .insert({
+      from_person_id: input.fromPersonId,
+      to_person_id: input.toPersonId,
+      relationship_type: input.relationshipType,
+      parent_role: input.parentRole,
+      note: input.note,
+      created_by: editorId,
+      updated_by: editorId,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+
+  return data.id;
+}
+
+export async function softDeleteRelationship(supabase: Client, id: string): Promise<void> {
+  const { error } = await supabase
+    .from("relationships")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Counts a person's active relationships, to warn an editor before deletion. */
+export async function countDependentRelationships(supabase: Client, personId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("relationships")
+    .select("id", { count: "exact", head: true })
+    .is("deleted_at", null)
+    .or(`from_person_id.eq.${personId},to_person_id.eq.${personId}`);
+  if (error) throw error;
+
+  return count ?? 0;
+}
