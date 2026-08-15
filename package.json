@@ -11,7 +11,10 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "worker:dev": "wrangler dev --config workers/media/wrangler.toml",
-    "worker:deploy": "wrangler deploy --config workers/media/wrangler.toml"
+    "worker:deploy": "wrangler deploy --config workers/media/wrangler.toml",
+    "backup:local": "tsx scripts/backup-local.ts",
+    "backup:verify": "tsx scripts/verify-backup.ts",
+    "export:gedcom": "tsx scripts/export-gedcom.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1111.0",
@@ -41,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5",
     "vitest": "^4.1.10",
     "wrangler": "^4.123.0"

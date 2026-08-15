@@ -5,11 +5,13 @@
 только два заранее созданных пользователя. Подробные требования — в
 [`CLAUDE.md`](./CLAUDE.md).
 
-**Статус:** Этапы 0–4 реализованы в коде. Работает вживую: дерево,
+**Статус:** Этапы 0–6 реализованы в коде. Работает вживую: дерево,
 поиск, боковая панель, страницы людей, вход двух редакторов, CRUD людей
-и связей. Загрузка фото/файлов в Cloudflare R2 написана и готова к
-проверке — активируется после того, как вы настроите R2 и Worker по
-[`docs/SETUP_R2.md`](./docs/SETUP_R2.md).
+и связей, загрузка фото/файлов в Cloudflare R2 (после настройки по
+[`docs/SETUP_R2.md`](./docs/SETUP_R2.md)), sitemap/robots, локальный
+бэкап и GEDCOM-экспорт. Развёртывание на Vercel — по
+[`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md), выполняет владелец
+сайта.
 
 ## Важно про приватность
 
@@ -60,8 +62,12 @@ cp .env.example .env.local
 | `npm run preview` | Production-сборка + локальный запуск |
 | `npm run worker:dev` | Локальный запуск Cloudflare Worker (отдача файлов) |
 | `npm run worker:deploy` | Развёртывание Worker в Cloudflare |
+| `npm run backup:local -- [папка]` | Локальный бэкап всех данных и файлов |
+| `npm run backup:verify -- [папка]` | Проверка целостности бэкапа |
+| `npm run export:gedcom -- [файл]` | Экспорт в GEDCOM (переносимость в другое ПО) |
 
-Резервное копирование (`npm run backup:local`) появится на Этапе 6.
+Подробнее о бэкапе и восстановлении —
+[`docs/BACKUP_AND_RESTORE.md`](./docs/BACKUP_AND_RESTORE.md).
 
 ## Структура проекта
 
@@ -79,12 +85,13 @@ cp .env.example .env.local
 - [`docs/BACKUP_AND_RESTORE.md`](./docs/BACKUP_AND_RESTORE.md) — резервное копирование и восстановление
 - [`docs/SETUP_SUPABASE.md`](./docs/SETUP_SUPABASE.md) — создание Supabase-проекта и двух редакторов
 - [`docs/SETUP_R2.md`](./docs/SETUP_R2.md) — создание R2-бакета и Worker для файлов
+- [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) — развёртывание на Vercel и прод-чеклист
 
 ## Дальнейшие этапы
 
-Разработка идёт по этапам, описанным в `CLAUDE.md`, раздел 22.
-Следующий — Этап 5: индексированный поиск через Supabase, sitemap/robots,
-доступность, финальная визуальная полировка.
+Все этапы из `CLAUDE.md`, раздел 22, реализованы в коде. Осталось
+только развёртывание — шаги в [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md),
+их выполняет владелец сайта (создание аккаунтов, домены, оплата).
 
 Бесплатный проект Supabase может «засыпать» при отсутствии активности
 и потребует восстановления через dashboard — это нормальное поведение

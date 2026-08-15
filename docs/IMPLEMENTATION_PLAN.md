@@ -162,7 +162,24 @@ demo-данных из `features/people/fixtures.ts` — переключены 
 
 ## Этап 6 — backup, portability и deployment
 
-- `npm run backup:local` и `npm run backup:verify`;
-- JSON/CSV-экспорт, опционально GEDCOM;
-- инструкция по развёртыванию Vercel/Supabase/Cloudflare;
-- финальный чек-лист перед публикацией.
+- ✅ `npm run backup:local [папка]` (`scripts/backup-local.ts`) —
+  JSON+CSV по всем прикладным таблицам, скачивание всех объектов R2,
+  `manifest.json` с checksum, без перезаписи существующего бэкапа,
+  ненулевой код выхода при ошибке; проверено вживую на реальном
+  Supabase/R2 проекта;
+- ✅ `npm run backup:verify [папка]` (`scripts/verify-backup.ts`) —
+  офлайн-проверка манифеста против файлов на диске; проверено вживую,
+  включая намеренную порчу файла для проверки, что checksum-мисматч
+  действительно ловится;
+- ✅ `npm run export:gedcom [файл]` (`scripts/export-gedcom.ts`) —
+  базовый GEDCOM 5.5.1 (люди, родители, супруги, рождение, смерть),
+  ограничение по полу задокументировано в `docs/DECISIONS.md`;
+- ✅ `docs/DEPLOYMENT.md` — пошаговая инструкция Vercel/Supabase/
+  Cloudflare + прод-чеклист по Definition of Done (CLAUDE.md 23);
+- ✅ `docs/BACKUP_AND_RESTORE.md` обновлён с целевого плана на
+  описание реальной реализации, план восстановления уточнён.
+
+Не сделано на этом этапе намеренно: сам деплой на Vercel (создание
+аккаунта, подключение GitHub, ввод env-переменных) — по CLAUDE.md 21
+это выполняет владелец сайта, Claude Code только подготовил код и
+инструкцию.

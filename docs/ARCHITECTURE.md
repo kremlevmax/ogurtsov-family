@@ -21,14 +21,17 @@ R2 через presigned URL.
   └─ GET файлов ──────────────────────────────────▶ Cloudflare Worker ──▶ R2
 ```
 
-## Текущее состояние (Этапы 0–4)
+## Текущее состояние (Этапы 0–6)
 
 - Supabase подключён и применён (`docs/SETUP_SUPABASE.md`): дерево,
   поиск, страницы людей, вход двух редакторов, CRUD людей/связей — всё
   на реальных данных.
-- R2 и Worker реализованы в коде (`lib/r2/`, `server/actions/media.ts`,
-  `workers/media/`), но требуют настройки Cloudflare владельцем сайта
-  перед первой реальной загрузкой (`docs/SETUP_R2.md`).
+- R2 и Worker настроены и проверены вживую (`lib/r2/`,
+  `server/actions/media.ts`, `workers/media/`, `docs/SETUP_R2.md`).
+- `sitemap.xml`/`robots.txt`, офлайн-баннер и WCAG-проверка палитры —
+  Этап 5.
+- Локальный бэкап, GEDCOM-экспорт и инструкция по развёртыванию —
+  Этап 6, см. `scripts/` ниже и `docs/DEPLOYMENT.md`.
 
 ## Слои
 
@@ -53,6 +56,12 @@ R2 через presigned URL.
   от основного приложения (`npm run worker:deploy`); исключён из
   `tsconfig.json` основного приложения (свой `tsconfig.json` со
   `@cloudflare/workers-types`).
+- `scripts/` — операционные скрипты вне рантайма приложения
+  (`backup-local.ts`, `verify-backup.ts`, `export-gedcom.ts`), запускаются
+  через `tsx`. Собственный минимальный Supabase/R2-клиент в
+  `scripts/lib/` вместо переиспользования `lib/supabase`/`lib/r2` —
+  те файлы помечены `import "server-only"`, который безусловно бросает
+  исключение вне бандлера Next.js (см. `docs/DECISIONS.md`, Этап 6).
 
 ## Дерево: доменная модель → граф
 

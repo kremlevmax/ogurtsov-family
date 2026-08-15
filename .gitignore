@@ -37,6 +37,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# локальные бэкапы и экспорты (CLAUDE.md 18) — большие бинарные файлы,
+# реальные семейные данные; никогда не коммитятся
+/backups/
+/exports/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
