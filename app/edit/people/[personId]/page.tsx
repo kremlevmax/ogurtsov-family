@@ -85,6 +85,7 @@ export default async function EditPersonPage(props: PageProps<"/edit/people/[per
             lastName: person.lastName ?? "",
             maidenName: person.maidenName ?? "",
             isPlaceholder: person.isPlaceholder,
+            isDeceased: person.isDeceased,
             birth: person.birth ?? EMPTY_DATE,
             death: person.death ?? EMPTY_DATE,
             birthPlace: person.birthPlace ?? "",

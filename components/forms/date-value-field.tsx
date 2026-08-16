@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { DatePrecision, DateValue } from "@/lib/dates/date-value";
 import { cn } from "@/lib/utils/cn";
 
@@ -21,6 +22,46 @@ function yearOf(iso: string | null): string {
 function isoFromYear(rawYear: string): string | null {
   if (!/^\d{4}$/.test(rawYear)) return null;
   return `${rawYear}-01-01`;
+}
+
+/**
+ * A plain controlled `<input value={yearOf(iso)}>` fights the user: as
+ * long as fewer than 4 digits are typed, `isoFromYear` returns `null`,
+ * `yearOf(null)` is `""`, and the field appears to reject every
+ * keystroke. Keeping the typed text in local state (only converting to
+ * an ISO date once it's a full 4-digit year) lets the field echo
+ * whatever's typed while the parent `DateValue` stays well-formed.
+ */
+function YearInput({
+  isoValue,
+  onIsoChange,
+  placeholder,
+  ariaLabel,
+  className,
+}: {
+  isoValue: string | null;
+  onIsoChange: (iso: string | null) => void;
+  placeholder?: string;
+  ariaLabel: string;
+  className?: string;
+}) {
+  const [text, setText] = useState(() => yearOf(isoValue));
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      placeholder={placeholder}
+      value={text}
+      onChange={(event) => {
+        const digits = event.target.value.replace(/\D/g, "").slice(0, 4);
+        setText(digits);
+        onIsoChange(isoFromYear(digits));
+      }}
+      className={className}
+      aria-label={ariaLabel}
+    />
+  );
 }
 
 export interface DateValueFieldProps {
@@ -75,42 +116,33 @@ export function DateValueField({ label, value, onChange }: DateValueFieldProps) 
       )}
 
       {(value.precision === "year" || value.precision === "approximate") && (
-        <input
-          type="number"
-          inputMode="numeric"
+        <YearInput
+          isoValue={value.start}
+          onIsoChange={(iso) => onChange({ ...value, start: iso, end: iso })}
           placeholder="Год"
-          value={yearOf(value.start)}
-          onChange={(event) => {
-            const iso = isoFromYear(event.target.value);
-            onChange({ ...value, start: iso, end: iso });
-          }}
           className={cn(fieldClassName, "w-28")}
-          aria-label={`${label}: год`}
+          ariaLabel={`${label}: год`}
         />
       )}
 
       {value.precision === "range" && (
         <div className="flex items-center gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
+          <YearInput
+            isoValue={value.start}
+            onIsoChange={(iso) => onChange({ ...value, start: iso })}
             placeholder="С"
-            value={yearOf(value.start)}
-            onChange={(event) => onChange({ ...value, start: isoFromYear(event.target.value) })}
             className={cn(fieldClassName, "w-24")}
-            aria-label={`${label}: с года`}
+            ariaLabel={`${label}: с года`}
           />
           <span aria-hidden="true" className="text-(--color-fg-muted)">
             —
           </span>
-          <input
-            type="number"
-            inputMode="numeric"
+          <YearInput
+            isoValue={value.end}
+            onIsoChange={(iso) => onChange({ ...value, end: iso })}
             placeholder="По"
-            value={yearOf(value.end)}
-            onChange={(event) => onChange({ ...value, end: isoFromYear(event.target.value) })}
             className={cn(fieldClassName, "w-24")}
-            aria-label={`${label}: по год`}
+            ariaLabel={`${label}: по год`}
           />
         </div>
       )}

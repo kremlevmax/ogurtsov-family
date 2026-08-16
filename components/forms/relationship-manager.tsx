@@ -8,6 +8,7 @@ import type { Person, Relationship } from "@/features/people/types";
 import { describeRelationship } from "@/features/people/relations";
 import { buildDisplayName } from "@/lib/names/display-name";
 import { searchPeople } from "@/features/search/normalize";
+import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -20,8 +21,6 @@ export interface RelationshipManagerProps {
 const RELATIONSHIP_TYPE_OPTIONS = [
   { value: "biological_parent", label: "Биологический родитель" },
   { value: "adoptive_parent", label: "Приёмный родитель (усыновитель)" },
-  { value: "foster_parent", label: "Приёмная семья" },
-  { value: "guardian", label: "Опекун" },
   { value: "spouse", label: "Супруг(а)" },
   { value: "former_spouse", label: "Бывший(ая) супруг(а)" },
   { value: "partner", label: "Партнёр" },
@@ -90,20 +89,33 @@ export function RelationshipManager({ personId, relationships, allPeople }: Rela
         </p>
       )}
 
-      <AddRelationshipForm personId={personId} allPeople={allPeople.filter((p) => p.id !== personId)} />
+      <AddRelationshipForm
+        personId={personId}
+        currentPersonName={buildDisplayName(allPeople.find((p) => p.id === personId) ?? { firstName: "", middleName: null, lastName: null, maidenName: null })}
+        allPeople={allPeople.filter((p) => p.id !== personId)}
+      />
     </div>
   );
 }
 
-function AddRelationshipForm({ personId, allPeople }: { personId: string; allPeople: Person[] }) {
+function AddRelationshipForm({
+  personId,
+  currentPersonName,
+  allPeople,
+}: {
+  personId: string;
+  currentPersonName: string;
+  allPeople: Person[];
+}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Person | null>(null);
   const [relationshipType, setRelationshipType] = useState<string>("biological_parent");
   const [direction, setDirection] = useState<"this-is-parent" | "this-is-child">("this-is-parent");
-  const [parentRole, setParentRole] = useState<string>("parent");
+  const [parentRole, setParentRole] = useState<string>("mother");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const selectedName = selected ? buildDisplayName(selected) : "найденный человек";
 
   const searchable = allPeople.map((person) => ({
     id: person.id,
@@ -150,11 +162,15 @@ function AddRelationshipForm({ personId, allPeople }: { personId: string; allPeo
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-inset) p-4"
     >
-      <p className="text-label text-xs text-(--color-fg-muted)">Добавить связь с существующим человеком</p>
+      <p className="text-label text-xs text-(--color-fg-muted)">Добавить связь с существующей карточкой человека</p>
+      <p className="text-sm text-(--color-fg-muted)">
+        Вы редактируете карточку <span className="font-medium text-(--color-fg)">{currentPersonName}</span>.
+        Найдите второго человека, а затем укажите, как он связан с {currentPersonName}.
+      </p>
 
       <div className="relative">
         <Input
-          placeholder="Найти человека…"
+          placeholder="Найти второго человека…"
           value={selected ? buildDisplayName(selected) : query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -190,7 +206,7 @@ function AddRelationshipForm({ personId, allPeople }: { personId: string; allPeo
 
       <div className="flex flex-wrap gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-(--color-fg)">Тип связи</span>
+          <span className="font-medium text-(--color-fg)">Вид связи (кровные, приёмные, брак…)</span>
           <select
             value={relationshipType}
             onChange={(event) => setRelationshipType(event.target.value)}
@@ -207,18 +223,24 @@ function AddRelationshipForm({ personId, allPeople }: { personId: string; allPeo
         {isParentType && (
           <>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-(--color-fg)">Кто есть кто</span>
+              <span className="font-medium text-(--color-fg)">Кто кому родитель</span>
               <select
                 value={direction}
                 onChange={(event) => setDirection(event.target.value as typeof direction)}
-                className={selectClassName}
+                className={cn(selectClassName, "min-w-56")}
               >
-                <option value="this-is-parent">Этот человек — родитель</option>
-                <option value="this-is-child">Этот человек — ребёнок</option>
+                <option value="this-is-parent">
+                  {currentPersonName} — родитель, {selectedName} — ребёнок
+                </option>
+                <option value="this-is-child">
+                  {selectedName} — родитель, {currentPersonName} — ребёнок
+                </option>
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-(--color-fg)">Роль родителя</span>
+              <span className="font-medium text-(--color-fg)">
+                Пол родителя ({direction === "this-is-parent" ? currentPersonName : selectedName})
+              </span>
               <select
                 value={parentRole}
                 onChange={(event) => setParentRole(event.target.value)}
@@ -226,7 +248,6 @@ function AddRelationshipForm({ personId, allPeople }: { personId: string; allPeo
               >
                 <option value="mother">Мать</option>
                 <option value="father">Отец</option>
-                <option value="parent">Родитель</option>
               </select>
             </label>
           </>

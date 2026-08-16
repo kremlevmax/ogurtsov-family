@@ -16,6 +16,16 @@ import { DateValueField } from "./date-value-field";
 
 const EMPTY_DATE: DateValue = { precision: "unknown", start: null, end: null, text: null };
 
+/** Quick-fill chips for the "Имя" field when the person's identity isn't known — CLAUDE.md 3.5's placeholder concept, made easier to use than typing "Неизвестная мать" by hand. */
+const PLACEHOLDER_NAME_SUGGESTIONS: Record<QuickRelation["relationKind"], string[]> = {
+  mother: ["Мать"],
+  father: ["Отец"],
+  parent: ["Мать", "Отец", "Родитель"],
+  spouse: ["Жена", "Муж"],
+  child: ["Сын", "Дочь"],
+};
+const DEFAULT_PLACEHOLDER_NAME_SUGGESTIONS = ["Сын", "Дочь", "Жена", "Муж", "Мать", "Отец"];
+
 export interface PersonFormProps {
   mode: "create" | "edit";
   personId?: string;
@@ -54,6 +64,10 @@ export function PersonForm({ mode, personId, defaultValues, quickRelation }: Per
   });
 
   const isDeceased = useWatch({ control, name: "isDeceased" });
+  const isPlaceholder = useWatch({ control, name: "isPlaceholder" });
+  const nameSuggestions = quickRelation
+    ? PLACEHOLDER_NAME_SUGGESTIONS[quickRelation.relationKind]
+    : DEFAULT_PLACEHOLDER_NAME_SUGGESTIONS;
 
   async function onSubmit(data: PersonFormInput) {
     setFormError(null);
@@ -102,8 +116,24 @@ export function PersonForm({ mode, personId, defaultValues, quickRelation }: Per
         </Field>
         <label className="flex items-center gap-2 text-sm text-(--color-fg)">
           <input type="checkbox" {...register("isPlaceholder")} className="h-4 w-4" />
-          Это неизвестный родственник (запись-заглушка)
+          Данные человека неизвестны
         </label>
+
+        {isPlaceholder && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-(--color-fg-muted)">Подставить в поле «Имя»:</span>
+            {nameSuggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => setValue("firstName", suggestion)}
+                className="text-label rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg-elevated) px-2 py-1 text-[10px] text-(--color-fg-muted) hover:border-(--color-accent) hover:text-(--color-accent)"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
       </FormSection>
 
       <FormSection title="Даты">

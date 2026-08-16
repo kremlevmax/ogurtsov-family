@@ -73,7 +73,7 @@ export function PersonDetailContent({
           {lifeSpan && <p className="text-label mt-3 text-sm text-(--color-accent)">{lifeSpan}</p>}
         </div>
 
-        {isEditor && <EditorQuickActions personId={person.id} />}
+        {isEditor && <EditorQuickActions personId={person.id} parents={parents} />}
       </div>
 
       <hr className="border-(--color-border)" />
@@ -146,13 +146,32 @@ export function PersonDetailContent({
   );
 }
 
-function EditorQuickActions({ personId }: { personId: string }) {
+function EditorQuickActions({ personId, parents }: { personId: string; parents: ParentLink[] }) {
+  const hasMother = parents.some((link) => link.role === "mother");
+  const hasFather = parents.some((link) => link.role === "father");
+
   const actions = [
-    { label: "Добавить мать", href: `/edit/people/new?relationTo=${personId}&relationKind=mother`, icon: UserPlus },
-    { label: "Добавить отца", href: `/edit/people/new?relationTo=${personId}&relationKind=father`, icon: UserPlus },
-    { label: "Добавить супруга/партнёра", href: `/edit/people/new?relationTo=${personId}&relationKind=spouse`, icon: Heart },
-    { label: "Добавить ребёнка", href: `/edit/people/new?relationTo=${personId}&relationKind=child`, icon: Baby },
-  ];
+    !hasMother && {
+      label: "Добавить карточку матери",
+      href: `/edit/people/new?relationTo=${personId}&relationKind=mother`,
+      icon: UserPlus,
+    },
+    !hasFather && {
+      label: "Добавить карточку отца",
+      href: `/edit/people/new?relationTo=${personId}&relationKind=father`,
+      icon: UserPlus,
+    },
+    {
+      label: "Добавить карточку супруга/партнёра",
+      href: `/edit/people/new?relationTo=${personId}&relationKind=spouse`,
+      icon: Heart,
+    },
+    {
+      label: "Добавить карточку ребёнка",
+      href: `/edit/people/new?relationTo=${personId}&relationKind=child`,
+      icon: Baby,
+    },
+  ].filter((action): action is { label: string; href: string; icon: typeof UserPlus } => Boolean(action));
 
   return (
     <div className="flex flex-wrap gap-2">
