@@ -10,7 +10,7 @@ import { MediaManager } from "@/components/forms/media-manager";
 import { requireEditor, NotAuthorizedError } from "@/server/auth/require-editor";
 import { getPersonByIdIncludingDeleted, listPeople } from "@/server/repositories/people";
 import { listRelationships, countDependentRelationships } from "@/server/repositories/relationships";
-import { listMediaForPerson } from "@/server/repositories/media";
+import { listMediaForPerson, listAllMediaForPicker } from "@/server/repositories/media";
 import { buildDisplayName } from "@/lib/names/display-name";
 import type { DateValue } from "@/lib/dates/date-value";
 
@@ -32,11 +32,12 @@ export default async function EditPersonPage(props: PageProps<"/edit/people/[per
     throw error;
   }
 
-  const [result, allPeople, allRelationships, media, dependentCount] = await Promise.all([
+  const [result, allPeople, allRelationships, media, allMedia, dependentCount] = await Promise.all([
     getPersonByIdIncludingDeleted(editor.supabase, personId),
     listPeople(editor.supabase),
     listRelationships(editor.supabase),
     listMediaForPerson(editor.supabase, personId),
+    listAllMediaForPicker(editor.supabase),
     countDependentRelationships(editor.supabase, personId),
   ]);
   if (!result) notFound();
@@ -45,6 +46,9 @@ export default async function EditPersonPage(props: PageProps<"/edit/people/[per
   const personRelationships = allRelationships.filter(
     (rel) => rel.fromPersonId === personId || rel.toPersonId === personId,
   );
+
+  const linkedMediaIds = new Set(media.map((item) => item.id));
+  const linkableMedia = allMedia.filter((item) => !linkedMediaIds.has(item.id));
 
   return (
     <div className="flex flex-1 flex-col">
@@ -98,7 +102,7 @@ export default async function EditPersonPage(props: PageProps<"/edit/people/[per
 
         <section className="flex flex-col gap-3">
           <h2 className="text-label text-xs text-(--color-fg-muted)">Фото и файлы</h2>
-          <MediaManager personId={personId} media={media} />
+          <MediaManager personId={personId} media={media} linkableMedia={linkableMedia} />
         </section>
 
         <section className="flex flex-col gap-3">

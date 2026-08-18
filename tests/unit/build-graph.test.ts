@@ -86,4 +86,37 @@ describe("buildFamilyGraph", () => {
     expect(graph.nodes).toHaveLength(1);
     expect(graph.edges).toHaveLength(0);
   });
+
+  it("records which recorded partnership formed each family unit, for layout ordering", () => {
+    const people = [person("parent"), person("ex"), person("current"), person("child-with-ex"), person("child-with-current")];
+    const relationships: TreeRelationship[] = [
+      { id: "r1", fromPersonId: "parent", toPersonId: "ex", relationshipType: "former_spouse" },
+      { id: "r2", fromPersonId: "parent", toPersonId: "child-with-ex", relationshipType: "biological_parent" },
+      { id: "r3", fromPersonId: "ex", toPersonId: "child-with-ex", relationshipType: "biological_parent" },
+      { id: "r4", fromPersonId: "parent", toPersonId: "current", relationshipType: "spouse" },
+      { id: "r5", fromPersonId: "parent", toPersonId: "child-with-current", relationshipType: "biological_parent" },
+      { id: "r6", fromPersonId: "current", toPersonId: "child-with-current", relationshipType: "biological_parent" },
+    ];
+
+    const graph = buildFamilyGraph(people, relationships);
+    const units = graph.nodes.filter((node) => node.kind === "familyUnit");
+    const exUnit = units.find((unit) => unit.parentIds.includes("ex"));
+    const currentUnit = units.find((unit) => unit.parentIds.includes("current"));
+
+    expect(exUnit?.partnerType).toBe("former_spouse");
+    expect(currentUnit?.partnerType).toBe("spouse");
+  });
+
+  it("leaves a shared-parentage-only unit's partnerType null when no partner relationship is on record", () => {
+    const people = [person("mother"), person("father"), person("child")];
+    const relationships: TreeRelationship[] = [
+      { id: "r1", fromPersonId: "mother", toPersonId: "child", relationshipType: "biological_parent" },
+      { id: "r2", fromPersonId: "father", toPersonId: "child", relationshipType: "biological_parent" },
+    ];
+
+    const graph = buildFamilyGraph(people, relationships);
+    const unit = graph.nodes.find((node) => node.kind === "familyUnit");
+
+    expect(unit?.partnerType).toBeNull();
+  });
 });

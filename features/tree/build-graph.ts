@@ -56,6 +56,8 @@ export interface FamilyUnitGraphNode {
   id: string;
   kind: "familyUnit";
   parentIds: string[];
+  /** The partner relationship directly on record between the two parents, if any — used only to bias layout ordering (current spouse placed adjacent, former spouse pushed out). Null for a shared-parentage unit with no recorded partnership. */
+  partnerType: "spouse" | "former_spouse" | "partner" | null;
 }
 
 export type FamilyGraphNode = PersonGraphNode | FamilyUnitGraphNode;
@@ -111,6 +113,11 @@ export function buildFamilyGraph(
     childrenByUnit.set(unitId, children);
   }
 
+  // "spouse" beats "partner" beats "former_spouse" when a pair somehow has
+  // more than one partner-type row on record — only matters for layout bias.
+  const PARTNER_TYPE_PRIORITY: Record<string, number> = { spouse: 0, partner: 1, former_spouse: 2 };
+  const unitPartnerType = new Map<string, FamilyUnitGraphNode["partnerType"]>();
+
   for (const rel of relationships) {
     if (!PARTNER_RELATIONSHIP_TYPES.has(rel.relationshipType)) continue;
     const parentIds = [rel.fromPersonId, rel.toPersonId].sort();
@@ -118,13 +125,23 @@ export function buildFamilyGraph(
     if (!unitParentIds.has(unitId)) {
       unitParentIds.set(unitId, parentIds);
     }
+    const existing = unitPartnerType.get(unitId);
+    const type = rel.relationshipType as FamilyUnitGraphNode["partnerType"];
+    if (!existing || PARTNER_TYPE_PRIORITY[type as string] < PARTNER_TYPE_PRIORITY[existing as string]) {
+      unitPartnerType.set(unitId, type);
+    }
   }
 
   const familyUnitNodes: FamilyUnitGraphNode[] = [];
   const edges: FamilyGraphEdge[] = [];
 
   for (const [unitId, parentIds] of unitParentIds) {
-    familyUnitNodes.push({ id: unitId, kind: "familyUnit", parentIds });
+    familyUnitNodes.push({
+      id: unitId,
+      kind: "familyUnit",
+      parentIds,
+      partnerType: unitPartnerType.get(unitId) ?? null,
+    });
 
     for (const parentId of parentIds) {
       edges.push({

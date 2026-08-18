@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/server/actions/auth";
 import { requireEditor, NotAuthorizedError } from "@/server/auth/require-editor";
 import { listPeople, listDeletedPeople } from "@/server/repositories/people";
-import { getTotalStorageBytes } from "@/server/repositories/media";
+import { getTotalStorageBytes, listDeletedMedia } from "@/server/repositories/media";
 import { buildDisplayName } from "@/lib/names/display-name";
 import { RestorePersonButton } from "@/components/forms/restore-person-button";
+import { RestoreMediaButton } from "@/components/forms/restore-media-button";
 
 const EXPECTED_TOTAL_BYTES = 5 * 1024 * 1024 * 1024; // ~5 ГБ (CLAUDE.md 3.7)
 
@@ -30,9 +31,10 @@ export default async function EditHomePage() {
     throw error;
   }
 
-  const [people, deletedPeople, storageBytes] = await Promise.all([
+  const [people, deletedPeople, deletedMedia, storageBytes] = await Promise.all([
     listPeople(editor.supabase),
     listDeletedPeople(editor.supabase),
+    listDeletedMedia(editor.supabase),
     getTotalStorageBytes(editor.supabase),
   ]);
   const storagePercent = Math.min(100, Math.round((storageBytes / EXPECTED_TOTAL_BYTES) * 100));
@@ -112,6 +114,30 @@ export default async function EditHomePage() {
                     {buildDisplayName(person) || "Без имени"}
                   </span>
                   <RestorePersonButton personId={person.id} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {deletedMedia.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-label text-xs text-(--color-fg-muted)">
+              Корзина файлов ({deletedMedia.length})
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {deletedMedia.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-2"
+                >
+                  <span className="min-w-0 text-sm text-(--color-fg-muted)">
+                    <span className="text-(--color-fg)">{item.title}</span>
+                    {item.linkedPersonNames.length > 0 && (
+                      <> · было привязано: {item.linkedPersonNames.join(", ")}</>
+                    )}
+                  </span>
+                  <RestoreMediaButton mediaId={item.id} />
                 </li>
               ))}
             </ul>

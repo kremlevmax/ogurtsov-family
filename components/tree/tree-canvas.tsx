@@ -5,12 +5,36 @@ import { Controls, ReactFlow, ReactFlowProvider, useReactFlow, type Edge } from 
 import "@xyflow/react/dist/style.css";
 import { buildReactFlowGraph, type FamilyFlowNode } from "@/features/tree/to-react-flow";
 import type { TreePerson, TreeRelationship } from "@/features/tree/build-graph";
-import { PERSON_NODE_SIZE } from "@/features/tree/layout";
+import { FAMILY_UNIT_NODE_SIZE, PERSON_NODE_SIZE } from "@/features/tree/layout";
 import { PersonNode } from "./person-node";
 import { FamilyUnitNode } from "./family-unit-node";
 import { TreeSelectionProvider } from "./tree-selection-context";
 
 const NODE_TYPES = { person: PersonNode, familyUnit: FamilyUnitNode };
+
+/** How far past the outermost nodes panning is still allowed — enough to comfortably center an edge node, not so much the tree gets lost in empty canvas. */
+const PAN_MARGIN = 400;
+
+/** Bounding box of every node (in flow coordinates), padded by `PAN_MARGIN` — passed to `ReactFlow`'s `translateExtent` so dragging can't scroll off into empty space. */
+function computePanBounds(nodes: FamilyFlowNode[]): [[number, number], [number, number]] {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const node of nodes) {
+    const size = node.type === "person" ? PERSON_NODE_SIZE : FAMILY_UNIT_NODE_SIZE;
+    minX = Math.min(minX, node.position.x);
+    minY = Math.min(minY, node.position.y);
+    maxX = Math.max(maxX, node.position.x + size.width);
+    maxY = Math.max(maxY, node.position.y + size.height);
+  }
+
+  return [
+    [minX - PAN_MARGIN, minY - PAN_MARGIN],
+    [maxX + PAN_MARGIN, maxY + PAN_MARGIN],
+  ];
+}
 
 export interface TreeCanvasProps {
   people: TreePerson[];
@@ -44,6 +68,10 @@ export function TreeCanvas({ people, relationships, selectedPersonId, onSelectPe
   }, [people, relationships]);
 
   const isEmpty = useMemo(() => people.length === 0, [people]);
+  const panBounds = useMemo(
+    () => (state.status === "ready" ? computePanBounds(state.nodes) : undefined),
+    [state],
+  );
 
   if (isEmpty) {
     return (
@@ -79,6 +107,7 @@ export function TreeCanvas({ people, relationships, selectedPersonId, onSelectPe
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}
+          translateExtent={panBounds}
           fitView
           proOptions={{ hideAttribution: true }}
           style={{ backgroundColor: "var(--color-bg)" }}

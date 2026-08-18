@@ -166,6 +166,24 @@ export async function deleteMediaAction(mediaId: string, personId: string): Prom
   }
 }
 
+export async function restoreMediaAction(mediaId: string): Promise<MediaActionState> {
+  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  try {
+    editor = await requireEditor();
+  } catch {
+    return { ok: false, error: "Нужно войти как редактор." };
+  }
+
+  try {
+    await mediaRepo.restoreMedia(editor.supabase, mediaId);
+    revalidatePath("/edit");
+    revalidatePath("/");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toUserMessage(error, "Не удалось восстановить файл. Попробуйте ещё раз.") };
+  }
+}
+
 export async function setProfilePhotoAction(personId: string, mediaId: string): Promise<MediaActionState> {
   let editor: Awaited<ReturnType<typeof requireEditor>>;
   try {
@@ -201,6 +219,26 @@ export async function unsetProfilePhotoAction(personId: string, mediaId: string)
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось убрать фото профиля. Попробуйте ещё раз.") };
+  }
+}
+
+/** Attaches an already-uploaded file to another person — no re-upload, same object (CLAUDE.md 3.7). */
+export async function linkExistingMediaAction(personId: string, mediaId: string): Promise<MediaActionState> {
+  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  try {
+    editor = await requireEditor();
+  } catch {
+    return { ok: false, error: "Нужно войти как редактор." };
+  }
+
+  try {
+    await mediaRepo.linkMediaToPerson(editor.supabase, personId, mediaId);
+    revalidatePath(`/people/${personId}`);
+    revalidatePath(`/edit/people/${personId}`);
+    revalidatePath("/");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toUserMessage(error, "Не удалось привязать файл. Попробуйте ещё раз.") };
   }
 }
 

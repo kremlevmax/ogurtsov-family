@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, MediaKind } from "@/lib/supabase/types";
-import type { PersonMedia } from "@/features/media/types";
+import type { DeletedMediaItem, MediaPickerItem, PersonMedia } from "@/features/media/types";
 
 type Client = SupabaseClient<Database>;
 
@@ -119,6 +119,12 @@ export async function softDeleteMedia(supabase: Client, mediaId: string): Promis
   if (error) throw error;
 }
 
+/** Undoes an accidental delete — the R2 object was never touched, only this flag (CLAUDE.md 13: restore safety). */
+export async function restoreMedia(supabase: Client, mediaId: string): Promise<void> {
+  const { error } = await supabase.from("media").update({ deleted_at: null }).eq("id", mediaId);
+  if (error) throw error;
+}
+
 /** The object key of a (possibly already soft-deleted) media row — used to also remove the R2 object. */
 export async function getMediaObjectKey(supabase: Client, mediaId: string): Promise<string | null> {
   const { data, error } = await supabase.from("media").select("object_key").eq("id", mediaId).maybeSingle();
@@ -170,7 +176,7 @@ export async function unsetProfilePhoto(supabase: Client, personId: string, medi
 
 type MediaRow = Database["public"]["Tables"]["media"]["Row"];
 
-function rowToPersonMedia(row: MediaRow, isProfile: boolean): PersonMedia {
+function rowToPersonMedia(row: MediaRow, isProfile: boolean, linkedToOtherPeople: boolean): PersonMedia {
   return {
     id: row.id,
     kind: row.kind,
@@ -185,6 +191,7 @@ function rowToPersonMedia(row: MediaRow, isProfile: boolean): PersonMedia {
     height: row.height,
     objectKey: row.object_key,
     isProfile,
+    linkedToOtherPeople,
   };
 }
 
@@ -203,19 +210,24 @@ export async function listMediaForPerson(supabase: Client, personId: string): Pr
   if (!links || links.length === 0) return [];
 
   const mediaIds = links.map((link) => link.media_id);
-  const { data: mediaRows, error: mediaError } = await supabase
-    .from("media")
-    .select("*")
-    .in("id", mediaIds)
-    .is("deleted_at", null);
+  const [{ data: mediaRows, error: mediaError }, { data: allLinks, error: allLinksError }] = await Promise.all([
+    supabase.from("media").select("*").in("id", mediaIds).is("deleted_at", null),
+    supabase.from("person_media").select("media_id").in("media_id", mediaIds),
+  ]);
   if (mediaError) throw mediaError;
+  if (allLinksError) throw allLinksError;
 
   const mediaById = new Map((mediaRows ?? []).map((row) => [row.id, row]));
+  const linkCountByMedia = new Map<string, number>();
+  for (const link of allLinks ?? []) {
+    linkCountByMedia.set(link.media_id, (linkCountByMedia.get(link.media_id) ?? 0) + 1);
+  }
 
   return links
     .map((link) => {
       const row = mediaById.get(link.media_id);
-      return row ? rowToPersonMedia(row, link.is_profile) : null;
+      if (!row) return null;
+      return rowToPersonMedia(row, link.is_profile, (linkCountByMedia.get(link.media_id) ?? 1) > 1);
     })
     .filter((item): item is PersonMedia => item !== null);
 }
@@ -243,13 +255,17 @@ export async function listAllMediaGroupedByPerson(supabase: Client): Promise<Rec
   if (mediaError) throw mediaError;
 
   const mediaById = new Map((mediaRows ?? []).map((row) => [row.id, row]));
+  const linkCountByMedia = new Map<string, number>();
+  for (const link of links) {
+    linkCountByMedia.set(link.media_id, (linkCountByMedia.get(link.media_id) ?? 0) + 1);
+  }
 
   const grouped: Record<string, PersonMedia[]> = {};
   for (const link of links) {
     const row = mediaById.get(link.media_id);
     if (!row) continue;
     const list = (grouped[link.person_id] ??= []);
-    list.push(rowToPersonMedia(row, link.is_profile));
+    list.push(rowToPersonMedia(row, link.is_profile, (linkCountByMedia.get(link.media_id) ?? 1) > 1));
   }
   return grouped;
 }
@@ -285,6 +301,104 @@ export async function getProfilePhotoObjectKeys(
     if (objectKey) result.set(link.person_id, objectKey);
   }
   return result;
+}
+
+/**
+ * Every non-deleted media item with who it's already linked to — powers
+ * the editor's "attach an existing file" picker (CLAUDE.md 3.7), so a
+ * photo already uploaded for one person can be reused on another
+ * without re-uploading the same bytes.
+ */
+export async function listAllMediaForPicker(supabase: Client): Promise<MediaPickerItem[]> {
+  const { data: mediaRows, error: mediaError } = await supabase
+    .from("media")
+    .select("id, kind, title, caption, extension, original_filename, size_bytes, object_key")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  if (mediaError) throw mediaError;
+  if (!mediaRows || mediaRows.length === 0) return [];
+
+  const { data: links, error: linksError } = await supabase
+    .from("person_media")
+    .select("person_id, media_id");
+  if (linksError) throw linksError;
+
+  const personIds = [...new Set((links ?? []).map((link) => link.person_id))];
+  const { data: peopleRows, error: peopleError } =
+    personIds.length === 0
+      ? { data: [] as { id: string; display_name: string }[], error: null }
+      : await supabase.from("people").select("id, display_name").in("id", personIds);
+  if (peopleError) throw peopleError;
+
+  const nameById = new Map((peopleRows ?? []).map((row) => [row.id, row.display_name]));
+  const linkedByMedia = new Map<string, { ids: string[]; names: string[] }>();
+  for (const link of links ?? []) {
+    const entry = linkedByMedia.get(link.media_id) ?? { ids: [], names: [] };
+    entry.ids.push(link.person_id);
+    const name = nameById.get(link.person_id);
+    if (name) entry.names.push(name);
+    linkedByMedia.set(link.media_id, entry);
+  }
+
+  return mediaRows.map((row) => {
+    const linked = linkedByMedia.get(row.id) ?? { ids: [], names: [] };
+    return {
+      id: row.id,
+      kind: row.kind,
+      title: row.title,
+      caption: row.caption,
+      extension: row.extension,
+      originalFilename: row.original_filename,
+      sizeBytes: row.size_bytes,
+      objectKey: row.object_key,
+      linkedPersonIds: linked.ids,
+      linkedPersonNames: linked.names,
+    };
+  });
+}
+
+/** Soft-deleted media, newest-deleted first — editor-only "trash" list, same pattern as `listDeletedPeople` (CLAUDE.md 13). */
+export async function listDeletedMedia(supabase: Client): Promise<DeletedMediaItem[]> {
+  const { data: mediaRows, error: mediaError } = await supabase
+    .from("media")
+    .select("id, kind, title, extension, deleted_at")
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+  if (mediaError) throw mediaError;
+  if (!mediaRows || mediaRows.length === 0) return [];
+
+  const mediaIds = mediaRows.map((row) => row.id);
+  const { data: links, error: linksError } = await supabase
+    .from("person_media")
+    .select("media_id, person_id")
+    .in("media_id", mediaIds);
+  if (linksError) throw linksError;
+
+  const personIds = [...new Set((links ?? []).map((link) => link.person_id))];
+  const { data: peopleRows, error: peopleError } =
+    personIds.length === 0
+      ? { data: [] as { id: string; display_name: string }[], error: null }
+      : await supabase.from("people").select("id, display_name").in("id", personIds);
+  if (peopleError) throw peopleError;
+
+  const nameById = new Map((peopleRows ?? []).map((row) => [row.id, row.display_name]));
+  const namesByMedia = new Map<string, string[]>();
+  for (const link of links ?? []) {
+    const name = nameById.get(link.person_id);
+    if (!name) continue;
+    const list = namesByMedia.get(link.media_id) ?? [];
+    list.push(name);
+    namesByMedia.set(link.media_id, list);
+  }
+
+  return mediaRows.map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    extension: row.extension,
+    deletedAt: row.deleted_at as string,
+    linkedPersonNames: namesByMedia.get(row.id) ?? [],
+  }));
 }
 
 /** Total bytes stored across all active media — shown to editors against the ~5 GB expectation (CLAUDE.md 3.7). */

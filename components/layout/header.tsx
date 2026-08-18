@@ -17,12 +17,26 @@ export function Header({ search }: HeaderProps) {
           Семейное дерево Огурцовых
         </Link>
         {search && <div className="min-w-0 flex-1 sm:flex sm:justify-center">{search}</div>}
-        <Link
-          href="/login"
-          className="text-label shrink-0 text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent)"
-        >
-          Вход
-        </Link>
+        <nav className="flex shrink-0 items-center gap-4">
+          <Link
+            href="/gallery"
+            className="text-label hidden text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent) sm:inline"
+          >
+            Фотоальбом
+          </Link>
+          <Link
+            href="/archive"
+            className="text-label hidden text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent) sm:inline"
+          >
+            Архив
+          </Link>
+          <Link
+            href="/login"
+            className="text-label text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent)"
+          >
+            Вход
+          </Link>
+        </nav>
       </div>
     </header>
   );

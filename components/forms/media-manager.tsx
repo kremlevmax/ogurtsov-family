@@ -2,15 +2,23 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Star, Trash2 } from "lucide-react";
+import { Star, Trash2, Unlink } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
-import type { PersonMedia } from "@/features/media/types";
-import { deleteMediaAction, setProfilePhotoAction, unsetProfilePhotoAction } from "@/server/actions/media";
+import type { MediaPickerItem, PersonMedia } from "@/features/media/types";
+import {
+  deleteMediaAction,
+  setProfilePhotoAction,
+  unsetProfilePhotoAction,
+  unlinkMediaAction,
+} from "@/server/actions/media";
 import { MediaUploadForm } from "./media-upload";
+import { LinkExistingMedia } from "./link-existing-media";
 
 export interface MediaManagerProps {
   personId: string;
   media: PersonMedia[];
+  /** Every other uploaded file site-wide, for the "attach existing" picker (CLAUDE.md 3.7). */
+  linkableMedia: MediaPickerItem[];
 }
 
 function formatFileSize(bytes: number): string {
@@ -19,7 +27,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 }
 
-export function MediaManager({ personId, media }: MediaManagerProps) {
+export function MediaManager({ personId, media, linkableMedia }: MediaManagerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +38,15 @@ export function MediaManager({ personId, media }: MediaManagerProps) {
       const result = await deleteMediaAction(mediaId, personId);
       if (result.ok) router.refresh();
       else setError(result.error ?? "Не удалось удалить файл.");
+    });
+  }
+
+  function handleUnlink(mediaId: string) {
+    setError(null);
+    startTransition(async () => {
+      const result = await unlinkMediaAction(personId, mediaId);
+      if (result.ok) router.refresh();
+      else setError(result.error ?? "Не удалось отвязать файл.");
     });
   }
 
@@ -89,15 +106,27 @@ export function MediaManager({ personId, media }: MediaManagerProps) {
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => handleDelete(item.id)}
-                  disabled={isPending}
-                  title="Удалить"
-                  className="shrink-0 rounded-full p-1.5 text-(--color-fg-muted) hover:text-(--color-danger)"
-                >
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </button>
+                {item.linkedToOtherPeople ? (
+                  <button
+                    type="button"
+                    onClick={() => handleUnlink(item.id)}
+                    disabled={isPending}
+                    title="Отвязать от этого человека (файл останется у остальных)"
+                    className="shrink-0 rounded-full p-1.5 text-(--color-fg-muted) hover:text-(--color-danger)"
+                  >
+                    <Unlink className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(item.id)}
+                    disabled={isPending}
+                    title="Удалить совсем"
+                    className="shrink-0 rounded-full p-1.5 text-(--color-fg-muted) hover:text-(--color-danger)"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                )}
               </li>
             );
           })}
@@ -111,6 +140,7 @@ export function MediaManager({ personId, media }: MediaManagerProps) {
       )}
 
       <MediaUploadForm personId={personId} />
+      <LinkExistingMedia personId={personId} candidates={linkableMedia} />
     </div>
   );
 }
