@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
@@ -11,6 +11,15 @@ import type { TreePerson } from "@/features/tree/build-graph";
 import type { Person, Relationship } from "@/features/people/types";
 import type { PersonMedia } from "@/features/media/types";
 import type { SearchablePerson } from "@/features/search/normalize";
+import { buildDisplayNameFirstNameFirst, compareByFirstName, compareByName } from "@/lib/names/display-name";
+
+type PeopleListSortMode = "lastName" | "firstName" | "birthYear";
+
+const SORT_MODE_LABELS: Record<PeopleListSortMode, string> = {
+  lastName: "По фамилии",
+  firstName: "По имени",
+  birthYear: "По дате рождения",
+};
 
 export interface FamilyTreeExplorerProps {
   people: Person[];
@@ -60,6 +69,35 @@ export function FamilyTreeExplorer({
     ? (people.find((person) => person.id === selectedPersonId) ?? null)
     : null;
 
+  const [peopleListSort, setPeopleListSort] = useState<PeopleListSortMode>("lastName");
+
+  const birthYearById = useMemo(
+    () => new Map(treePeople.map((person) => [person.id, person.birthYear])),
+    [treePeople],
+  );
+
+  const sortedListPeople = useMemo(() => {
+    // Reading order matches sort order: "по имени" leads with имя in the
+    // label too, otherwise the list would read alphabetized by a name
+    // part it isn't visibly leading with.
+    const withListLabel = searchablePeople.map((person) => ({
+      ...person,
+      birthYear: birthYearById.get(person.id) ?? null,
+      listLabel: peopleListSort === "firstName" ? buildDisplayNameFirstNameFirst(person) : person.displayName,
+    }));
+
+    if (peopleListSort === "firstName") return withListLabel.sort(compareByFirstName);
+    if (peopleListSort === "birthYear") {
+      return withListLabel.sort((a, b) => {
+        if (a.birthYear === null && b.birthYear === null) return compareByName(a, b);
+        if (a.birthYear === null) return 1;
+        if (b.birthYear === null) return -1;
+        return a.birthYear - b.birthYear || compareByName(a, b);
+      });
+    }
+    return withListLabel.sort(compareByName);
+  }, [searchablePeople, peopleListSort, birthYearById]);
+
   return (
     <div className="flex flex-1 flex-col">
       <Header search={<SearchBox people={searchablePeople} onSelect={selectPerson} />} />
@@ -97,14 +135,33 @@ export function FamilyTreeExplorer({
           <summary className="text-label cursor-pointer text-xs text-(--color-fg-muted)">
             Список всех людей (доступная альтернатива дереву)
           </summary>
-          <ul className="mt-3 grid gap-1 sm:grid-cols-2">
-            {searchablePeople.map((person) => (
-              <li key={person.id}>
+
+          <div className="mt-3 flex items-center gap-2">
+            <label htmlFor="people-list-sort" className="text-label text-xs text-(--color-fg-muted)">
+              Сортировка
+            </label>
+            <select
+              id="people-list-sort"
+              value={peopleListSort}
+              onChange={(event) => setPeopleListSort(event.target.value as PeopleListSortMode)}
+              className="h-8 rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg) px-2 text-xs text-(--color-fg) focus-visible:outline-none"
+            >
+              {(Object.entries(SORT_MODE_LABELS) as [PeopleListSortMode, string][]).map(([mode, label]) => (
+                <option key={mode} value={mode}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <ul className="mt-3 columns-1 gap-x-6 sm:columns-2">
+            {sortedListPeople.map((person) => (
+              <li key={person.id} className="mb-1 break-inside-avoid">
                 <Link
                   href={`/people/${person.id}`}
                   className="text-sm text-(--color-fg) underline-offset-2 hover:underline"
                 >
-                  {person.displayName || "Без имени"}
+                  {person.listLabel || "Без имени"}
                   {person.lifeSpan && (
                     <span className="text-label ml-1.5 text-[11px] text-(--color-fg-muted)">
                       {person.lifeSpan}
