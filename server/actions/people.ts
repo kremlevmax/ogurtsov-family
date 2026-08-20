@@ -74,7 +74,7 @@ export async function softDeletePersonAction(personId: string): Promise<DeletePe
   }
 
   try {
-    await peopleRepo.softDeletePerson(editor.supabase, personId);
+    await peopleRepo.softDeletePerson(editor.supabase, personId, editor.editorId);
     revalidatePath("/");
     revalidatePath(`/people/${personId}`);
     revalidatePath("/edit");

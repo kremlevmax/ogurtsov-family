@@ -8,6 +8,7 @@ import { buildDisplayName } from "@/lib/names/display-name";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { getPlaceNamesByIds, findOrCreatePlaceId } from "./places";
 import { getProfilePhotoObjectKeys } from "./media";
+import { softDeleteRelationshipsForPerson, restoreRelationshipsDeletedWithPerson } from "./relationships";
 
 type Client = SupabaseClient<Database>;
 type PersonRow = Database["public"]["Tables"]["people"]["Row"];
@@ -183,15 +184,32 @@ export async function updatePerson(
   if (error) throw error;
 }
 
-export async function softDeletePerson(supabase: Client, id: string): Promise<void> {
-  const { error } = await supabase
-    .from("people")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+export async function softDeletePerson(supabase: Client, id: string, editorId: string): Promise<void> {
+  const deletedAt = new Date().toISOString();
+  const { error } = await supabase.from("people").update({ deleted_at: deletedAt }).eq("id", id);
   if (error) throw error;
+
+  // Same timestamp on both, so restorePerson can undo precisely this
+  // cascade later without reviving relationships deleted separately.
+  await softDeleteRelationshipsForPerson(supabase, id, deletedAt, editorId);
 }
 
 export async function restorePerson(supabase: Client, id: string): Promise<void> {
+  const { data, error: fetchError } = await supabase
+    .from("people")
+    .select("deleted_at")
+    .eq("id", id)
+    .single();
+  if (fetchError) throw fetchError;
+
+  if (data.deleted_at) {
+    await restoreRelationshipsDeletedWithPerson(supabase, id, data.deleted_at);
+  }
+
+  return restorePersonRow(supabase, id);
+}
+
+async function restorePersonRow(supabase: Client, id: string): Promise<void> {
   const { error } = await supabase.from("people").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }

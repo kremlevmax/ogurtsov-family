@@ -14,7 +14,8 @@
     "worker:deploy": "wrangler deploy --config workers/media/wrangler.toml",
     "backup:local": "tsx scripts/backup-local.ts",
     "backup:verify": "tsx scripts/verify-backup.ts",
-    "export:gedcom": "tsx scripts/export-gedcom.ts"
+    "export:gedcom": "tsx scripts/export-gedcom.ts",
+    "relationships:fix-orphans": "tsx scripts/fix-orphan-relationships.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1111.0",

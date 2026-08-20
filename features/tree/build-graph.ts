@@ -93,8 +93,19 @@ export function buildFamilyGraph(
     person,
   }));
 
+  // A relationship whose person was deleted without also deleting the
+  // relationship (e.g. data left over from before soft-deleting a person
+  // cascaded to their relationships) would otherwise still grow a
+  // family-unit node with no person box to show at the other end — a
+  // dangling stub in the tree. Both ends must be someone actually on
+  // screen.
+  const livingPersonIds = new Set(people.map((p) => p.id));
+  const validRelationships = relationships.filter(
+    (rel) => livingPersonIds.has(rel.fromPersonId) && livingPersonIds.has(rel.toPersonId),
+  );
+
   const parentsByChild = new Map<string, Set<string>>();
-  for (const rel of relationships) {
+  for (const rel of validRelationships) {
     if (!PARENT_RELATIONSHIP_TYPES.has(rel.relationshipType)) continue;
     const parents = parentsByChild.get(rel.toPersonId) ?? new Set<string>();
     parents.add(rel.fromPersonId);
@@ -118,7 +129,7 @@ export function buildFamilyGraph(
   const PARTNER_TYPE_PRIORITY: Record<string, number> = { spouse: 0, partner: 1, former_spouse: 2 };
   const unitPartnerType = new Map<string, FamilyUnitGraphNode["partnerType"]>();
 
-  for (const rel of relationships) {
+  for (const rel of validRelationships) {
     if (!PARTNER_RELATIONSHIP_TYPES.has(rel.relationshipType)) continue;
     const parentIds = [rel.fromPersonId, rel.toPersonId].sort();
     const unitId = familyUnitId(parentIds);

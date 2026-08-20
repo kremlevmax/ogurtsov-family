@@ -107,6 +107,33 @@ describe("buildFamilyGraph", () => {
     expect(currentUnit?.partnerType).toBe("spouse");
   });
 
+  it("drops a relationship pointing at a person who no longer exists, instead of growing a dangling family-unit stub", () => {
+    // Real bug report: a person was soft-deleted without their
+    // relationships being deleted alongside — the leftover rows still
+    // named them as a spouse and as a child's parent, and this used to
+    // still create a family-unit node with nothing to show at the other
+    // end (build-graph.ts doesn't know "deleted"; it only sees whichever
+    // `people` its caller passed in, so a missing id is the only signal
+    // available here).
+    const people = [person("anchor"), person("current-spouse"), person("shared-child")];
+    const relationships: TreeRelationship[] = [
+      { id: "r1", fromPersonId: "anchor", toPersonId: "deleted-spouse", relationshipType: "spouse" },
+      { id: "r2", fromPersonId: "deleted-spouse", toPersonId: "deleted-child", relationshipType: "biological_parent" },
+      { id: "r3", fromPersonId: "anchor", toPersonId: "deleted-child", relationshipType: "biological_parent" },
+      { id: "r4", fromPersonId: "anchor", toPersonId: "current-spouse", relationshipType: "spouse" },
+      { id: "r5", fromPersonId: "anchor", toPersonId: "shared-child", relationshipType: "biological_parent" },
+      { id: "r6", fromPersonId: "current-spouse", toPersonId: "shared-child", relationshipType: "biological_parent" },
+    ];
+
+    const graph = buildFamilyGraph(people, relationships);
+    const unitNodes = graph.nodes.filter((node) => node.kind === "familyUnit");
+
+    expect(unitNodes).toHaveLength(1);
+    expect(unitNodes[0].parentIds.sort()).toEqual(["anchor", "current-spouse"]);
+    expect(graph.edges.some((edge) => edge.source === "deleted-spouse" || edge.target === "deleted-spouse")).toBe(false);
+    expect(graph.edges.some((edge) => edge.target === "deleted-child")).toBe(false);
+  });
+
   it("leaves a shared-parentage-only unit's partnerType null when no partner relationship is on record", () => {
     const people = [person("mother"), person("father"), person("child")];
     const relationships: TreeRelationship[] = [

@@ -54,6 +54,43 @@ export async function softDeleteRelationship(supabase: Client, id: string): Prom
   if (error) throw error;
 }
 
+/**
+ * Deactivates every active relationship touching a person, stamped with
+ * the same `deletedAt` the caller used for the person itself — so
+ * `restoreRelationshipsDeletedWithPerson` can later undo exactly this
+ * cascade and nothing the editor deleted separately. Without this, a
+ * soft-deleted person leaves relationships on record that still point
+ * at them, and the tree grows a family-unit node with no person box at
+ * the other end to show.
+ */
+export async function softDeleteRelationshipsForPerson(
+  supabase: Client,
+  personId: string,
+  deletedAt: string,
+  editorId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("relationships")
+    .update({ deleted_at: deletedAt, updated_by: editorId })
+    .is("deleted_at", null)
+    .or(`from_person_id.eq.${personId},to_person_id.eq.${personId}`);
+  if (error) throw error;
+}
+
+/** Undoes exactly the cascade `softDeleteRelationshipsForPerson` made for this person, by matching the timestamp — leaves relationships the editor deleted independently untouched. */
+export async function restoreRelationshipsDeletedWithPerson(
+  supabase: Client,
+  personId: string,
+  deletedAt: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("relationships")
+    .update({ deleted_at: null })
+    .eq("deleted_at", deletedAt)
+    .or(`from_person_id.eq.${personId},to_person_id.eq.${personId}`);
+  if (error) throw error;
+}
+
 /** Counts a person's active relationships, to warn an editor before deletion. */
 export async function countDependentRelationships(supabase: Client, personId: string): Promise<number> {
   const { count, error } = await supabase
