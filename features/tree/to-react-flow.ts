@@ -6,14 +6,23 @@ import {
   type TreePerson,
   type TreeRelationship,
 } from "./build-graph";
+import { isBranchRoot, resolveBranchColors } from "./branch-colors";
 import { layoutFamilyGraph, type PositionedNode } from "./layout";
 
 export interface PersonNodeData extends Record<string, unknown> {
   person: TreePerson;
+  /** Resolved branch color (own or inherited from the nearest blood ancestor) — null if this person belongs to no branch. */
+  branchColor: string | null;
+  /** True only for the literal branch founder, not their descendants — gets the larger, double-bordered treatment. */
+  isBranchRoot: boolean;
+  /** A one-off highlight on just this person (people.highlight_color) — never inherited, independent of branchColor/isBranchRoot. */
+  highlightColor: string | null;
 }
 
 export interface FamilyUnitNodeData extends Record<string, unknown> {
   parentIds: string[];
+  /** False for a partner-only union with no shared child — the dot itself stays invisible then (no line to route down to), while the node/edges still exist so the layout keeps seating the couple side by side and the connector still converges at the same point it always did. */
+  hasChildren: boolean;
 }
 
 export type FamilyFlowNode = Node<PersonNodeData, "person"> | Node<FamilyUnitNodeData, "familyUnit">;
@@ -26,9 +35,44 @@ export async function buildReactFlowGraph(
   const graph = buildFamilyGraph(people, relationships);
   const positions = await layoutFamilyGraph(graph);
   const positionById = new Map(positions.map((position) => [position.id, position]));
+  const branchColors = resolveBranchColors(people, relationships);
 
   centerTwoParentUnits(graph.nodes, positionById);
   centerSoleChildren(graph, positionById);
+
+  // A partner-only union (spouse/former_spouse/partner with no shared
+  // child) still needs its family-unit node exactly as before — that's
+  // what seats the couple side by side — but its dot has nowhere to
+  // route a line down to. FamilyUnitNode (components/tree/family-unit-
+  // node.tsx) simply doesn't draw the circle when `hasChildren` is
+  // false; the node and its position are otherwise untouched.
+  const unitsWithChildren = new Set(
+    graph.edges.filter((edge) => edge.kind === "unitToChild").map((edge) => edge.source),
+  );
+
+  // For a childless TWO-parent union, routing both parentToUnit edges
+  // into that invisible dot (like a real parent-child union does) always
+  // leaves a visible trace of the dot's position: smoothstep bends both
+  // edges at the same height on their way to the shared target, so they
+  // read as one continuous bar spanning the full gap between the two
+  // cards, with a small kink sitting right at the target — a miniature
+  // version of the exact "stub reaching for a child that isn't there"
+  // shape this was meant to remove (real bug report: Наталья Ивановна
+  // Огурцова и Егор Егорович Огурцов). There's a simpler shape available
+  // precisely because there are exactly two parents and nothing below
+  // them: one direct edge from one card's bottom straight to the
+  // other's, using the second bottom-positioned target handle
+  // (`id="bottom"`) person-node.tsx adds for this — same drop-curve-
+  // curve-rise silhouette as a real union's merge, just closing directly
+  // on the neighbor instead of bending toward a third point.
+  const directTieUnits = new Set(
+    graph.nodes
+      .filter(
+        (node): node is Extract<FamilyGraphNode, { kind: "familyUnit" }> =>
+          node.kind === "familyUnit" && !unitsWithChildren.has(node.id) && node.parentIds.length === 2,
+      )
+      .map((node) => node.id),
+  );
 
   const nodes: FamilyFlowNode[] = graph.nodes.map((node) => {
     const position = positionById.get(node.id) ?? { x: 0, y: 0 };
@@ -38,7 +82,12 @@ export async function buildReactFlowGraph(
         id: node.id,
         type: "person",
         position,
-        data: { person: node.person },
+        data: {
+          person: node.person,
+          branchColor: branchColors.get(node.id) ?? null,
+          isBranchRoot: isBranchRoot(node.person, branchColors),
+          highlightColor: node.person.highlightColor,
+        },
       } satisfies Node<PersonNodeData, "person">;
     }
 
@@ -46,17 +95,56 @@ export async function buildReactFlowGraph(
       id: node.id,
       type: "familyUnit",
       position,
-      data: { parentIds: node.parentIds },
+      data: { parentIds: node.parentIds, hasChildren: unitsWithChildren.has(node.id) },
     } satisfies Node<FamilyUnitNodeData, "familyUnit">;
   });
 
-  const edges: Edge[] = graph.edges.map((edge) => ({
-    id: edge.id,
-    source: edge.source,
-    target: edge.target,
-    type: "smoothstep",
-    style: { strokeWidth: 1.5, stroke: "var(--color-fg-muted)" },
-  }));
+  // An edge's color follows whichever end of it is a person (parentToUnit:
+  // source: unitToChild: target) — a married-in spouse simply has no
+  // resolved color, so their edge falls back to neutral automatically,
+  // with no separate "is this a spouse edge" check needed.
+  const edges: Edge[] = [];
+
+  for (const unit of graph.nodes) {
+    if (unit.kind !== "familyUnit" || !directTieUnits.has(unit.id)) continue;
+    const [a, b] = unit.parentIds;
+    const color = branchColors.get(a) ?? branchColors.get(b);
+    edges.push({
+      id: `tie:${unit.id}`,
+      source: a,
+      target: b,
+      targetHandle: "bottom",
+      // "parentTie" (components/tree/parent-tie-edge.tsx) — same custom
+      // edge every parentToUnit edge below uses, so this direct tie bends
+      // at exactly the same height any of them would. See that
+      // component's doc for why stock "smoothstep" can't guarantee this.
+      type: "parentTie",
+      style: { strokeWidth: color ? 2 : 1.5, stroke: color ?? "var(--color-fg-muted)" },
+    });
+  }
+
+  for (const edge of graph.edges) {
+    // Replaced by the direct tie above — routing it into the union's own
+    // (invisible) dot as well would draw the same couple twice.
+    if (edge.kind === "parentToUnit" && directTieUnits.has(edge.target)) continue;
+
+    const personEndId = edge.kind === "parentToUnit" ? edge.source : edge.target;
+    const color = branchColors.get(personEndId);
+    edges.push({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      // Every parentToUnit edge — child-having union or a single-parent
+      // childless one (placeholder/unknown other parent, the only
+      // childless case left routing into its own dot instead of a direct
+      // tie) — uses the same custom "parentTie" edge as the direct ties
+      // above, so its bend height never depends on where its particular
+      // target happens to sit. unitToChild edges are unrelated to any of
+      // this and keep the stock "smoothstep" behavior.
+      type: edge.kind === "parentToUnit" ? "parentTie" : "smoothstep",
+      style: { strokeWidth: color ? 2 : 1.5, stroke: color ?? "var(--color-fg-muted)" },
+    });
+  }
 
   return { nodes, edges };
 }

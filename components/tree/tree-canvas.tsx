@@ -8,9 +8,11 @@ import type { TreePerson, TreeRelationship } from "@/features/tree/build-graph";
 import { FAMILY_UNIT_NODE_SIZE, PERSON_NODE_SIZE } from "@/features/tree/layout";
 import { PersonNode } from "./person-node";
 import { FamilyUnitNode } from "./family-unit-node";
+import { ParentTieEdge } from "./parent-tie-edge";
 import { TreeSelectionProvider } from "./tree-selection-context";
 
 const NODE_TYPES = { person: PersonNode, familyUnit: FamilyUnitNode };
+const EDGE_TYPES = { parentTie: ParentTieEdge };
 
 /** How far past the outermost nodes panning is still allowed — enough to comfortably center an edge node, not so much the tree gets lost in empty canvas. */
 const PAN_MARGIN = 400;
@@ -152,6 +154,7 @@ export function TreeCanvas({ people, relationships, selectedPersonId, onSelectPe
           nodes={state.nodes}
           edges={state.edges}
           nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable={false}

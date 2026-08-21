@@ -10,26 +10,48 @@ const optionalText = (max: number) =>
     .nullable()
     .transform((value) => (value ? value : null));
 
+/** Empty/missing means "not a branch founder" — same null-on-empty shape as `optionalText`, but constrained to a hex color. */
+const optionalHexColor = z
+  .string()
+  .trim()
+  .nullable()
+  .transform((value) => (value ? value : null))
+  .refine((value) => value === null || /^#[0-9a-fA-F]{6}$/.test(value), {
+    message: "Цвет должен быть в формате #RRGGBB",
+  });
+
 /**
  * Server-side validation for the person editing form (create + update).
  * The exact same schema runs client-side (RHF resolver) and server-side
  * (Server Action) — CLAUDE.md 13: client validation is never trusted alone.
  */
-export const personFormSchema = z.object({
-  firstName: z.string().trim().min(1, "Укажите имя").max(200),
-  middleName: optionalText(200),
-  lastName: optionalText(200),
-  maidenName: optionalText(200),
-  isPlaceholder: z.boolean(),
-  isDeceased: z.boolean(),
-  birth: dateValueSchema,
-  death: dateValueSchema,
-  birthPlace: optionalText(300),
-  deathPlace: optionalText(300),
-  profession: optionalText(300),
-  education: optionalText(300),
-  shortBio: optionalText(5000),
-});
+export const personFormSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "Укажите имя").max(200),
+    middleName: optionalText(200),
+    lastName: optionalText(200),
+    maidenName: optionalText(200),
+    isPlaceholder: z.boolean(),
+    isDeceased: z.boolean(),
+    birth: dateValueSchema,
+    death: dateValueSchema,
+    birthPlace: optionalText(300),
+    deathPlace: optionalText(300),
+    profession: optionalText(300),
+    education: optionalText(300),
+    shortBio: optionalText(5000),
+    branchColor: optionalHexColor,
+    // Independent from branchColor: highlights just this one card, with
+    // no inheritance by descendants (features/tree/branch-colors.ts
+    // never reads this field). Mutually exclusive with branchColor —
+    // a person is either a branch founder or a plain one-off highlight,
+    // not both at once.
+    highlightColor: optionalHexColor,
+  })
+  .refine((value) => !(value.branchColor && value.highlightColor), {
+    message: "Нельзя одновременно быть родоначальником ветки и просто выделенным — выберите один вариант",
+    path: ["highlightColor"],
+  });
 
 export type PersonFormInput = z.infer<typeof personFormSchema>;
 

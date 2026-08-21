@@ -52,9 +52,6 @@ export function PersonDetailContent({
   const lifeSpan = formatLifeSpan(person.birth, person.death, isDeceased);
 
   const givenNames = [person.firstName, person.middleName].filter(Boolean).join(" ");
-  const familyName = person.maidenName
-    ? `${person.lastName ?? ""} (${person.maidenName})`.trim()
-    : person.lastName;
 
   return (
     <div className="@container flex flex-col gap-8">
@@ -65,12 +62,22 @@ export function PersonDetailContent({
           </p>
           <h1 className="font-heading leading-tight">
             {givenNames && <span className="block text-3xl font-bold text-(--color-fg)">{givenNames}</span>}
-            {familyName && <span className="block text-3xl italic text-(--color-fg)">{familyName}</span>}
-            {!givenNames && !familyName && (
+            {/* Surname and maiden name flow as ordinary inline text (not each forced onto its own line) — sharing a line whenever they fit, wrapping only if they don't. Only the maiden name is italic — it's the one part of the name that isn't this person's own, current surname. */}
+            {(person.lastName || person.maidenName) && (
+              <span className="block text-3xl text-(--color-fg)">
+                {person.lastName && <span className="font-bold">{person.lastName}</span>}
+                {person.lastName && person.maidenName && " "}
+                {person.maidenName && <span className="italic">({person.maidenName})</span>}
+              </span>
+            )}
+            {!givenNames && !person.lastName && !person.maidenName && (
               <span className="block text-3xl font-bold text-(--color-fg)">Без имени</span>
             )}
           </h1>
-          {lifeSpan && <p className="text-label mt-3 text-sm text-(--color-accent)">{lifeSpan}</p>}
+          {/* Italic font-body, matching the tree cell's life-span style
+            (docs/DECISIONS.md, 2026-08-20/21) — not `.text-label`, which
+            stays for real eyebrow/form labels elsewhere on this page. */}
+          {lifeSpan && <p className="font-body mt-3 text-base italic text-(--color-fg-muted)">{lifeSpan}</p>}
         </div>
 
         {isEditor && <EditorQuickActions personId={person.id} parents={parents} />}

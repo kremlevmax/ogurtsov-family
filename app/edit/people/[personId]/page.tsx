@@ -97,6 +97,8 @@ export default async function EditPersonPage(props: PageProps<"/edit/people/[per
             profession: person.profession ?? "",
             education: person.education ?? "",
             shortBio: person.shortBio ?? "",
+            branchColor: person.branchColor,
+            highlightColor: person.highlightColor,
           }}
         />
 

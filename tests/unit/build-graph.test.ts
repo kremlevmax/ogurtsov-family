@@ -11,6 +11,8 @@ function person(id: string, overrides: Partial<TreePerson> = {}): TreePerson {
     isDeceased: false,
     isPlaceholder: false,
     photoUrl: null,
+    branchColor: null,
+    highlightColor: null,
     ...overrides,
   };
 }

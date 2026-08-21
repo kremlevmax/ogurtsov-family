@@ -23,6 +23,10 @@ export interface Person {
   education: string | null;
   shortBio: string | null;
   photoUrl: string | null;
+  /** Non-null marks this person as a branch founder; their blood descendants inherit it in the tree (features/tree/branch-colors.ts). */
+  branchColor: string | null;
+  /** Non-null highlights just this one card — no inheritance, independent of branchColor. */
+  highlightColor: string | null;
 }
 
 export interface Relationship {

@@ -9,7 +9,14 @@ export interface PositionedNode {
   height: number;
 }
 
-export const PERSON_NODE_SIZE = { width: 272, height: 92 } as const;
+// Height bumped 92 -> 104 alongside the "Викторианский альбом" frame
+// (docs/DECISIONS.md, 2026-08-20): the frame's inner hairline + corner
+// scrolls left too little room for a 2-line wrapped ФИО plus the
+// avatar, so long names started crowding into the border. Every
+// connector-height formula elsewhere (ROW_GAP, GENERATION_HEIGHT, the
+// custom parentTie bend) is computed from this constant rather than a
+// hardcoded number, so this is the only place that needs to change.
+export const PERSON_NODE_SIZE = { width: 272, height: 104 } as const;
 /**
  * Must match the FamilyUnitNode component's actual rendered size
  * (`h-2.5 w-2.5` = 10px) exactly. A mismatch here shifts the node's
@@ -22,8 +29,19 @@ export const FAMILY_UNIT_NODE_SIZE = { width: 10, height: 10 } as const;
 const SLOT_GAP = 36;
 /** Pixel width of one horizontal layout "column" — a person box plus the gap to its neighbor. Exported so tests can assert on slot adjacency without hardcoding this arithmetic twice. */
 export const SLOT_WIDTH = PERSON_NODE_SIZE.width + SLOT_GAP;
-/** Vertical gap between a person row and the family-unit-dot row below it, and between that dot row and the next person row. */
-const ROW_GAP = 70;
+/** Vertical gap between a person row and the family-unit-dot row below it, and between that dot row and the next person row. Exported so to-react-flow.ts can line up a childless couple's direct tie with a normal union's own merge height (see its `directTieUnits` comment). */
+export const ROW_GAP = 70;
+/**
+ * Vertical gap used instead of `ROW_GAP` for a childless union's dot.
+ * Paired with the tightened `pathOptions` in `to-react-flow.ts` (small
+ * `offset`/`borderRadius`, `stepPosition: 1`) — that combination is what
+ * actually keeps the leftover run past the merge point down to just a
+ * few px; this gap only needs to be short enough to read as "right below
+ * the cards" and long enough (comfortably over 2× that small offset) that
+ * the curve doesn't compress into a lopsided kink. See the pathOptions
+ * comment for why the two must move together.
+ */
+const CHILDLESS_UNIT_GAP = 28;
 const GENERATION_HEIGHT = PERSON_NODE_SIZE.height + ROW_GAP + FAMILY_UNIT_NODE_SIZE.height + ROW_GAP;
 
 const PARTNER_TYPE_PRIORITY: Record<string, number> = { spouse: 0, partner: 1, former_spouse: 2 };
@@ -461,13 +479,30 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
     noteRowInterval(row, x, x + PERSON_NODE_SIZE.width, id);
   }
 
-  /** Placed for *any* union with a connector dot — including a single-parent union (placeholder or unknown other parent), which has no spouse box but still needs its dot positioned. */
+  /**
+   * Placed for *any* union with a connector dot — including a
+   * single-parent union (placeholder or unknown other parent), which has
+   * no spouse box but still needs its dot positioned.
+   *
+   * A childless union (no `unitToChild` edge at all — a partner-only tie)
+   * sits much closer to the parent row than a real parent-child union
+   * does. Placed at the standard full `ROW_GAP` depth, its two
+   * parentToUnit connector lines still travel all the way down to where
+   * a child's connector would normally continue further — reads as a
+   * dead-end stub reaching for a child that doesn't exist, even with the
+   * dot itself invisible (real bug report: Наталья Ивановна Огурцова и
+   * Егор Егорович Огурцов). Pulling the dot up to sit right where the
+   * two lines' horizontal jog already happens leaves just a short bridge
+   * between the two cards' bottom-centers, with nothing hanging below it.
+   */
   function placeUnitDot(unitId: string, anchorId: string, centerX: number): void {
     const rowDepth = depthOf(anchorId);
+    const hasChildren = (childrenByUnit.get(unitId)?.length ?? 0) > 0;
+    const gap = hasChildren ? ROW_GAP : CHILDLESS_UNIT_GAP;
     positionById.set(unitId, {
       id: unitId,
       x: centerX - FAMILY_UNIT_NODE_SIZE.width / 2,
-      y: rowDepth * GENERATION_HEIGHT + PERSON_NODE_SIZE.height + ROW_GAP,
+      y: rowDepth * GENERATION_HEIGHT + PERSON_NODE_SIZE.height + gap,
       width: FAMILY_UNIT_NODE_SIZE.width,
       height: FAMILY_UNIT_NODE_SIZE.height,
     });

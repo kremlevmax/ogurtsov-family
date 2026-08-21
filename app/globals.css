@@ -17,8 +17,17 @@
   --color-danger: #b3413a;
   --color-danger-fg: #ffffff;
 
-  --font-heading: var(--font-playfair-display);
-  --font-body: var(--font-lora);
+  /* "Викторианский альбом" card-frame ornament (docs/DECISIONS.md,
+   * 2026-08-20): border + corner-scroll colors for every tree card's
+   * frame specifically — deliberately separate from --color-accent,
+   * which stays terracotta for buttons/links/focus across the rest of
+   * the site (owner chose fonts + this frame treatment, not a site-wide
+   * palette change). */
+  --color-frame: #5c1a24;
+  --color-frame-accent: #b8933f;
+
+  --font-heading: var(--font-prata);
+  --font-body: var(--font-eb-garamond);
   --font-label: var(--font-geist-mono);
 
   --radius-sm: 0.375rem;

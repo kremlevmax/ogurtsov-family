@@ -73,6 +73,8 @@ export interface Database {
           profession: string | null;
           education: string | null;
           short_bio: string | null;
+          branch_color: string | null;
+          highlight_color: string | null;
           created_at: string;
           updated_at: string;
           created_by: string | null;

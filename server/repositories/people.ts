@@ -54,6 +54,8 @@ async function rowsToPeople(supabase: Client, rows: PersonRow[]): Promise<Person
       education: row.education,
       shortBio: row.short_bio,
       photoUrl: profileObjectKey ? getMediaPublicUrl(profileObjectKey) : null,
+      branchColor: row.branch_color,
+      highlightColor: row.highlight_color,
     };
   });
 }
@@ -145,6 +147,8 @@ function toDbFields(input: PersonFormInput, birthPlaceId: string | null, deathPl
     profession: input.profession,
     education: input.education,
     short_bio: input.shortBio,
+    branch_color: input.branchColor,
+    highlight_color: input.highlightColor,
   };
 }
 

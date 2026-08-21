@@ -13,6 +13,8 @@ function person(id: string): TreePerson {
     isDeceased: false,
     isPlaceholder: false,
     photoUrl: null,
+    branchColor: null,
+    highlightColor: null,
   };
 }
 

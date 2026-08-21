@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Ornament } from "@/components/ui/ornament";
 
 export interface HeaderProps {
   /** Rendered centered in the top bar, e.g. the home page's SearchBox. */
@@ -8,7 +9,7 @@ export interface HeaderProps {
 
 export function Header({ search }: HeaderProps) {
   return (
-    <header className="border-b border-(--color-border) bg-(--color-bg-elevated)">
+    <header className="bg-(--color-bg-elevated)">
       <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-4">
         <Link
           href="/"
@@ -38,6 +39,11 @@ export function Header({ search }: HeaderProps) {
           </Link>
         </nav>
       </div>
+      {/* Decorative only — hidden on mobile so the header stays compact there (CLAUDE.md 3.6). */}
+      <div className="hidden justify-center border-b border-(--color-border) py-1 text-(--color-border) sm:flex">
+        <Ornament className="h-3 w-32" />
+      </div>
+      <div className="border-b border-(--color-border) sm:hidden" />
     </header>
   );
 }

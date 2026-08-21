@@ -13,8 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormSection, Field } from "./form-field";
 import { DateValueField } from "./date-value-field";
+import { ColorPresetSwatches, COLOR_PRESETS } from "./color-preset-swatches";
 
 const EMPTY_DATE: DateValue = { precision: "unknown", start: null, end: null, text: null };
+const DEFAULT_MARK_COLOR = COLOR_PRESETS[0];
 
 /** Quick-fill chips for the "Имя" field when the person's identity isn't known — CLAUDE.md 3.5's placeholder concept, made easier to use than typing "Неизвестная мать" by hand. */
 const PLACEHOLDER_NAME_SUGGESTIONS: Record<QuickRelation["relationKind"], string[]> = {
@@ -59,12 +61,23 @@ export function PersonForm({ mode, personId, defaultValues, quickRelation }: Per
       profession: "",
       education: "",
       shortBio: "",
+      branchColor: null,
+      highlightColor: null,
       ...defaultValues,
     },
   });
 
   const isDeceased = useWatch({ control, name: "isDeceased" });
   const isPlaceholder = useWatch({ control, name: "isPlaceholder" });
+  const branchColor = useWatch({ control, name: "branchColor" });
+  const highlightColor = useWatch({ control, name: "highlightColor" });
+  const markMode: "none" | "highlight" | "branch" = branchColor ? "branch" : highlightColor ? "highlight" : "none";
+
+  function setMarkMode(mode: "none" | "highlight" | "branch") {
+    const carriedColor = branchColor ?? highlightColor ?? DEFAULT_MARK_COLOR;
+    setValue("branchColor", mode === "branch" ? carriedColor : null);
+    setValue("highlightColor", mode === "highlight" ? carriedColor : null);
+  }
   const nameSuggestions = quickRelation
     ? PLACEHOLDER_NAME_SUGGESTIONS[quickRelation.relationKind]
     : DEFAULT_PLACEHOLDER_NAME_SUGGESTIONS;
@@ -180,6 +193,63 @@ export function PersonForm({ mode, personId, defaultValues, quickRelation }: Per
         {isDeceased && (
           <Field label="Место смерти">
             <Input {...register("deathPlace")} autoComplete="off" />
+          </Field>
+        )}
+      </FormSection>
+
+      <FormSection title="Выделение в дереве">
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 text-sm text-(--color-fg)">
+            <input
+              type="radio"
+              name="markMode"
+              className="h-4 w-4"
+              checked={markMode === "none"}
+              onChange={() => setMarkMode("none")}
+            />
+            Обычная карточка, без цвета
+          </label>
+          <label className="flex items-center gap-2 text-sm text-(--color-fg)">
+            <input
+              type="radio"
+              name="markMode"
+              className="h-4 w-4"
+              checked={markMode === "highlight"}
+              onChange={() => setMarkMode("highlight")}
+            />
+            Просто выделить эту карточку
+          </label>
+          <p className="ml-6 text-xs text-(--color-fg-muted)">
+            Цвет получит только эта карточка. На детей, родителей и супругов это никак не повлияет.
+          </p>
+          <label className="flex items-center gap-2 text-sm text-(--color-fg)">
+            <input
+              type="radio"
+              name="markMode"
+              className="h-4 w-4"
+              checked={markMode === "branch"}
+              onChange={() => setMarkMode("branch")}
+            />
+            Родоначальник отдельной ветки
+          </label>
+          <p className="ml-6 text-xs text-(--color-fg-muted)">
+            Цвет унаследуют все кровные потомки этого человека в дереве. Супруги и партнёры цвет не наследуют.
+          </p>
+        </div>
+
+        {markMode !== "none" && (
+          <Field label="Цвет">
+            <div className="flex flex-col gap-2">
+              <ColorPresetSwatches
+                value={(markMode === "branch" ? branchColor : highlightColor) ?? DEFAULT_MARK_COLOR}
+                onChange={(hex) => setValue(markMode === "branch" ? "branchColor" : "highlightColor", hex)}
+              />
+              <input
+                type="color"
+                {...register(markMode === "branch" ? "branchColor" : "highlightColor")}
+                className="h-10 w-20 cursor-pointer rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated)"
+              />
+            </div>
           </Field>
         )}
       </FormSection>

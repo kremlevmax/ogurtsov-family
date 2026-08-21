@@ -14,7 +14,8 @@ export type RelationshipType =
   | "former_spouse"
   | "partner";
 
-const PARENT_RELATIONSHIP_TYPES: ReadonlySet<RelationshipType> = new Set([
+/** Exported for `branch-colors.ts`, which walks the same blood-parent edges to resolve inherited branch colors. */
+export const PARENT_RELATIONSHIP_TYPES: ReadonlySet<RelationshipType> = new Set([
   "biological_parent",
   "adoptive_parent",
   "foster_parent",
@@ -36,6 +37,10 @@ export interface TreePerson {
   isDeceased: boolean;
   isPlaceholder: boolean;
   photoUrl: string | null;
+  /** This person's own branch-founder color, if any — not yet resolved for inheritance; see `resolveBranchColors` in `branch-colors.ts`. */
+  branchColor: string | null;
+  /** A one-off highlight on just this person — never inherited, independent of branchColor. */
+  highlightColor: string | null;
 }
 
 /** Direction convention matches `relationships`: from = parent, to = child. */
