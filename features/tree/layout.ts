@@ -52,54 +52,50 @@ function partnerPriority(type: FamilyUnitGraphNode["partnerType"]): number {
 }
 
 /**
- * One node in the tree handed to d3-hierarchy. Represents a single
- * *column*: either one unmarried person (no `spouseId`) or an anchor
- * centered together with their highest-priority spouse (`spouseId` set,
- * rendered as two boxes side by side). `children` are that marriage's
- * own kids, each themselves the root of their own column — this is
- * exactly the tree d3's Reingold-Tilford/Buchheim implementation is
- * designed for, so its centering and non-overlap guarantees apply
- * directly, without hand-written width arithmetic.
- *
- * `slots` is this column's width for d3's `separation()` — normally 1
- * (unmarried) or 2 (a couple's two boxes), but bumped up further by an
- * estimate of any *secondary* marriages this person has (see
- * `estimateSubtreeWidth`). Those don't become tree edges (a person can
- * only be a "child" in one place — see the module doc), so nothing else
- * would ever tell this column's siblings to leave it enough room; left
- * unaccounted for, a secondary spouse gets shoved arbitrarily far away
- * hunting for free space, with a connector line crossing straight
- * through unrelated siblings in between — reported directly against
- * real data (Мария Кисель's second husband, Косолапов, ended up seven
- * columns away, crossing her whole sibling row to reach her).
+ * One of a person's marriages, as far as layout is concerned: the
+ * spouse (`null` for a single-parent/placeholder union — no box, just a
+ * dot), the union's own connector dot, and that union's own children.
+ * Every owned marriage a person has — not just their "primary" one —
+ * is a `Marriage` on the same `WalkerNode`, so **all** of them
+ * participate in the one real d3-hierarchy pass (see `WalkerNode`):
+ * this is what replaced the old "bolt a second marriage on afterwards"
+ * step, which only ever got a best-effort collision *avoidance*, not
+ * d3's actual non-overlap *guarantee*.
  */
-interface WalkerNode {
-  personId: string;
-  slots: number;
+interface Marriage {
   spouseId: string | null;
   unitId: string | null;
   children: WalkerNode[];
 }
 
 /**
- * Rough estimate of how many columns a subtree needs, used only to
- * reserve room in a *sibling* row for a secondary attachment that will
- * actually be laid out (properly, tightly) later — see the `slots` doc
- * above. Deliberately the same simple "sum of children" arithmetic the
- * old hand-rolled algorithm used throughout: it overestimates slightly
- * compared to d3's real contour-based packing, which is fine for a
- * reservation (a little extra breathing room, never a collision) but
- * would have been the wrong tool for *actual* placement.
+ * One node in the tree handed to d3-hierarchy. Represents a single
+ * *person* together with every marriage they own (see `unitOwner`) —
+ * each marriage's own children are real d3 children of this same node
+ * (see `childrenOf`), so d3's Reingold-Tilford/Buchheim algorithm sees
+ * the whole family — primary marriage, second marriage, third — in one
+ * pass and finds a single, globally non-overlapping arrangement. Zero
+ * marriages: an unmarried leaf. One: today's ordinary couple. Two or
+ * more: each additional marriage's spouse box lands beside the person,
+ * alternating sides outward from the primary marriage (see
+ * `orderedColumns`) — a childless leaf has nothing to protect from
+ * this alternation, and a *married* neighbor's own footprint (their own
+ * spouse box, in `slots`) is exactly what already keeps d3 from placing
+ * two people's boxes on top of each other.
+ *
+ * `slots` is this column's own width for d3's `separation()` — 1 for
+ * the person, plus 1 for every marriage that has a spouse box. It does
+ * *not* need to account for descendants: those are real d3 children
+ * now, so d3's own contour algorithm sizes them exactly, which is the
+ * whole point of this design — no more hand-rolled width estimate that
+ * could only ever approximate the real footprint (real bug report:
+ * Мария Кисель's second husband, Косолапов, needed room the old
+ * estimate under-reserved, landing him seven columns away).
  */
-function estimateSubtreeWidth(node: WalkerNode): number {
-  if (node.children.length === 0) return node.slots;
-  return node.children.reduce((sum, child) => sum + estimateSubtreeWidth(child), 0);
-}
-
-/** A marriage beyond someone's first is not a tree edge (the anchor already has a parent elsewhere) — it's laid out as its own independent subtree and then bolted on next to the anchor once the anchor's real position is known. */
-interface SecondaryAttachment {
-  hostId: string;
-  root: WalkerNode;
+interface WalkerNode {
+  personId: string;
+  slots: number;
+  marriages: Marriage[];
 }
 
 /**
@@ -124,11 +120,10 @@ interface SecondaryAttachment {
  *    through the graph — see the unit-ownership comment below for why
  *    that's unsafe.
  * 2. **Multiple marriages** — a person can be a "child" for tree
- *    purposes in only one place, so at most one marriage becomes a real
- *    tree edge (the "primary" one — current spouse over former, see
- *    `partnerPriority`). Any further marriages are laid out as their
- *    own independent d3 subtrees and then translated to sit immediately
- *    beside the anchor's already-fixed position.
+ *    purposes in only one place, so at most one marriage's *anchor* is
+ *    reachable as someone else's child; every marriage they themselves
+ *    *own*, though, is a `Marriage` entry on their own `WalkerNode` (see
+ *    there) — all sharing the one real d3 pass, not bolted on after.
  */
 export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
   const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
@@ -145,8 +140,10 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
       unitsByParent.set(parentId, list);
     }
   }
-  // Current spouse first, former spouse last — determines which marriage
-  // becomes the real tree edge ("primary") versus a bolted-on extra.
+  // Current spouse first, former spouse last — determines which
+  // marriage is treated as "primary" (its side, chosen via
+  // `preferMarriageOver`, anchors where every further marriage
+  // alternates outward from — see `orderedColumns`).
   for (const list of unitsByParent.values()) {
     list.sort((a, b) => partnerPriority(a.partnerType) - partnerPriority(b.partnerType));
   }
@@ -296,38 +293,12 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
   // --- Build the d3 tree(s) ----------------------------------------------
   const consumedUnits = new Set<string>();
   const visitedPeople = new Set<string>();
-  const secondaryAttachments: SecondaryAttachment[] = [];
-  // Every node ever built, by its anchor id — regardless of how deeply
-  // nested it ends up (unlike `forestRoot.children`, which only holds
-  // *root-level* clusters). Needed to find an owner's node again later
-  // to pull their whole subtree up a level — see the row-realignment
-  // step near the end.
+  // Every node ever built, by its own person id — regardless of how
+  // deeply nested it ends up (unlike `forestRoot.marriages[0].children`,
+  // which only holds *root-level* clusters). Needed to find an owner's
+  // node again later to pull their whole subtree up a level — see the
+  // row-realignment step near the end.
   const nodeByPersonId = new Map<string, WalkerNode>();
-
-  function buildForUnit(anchorId: string, unit: FamilyUnitGraphNode): WalkerNode {
-    consumedUnits.add(unit.id);
-    const rawSpouseId = unit.parentIds.find((id) => id !== anchorId) ?? null;
-    // A spouse who is *already* visited has their own established
-    // position elsewhere in the tree (the "diamond" case: someone who is
-    // simultaneously a blood descendant via one branch and married in to
-    // another — see the unit-ownership comment above). Drawing them a
-    // second time here, next to this anchor, wouldn't just duplicate
-    // their box — `applyHierarchy` positions every node by id, so
-    // whichever placement runs later would silently overwrite the
-    // other's (and everyone else's, since only one of the two positions
-    // is ever kept) with an unrelated x from a completely different part
-    // of the tree. Rendering the anchor alone instead — no visible
-    // spouse box here, though the marriage's children still render
-    // normally — is the same "not spatially adjacent" trade-off already
-    // accepted for this case, just applied consistently regardless of
-    // which side of the marriage gets built first.
-    const spouseId = rawSpouseId && !visitedPeople.has(rawSpouseId) ? rawSpouseId : null;
-    if (spouseId) visitedPeople.add(spouseId);
-    const children = buildChildNodes(unit.id);
-    const node: WalkerNode = { personId: anchorId, slots: spouseId ? 2 : 1, spouseId, unitId: unit.id, children };
-    nodeByPersonId.set(anchorId, node);
-    return node;
-  }
 
   /**
    * Builds this union's child nodes — skipping (not just no-op'ing) any
@@ -364,40 +335,39 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
   }
 
   function buildPersonNode(personId: string): WalkerNode {
-    if (visitedPeople.has(personId)) return { personId, slots: 1, spouseId: null, unitId: null, children: [] };
+    if (visitedPeople.has(personId)) return { personId, slots: 1, marriages: [] };
     visitedPeople.add(personId);
 
     const units = ownedUnitsOf(personId).filter((unit) => !consumedUnits.has(unit.id));
-    if (units.length === 0) {
-      const leaf: WalkerNode = { personId, slots: 1, spouseId: null, unitId: null, children: [] };
-      nodeByPersonId.set(personId, leaf);
-      return leaf;
-    }
-
-    const [primary, ...rest] = units;
-    const node = buildForUnit(personId, primary);
-
-    for (const unit of rest) {
-      const spouseId = unit.parentIds.find((id) => id !== personId);
-      // Same "already has their own position elsewhere" guard as
-      // `buildForUnit` — vanishingly rare for a *second* marriage, but
-      // still unsafe to skip: it would double-write their position.
-      if (!spouseId || visitedPeople.has(spouseId)) continue;
+    const marriages: Marriage[] = [];
+    for (const unit of units) {
       consumedUnits.add(unit.id);
-      visitedPeople.add(spouseId);
-      const kids = buildChildNodes(unit.id);
-      const attachmentRoot: WalkerNode = { personId: spouseId, slots: 1, spouseId: null, unitId: unit.id, children: kids };
-      secondaryAttachments.push({ hostId: personId, root: attachmentRoot });
-      // Reserve room in *this* person's own sibling row for the
-      // attachment — see the `slots` doc on `WalkerNode`. Doubled: d3's
-      // `separation()` splits any increase in a node's `slots` evenly
-      // between its *two* neighbors, but a secondary attachment only
-      // ever needs room on the left (see `hostNextLeftX` below) — so
-      // only half of a plain, un-doubled reservation would ever reach
-      // the side that actually needs it.
-      node.slots += 2 * estimateSubtreeWidth(attachmentRoot);
+      const rawSpouseId = unit.parentIds.find((id) => id !== personId) ?? null;
+      // A spouse who is *already* visited has their own established
+      // position elsewhere in the tree (the "diamond" case: someone who
+      // is simultaneously a blood descendant via one branch and married
+      // in to another — see the unit-ownership comment above). Drawing
+      // them a second time here, next to this person, wouldn't just
+      // duplicate their box — `applyHierarchy` positions every node by
+      // id, so whichever placement runs later would silently overwrite
+      // the other's (and everyone else's, since only one of the two
+      // positions is ever kept) with an unrelated x from a completely
+      // different part of the tree. Rendering this person alone instead
+      // — no visible spouse box for this marriage, though the union's
+      // children still render normally — is the same "not spatially
+      // adjacent" trade-off already accepted for this case, just applied
+      // consistently regardless of which side of the marriage gets
+      // built first, and regardless of whether it's the primary marriage
+      // or a later one.
+      const spouseId = rawSpouseId && !visitedPeople.has(rawSpouseId) ? rawSpouseId : null;
+      if (spouseId) visitedPeople.add(spouseId);
+      const children = buildChildNodes(unit.id);
+      marriages.push({ spouseId, unitId: unit.id, children });
     }
 
+    const spouseCount = marriages.filter((m) => m.spouseId !== null).length;
+    const node: WalkerNode = { personId, slots: 1 + spouseCount, marriages };
+    nodeByPersonId.set(personId, node);
     return node;
   }
 
@@ -417,26 +387,83 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
     )
     .map((node) => node.id);
 
-  const forestRoot: WalkerNode = { personId: "__forest__", slots: 1, spouseId: null, unitId: null, children: [] };
+  const forestRoot: WalkerNode = {
+    personId: "__forest__",
+    slots: 1,
+    marriages: [{ spouseId: null, unitId: null, children: [] }],
+  };
+  const forestChildren = forestRoot.marriages[0].children;
   // Checked one at a time, right before building each — not a `.filter()`
   // pass upfront, which would run entirely before any `buildPersonNode`
   // call had a chance to mark a spouse visited (e.g. a root couple where
   // both partners have no recorded parents: building the first partner
   // must be able to stop the second from also starting its own root).
   for (const id of rootIds) {
-    if (!visitedPeople.has(id)) forestRoot.children.push(buildPersonNode(id));
+    if (!visitedPeople.has(id)) forestChildren.push(buildPersonNode(id));
   }
 
   // Anyone somehow unreached (shouldn't happen, but never drop a node).
   for (const node of graph.nodes) {
     if (node.kind === "person" && !visitedPeople.has(node.id)) {
-      forestRoot.children.push(buildPersonNode(node.id));
+      forestChildren.push(buildPersonNode(node.id));
     }
+  }
+
+  // --- Left-to-right column ordering (person + every married spouse) ----
+  //
+  // One label per box: the person themself, or one specific marriage's
+  // spouse. The primary marriage (`marriages[0]` that has a spouse)
+  // lands immediately beside the person on its designated side (mirrors
+  // for a `preferMarriageOver` case, same as always); every further
+  // marriage alternates to the *opposite* side, one slot further out
+  // than the previous marriage on that same side — flanking, by
+  // construction, rather than a preference bolted on after the fact.
+  // Shared by the d3 children-accessor (`childrenOf`) and the actual box
+  // placement (`applyHierarchy`) so the two can never disagree about
+  // which side anyone ends up on.
+  interface Column {
+    id: string;
+    marriage?: Marriage;
+  }
+
+  function orderedColumns(personId: string, marriages: Marriage[]): Column[] {
+    const withSpouse = marriages.filter((m): m is Marriage & { spouseId: string } => m.spouseId !== null);
+    if (withSpouse.length === 0) return [{ id: personId }];
+    const primaryOnLeft = preferMarriageOver.has(withSpouse[0].spouseId);
+    const left: Marriage[] = [];
+    const right: Marriage[] = [];
+    withSpouse.forEach((m, i) => {
+      const goesRight = i % 2 === 0 !== primaryOnLeft;
+      (goesRight ? right : left).push(m);
+    });
+    return [
+      ...left
+        .slice()
+        .reverse()
+        .map((m) => ({ id: m.spouseId as string, marriage: m })),
+      { id: personId },
+      ...right.map((m) => ({ id: m.spouseId as string, marriage: m })),
+    ];
+  }
+
+  /**
+   * d3's own `children` accessor: every marriage's children, flattened
+   * in the same left-to-right order their spouse box will end up in
+   * (see `orderedColumns`) — so a marriage's kids fan out on the same
+   * side d3 will see the eventual box, keeping its own centering
+   * sensible. A spouseless marriage's children (single-parent /
+   * placeholder union) have no side of their own to align with; they're
+   * injected once, at the person's own column position.
+   */
+  function childrenOf(node: WalkerNode): WalkerNode[] {
+    const columns = orderedColumns(node.personId, node.marriages);
+    const spouselessChildren = node.marriages.filter((m) => m.spouseId === null).flatMap((m) => m.children);
+    return columns.flatMap((col) => (col.marriage ? col.marriage.children : spouselessChildren));
   }
 
   // --- Run d3's tidy-tree algorithm --------------------------------------
   function layoutTree(root: WalkerNode): HierarchyPointNode<WalkerNode> {
-    const h = hierarchy(root, (n) => n.children);
+    const h = hierarchy(root, childrenOf);
     tree<WalkerNode>()
       .nodeSize([SLOT_WIDTH, 1])
       .separation((a, b) => (a.data.slots + b.data.slots) / 2)(h);
@@ -444,39 +471,10 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
   }
 
   const positionById = new Map<string, PositionedNode>();
-  // Occupied [left, right) intervals already placed at each row — the
-  // only thing bolting on a secondary marriage (below) needs to check
-  // against, since the main tree's own rows are otherwise guaranteed
-  // collision-free by d3's contour algorithm. Kept as actual intervals,
-  // not a single row-wide leftmost edge: a family tree easily has
-  // dozens of unrelated people sharing a row, and clamping against
-  // whichever one happens to be furthest left — even on the opposite
-  // side of the tree — was pushing a secondary marriage's tiny 2-child
-  // subtree thousands of pixels away from its own anchor to avoid a
-  // "collision" with a branch it was never actually near.
-  const rowIntervals = new Map<number, { left: number; right: number; id: string }[]>();
 
-  function noteRowInterval(row: number, left: number, right: number, id: string): void {
-    const list = rowIntervals.get(row) ?? [];
-    list.push({ left, right, id });
-    rowIntervals.set(row, list);
-  }
-
-  /**
-   * `row` is taken explicitly, not derived from `depthOf(id)` — for the
-   * *anchor* of a compound those always agree, but for the spouse box
-   * they can genuinely differ: `preferMarriageOver` above deliberately
-   * lets a deep cross-generation marriage claim a shallower blood
-   * relative, specifically so the couple renders together, which only
-   * works if the spouse's box actually lands on the *anchor's* row —
-   * using her own (shallower) blood depth instead put her back on a
-   * different row than her husband, edge still crossing everything
-   * between them, just vertically instead of horizontally this time.
-   */
   function placePersonBox(id: string, centerX: number, row: number): void {
     const x = centerX - PERSON_NODE_SIZE.width / 2;
     positionById.set(id, { id, x, y: row * GENERATION_HEIGHT, width: PERSON_NODE_SIZE.width, height: PERSON_NODE_SIZE.height });
-    noteRowInterval(row, x, x + PERSON_NODE_SIZE.width, id);
   }
 
   /**
@@ -513,123 +511,42 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
       if (d.data.personId === "__forest__") return;
       const centerX = d.x;
       const row = depthOf(d.data.personId);
-      if (d.data.spouseId) {
-        // A spouse claimed via `preferMarriageOver` has their own blood
-        // parents realigned above them (see below) — putting that
-        // spouse on the *left* reads more naturally with their own
-        // ancestor cluster hanging above from that side, at the site
-        // owner's request.
-        const spouseOnLeft = preferMarriageOver.has(d.data.spouseId);
-        placePersonBox(d.data.personId, centerX + (spouseOnLeft ? 1 : -1) * (SLOT_WIDTH / 2), row);
-        placePersonBox(d.data.spouseId, centerX + (spouseOnLeft ? -1 : 1) * (SLOT_WIDTH / 2), row);
-      } else {
-        placePersonBox(d.data.personId, centerX, row);
+
+      const columns = orderedColumns(d.data.personId, d.data.marriages);
+      const boxCount = columns.length;
+      const xById = new Map<string, number>();
+      columns.forEach((col, index) => {
+        const x = centerX + (index - (boxCount - 1) / 2) * SLOT_WIDTH;
+        placePersonBox(col.id, x, row);
+        xById.set(col.id, x);
+      });
+
+      const hostX = xById.get(d.data.personId)!;
+      for (const marriage of d.data.marriages) {
+        if (!marriage.unitId) continue;
+        const spouseX = marriage.spouseId !== null ? xById.get(marriage.spouseId) : undefined;
+        const dotX = spouseX !== undefined ? (hostX + spouseX) / 2 : hostX;
+        placeUnitDot(marriage.unitId, d.data.personId, dotX);
       }
-      if (d.data.unitId) placeUnitDot(d.data.unitId, d.data.personId, centerX);
     });
   }
 
   applyHierarchy(layoutTree(forestRoot));
 
-  // --- Bolt on secondary marriages ---------------------------------------
-  //
-  // Each is laid out as its own independent tidy (sub)tree — d3's own
-  // contour algorithm guarantees no overlap *within* it — then shifted
-  // as a whole so its root spouse lands immediately beside the host's
-  // already-fixed box. That target shift is only a *preference*: the
-  // subtree's own descendants can still fan out wide enough (e.g. three
-  // children) to reach back across rows already occupied by the host's
-  // *other*, primary family — reported directly against real data
-  // (Сафрон Гаврилович's two families' children ended up sharing a
-  // column). So the shift actually used is nudged left, row by row, only
-  // far enough to clear whichever *specific* interval it would actually
-  // overlap — re-checked to a fixpoint, since nudging left to dodge one
-  // row's interval can occasionally introduce a new overlap on another.
-  //
-  // Processed as a fixpoint (not a single pass): a secondary attachment
-  // nested inside *another* secondary attachment (a remarried widow
-  // whose new husband himself has further marriages, for instance) can't
-  // be placed until its own host has a position — which may itself only
-  // just have been assigned in this same loop.
-  const pendingAttachments = [...secondaryAttachments];
-  const hostNextLeftX = new Map<string, number>();
-  let progress = true;
-  while (pendingAttachments.length > 0 && progress) {
-    progress = false;
-    for (let i = pendingAttachments.length - 1; i >= 0; i--) {
-      const attachment = pendingAttachments[i];
-      const hostPosition = positionById.get(attachment.hostId);
-      if (!hostPosition) continue;
-
-      const subtree = layoutTree(attachment.root);
-
-      const localExtentByRow = new Map<number, { left: number; right: number }>();
-      subtree.each((d) => {
-        const row = depthOf(d.data.personId);
-        const localLeft = d.data.spouseId ? d.x - SLOT_WIDTH / 2 - PERSON_NODE_SIZE.width / 2 : d.x - PERSON_NODE_SIZE.width / 2;
-        const localRight = d.data.spouseId ? d.x + SLOT_WIDTH / 2 + PERSON_NODE_SIZE.width / 2 : d.x + PERSON_NODE_SIZE.width / 2;
-        const existing = localExtentByRow.get(row);
-        localExtentByRow.set(row, {
-          left: existing ? Math.min(existing.left, localLeft) : localLeft,
-          right: existing ? Math.max(existing.right, localRight) : localRight,
-        });
-      });
-
-      const hostCenterX = hostPosition.x + hostPosition.width / 2;
-      const preferredLeftX = hostNextLeftX.get(attachment.hostId) ?? hostCenterX - SLOT_WIDTH;
-      let shift = preferredLeftX - subtree.x;
-      // Each pass can resolve at most one blocking interval per row — a
-      // row with several people already packed tightly together (e.g.
-      // three sisters standing right next to an unrelated family) can
-      // need as many passes as there are people to push past, not just
-      // one per *row* touched. Bounding the loop by row count alone cut
-      // this off after a single push, silently leaving the subtree
-      // stacked directly on top of whoever was one interval further —
-      // reported directly against real data (Наталья Ивановна landing
-      // exactly on Прасковья Трофимовна). Bounded by total interval
-      // count across every row this subtree touches instead, which is
-      // always enough passes to walk past every one of them.
-      const maxIterations = [...localExtentByRow.keys()].reduce((sum, row) => sum + (rowIntervals.get(row)?.length ?? 0), 1);
-      for (let iteration = 0; iteration < maxIterations; iteration++) {
-        let adjustedThisPass = false;
-        for (const [row, extent] of localExtentByRow) {
-          const intervals = rowIntervals.get(row);
-          if (!intervals) continue;
-          const left = extent.left + shift;
-          const right = extent.right + shift;
-          for (const interval of intervals) {
-            const overlapsInterval = left < interval.right + SLOT_GAP && interval.left - SLOT_GAP < right;
-            if (!overlapsInterval) continue;
-            const requiredShift = interval.left - SLOT_GAP - extent.right;
-            if (requiredShift < shift) {
-              shift = requiredShift;
-              adjustedThisPass = true;
-            }
-          }
-        }
-        if (!adjustedThisPass) break;
-      }
-
-      let placedMinX = Infinity;
-      subtree.each((d) => {
-        const row = depthOf(d.data.personId);
-        if (d.data.spouseId) {
-          const spouseOnLeft = preferMarriageOver.has(d.data.spouseId);
-          placePersonBox(d.data.personId, d.x + shift + (spouseOnLeft ? 1 : -1) * (SLOT_WIDTH / 2), row);
-          placePersonBox(d.data.spouseId, d.x + shift + (spouseOnLeft ? -1 : 1) * (SLOT_WIDTH / 2), row);
-        } else {
-          placePersonBox(d.data.personId, d.x + shift, row);
-        }
-        if (d.data.unitId) placeUnitDot(d.data.unitId, d.data.personId, d.x + shift);
-        placedMinX = Math.min(placedMinX, d.x + shift);
-      });
-
-      // Next attachment for the same host stacks further left, past this one's own leftmost extent.
-      hostNextLeftX.set(attachment.hostId, placedMinX - SLOT_WIDTH);
-
-      pendingAttachments.splice(i, 1);
-      progress = true;
-    }
+  // Occupied [left, right) intervals at each row — used only by the two
+  // realignment passes below (a claimed spouse's parents, and a kept
+  // sibling group), which still nudge a whole cluster sideways by hand
+  // after the fact; everything d3 itself placed is already guaranteed
+  // collision-free and never needs this.
+  const rowIntervals = new Map<number, { left: number; right: number; id: string }[]>();
+  for (const node of graph.nodes) {
+    if (node.kind !== "person") continue; // family-unit dots never counted as obstacles, same as before
+    const pos = positionById.get(node.id);
+    if (!pos) continue;
+    const row = Math.round(pos.y / GENERATION_HEIGHT);
+    const list = rowIntervals.get(row) ?? [];
+    list.push({ left: pos.x, right: pos.x + pos.width, id: node.id });
+    rowIntervals.set(row, list);
   }
 
   // --- Realign a claimed person's own blood parents above them -----------
@@ -646,9 +563,11 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
   // block so it sits directly above the claimed child instead.
   function collectWalkerIds(node: WalkerNode, ids: Set<string>): void {
     ids.add(node.personId);
-    if (node.spouseId) ids.add(node.spouseId);
-    if (node.unitId) ids.add(node.unitId);
-    for (const child of node.children) collectWalkerIds(child, ids);
+    for (const marriage of node.marriages) {
+      if (marriage.spouseId) ids.add(marriage.spouseId);
+      if (marriage.unitId) ids.add(marriage.unitId);
+      for (const child of marriage.children) collectWalkerIds(child, ids);
+    }
   }
 
   for (const claimedId of preferMarriageOver) {
@@ -665,11 +584,11 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
     // actually ended up as the real top-level tree node: that's decided
     // separately, by which one the root walk happened to reach first
     // (see `rootIds`). The other is only ever referenced as a nested
-    // `spouseId` and was never given its own entry in `nodeByPersonId` —
-    // so find whichever parent *does* have one, instead of trusting
-    // `unitOwner` to have picked the same one.
+    // marriage `spouseId` and was never given its own entry in
+    // `nodeByPersonId` — so find whichever parent *does* have one,
+    // instead of trusting `unitOwner` to have picked the same one.
     const anchorId = parentUnit.parentIds.find((id) => nodeByPersonId.has(id));
-    const rootNode = anchorId ? forestRoot.children.find((node) => node.personId === anchorId) : undefined;
+    const rootNode = anchorId ? forestChildren.find((node) => node.personId === anchorId) : undefined;
     if (!anchorId || !rootNode) continue; // not a root-level cluster — leave whatever placed it alone
 
     const idsToShift = new Set<string>();
@@ -701,9 +620,7 @@ export function computeFamilyTreeLayout(graph: FamilyGraph): PositionedNode[] {
 
     // The whole cluster moves as one rigid block, so it can only be
     // pulled as close to directly-above as whatever's already occupying
-    // its rows (unrelated to this cluster) allows — clamped the same
-    // way a secondary marriage's bolt-on is, just possibly in either
-    // direction instead of only left.
+    // its rows (unrelated to this cluster) allows.
     const rowExtents = new Map<number, { left: number; right: number }>();
     for (const id of idsToShift) {
       if (nodeById.get(id)?.kind !== "person") continue;

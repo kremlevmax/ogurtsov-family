@@ -37,8 +37,21 @@ export async function buildReactFlowGraph(
   const positionById = new Map(positions.map((position) => [position.id, position]));
   const branchColors = resolveBranchColors(people, relationships);
 
-  centerTwoParentUnits(graph.nodes, positionById);
-  centerSoleChildren(graph, positionById);
+  // Each pass can nudge the *next* one loose: straightening the line
+  // into a sole child can carry their own spouse sideways with them
+  // (see `centerSoleChildren`'s doc comment), which leaves that
+  // couple's own family-unit dot behind their new position — and
+  // recentering *that* dot can in turn de-center *their* sole child,
+  // and so on down the generations. Repeating both passes until they
+  // stop finding anything to move — not just running each once —
+  // is what actually reaches every generation, not just the first one
+  // touched (real case: 4 generations of straight-line couples, only
+  // the top one changed to running each pass a single time).
+  for (let pass = 0; pass < 20; pass++) {
+    const changedUnits = centerTwoParentUnits(graph.nodes, positionById);
+    const changedChildren = centerSoleChildren(graph, positionById);
+    if (!changedUnits && !changedChildren) break;
+  }
 
   // A partner-only union (spouse/former_spouse/partner with no shared
   // child) still needs its family-unit node exactly as before — that's
@@ -163,6 +176,7 @@ function wouldCollide(
   movedId: string,
   newX: number,
   positionById: Map<string, PositionedNode>,
+  excludeIds?: ReadonlySet<string>,
 ): boolean {
   const moved = positionById.get(movedId);
   if (!moved) return true;
@@ -172,7 +186,7 @@ function wouldCollide(
   const right = newX + moved.width + MIN_NODE_GAP;
 
   for (const [otherId, other] of positionById) {
-    if (otherId === movedId) continue;
+    if (otherId === movedId || excludeIds?.has(otherId)) continue;
     const verticalOverlap = moved.y < other.y + other.height && bottom > other.y;
     if (!verticalOverlap) continue;
     const horizontalOverlap = left < other.x + other.width && right > other.x;
@@ -191,7 +205,8 @@ function wouldCollide(
 function centerTwoParentUnits(
   nodes: FamilyGraphNode[],
   positionById: Map<string, PositionedNode>,
-): void {
+): boolean {
+  let changed = false;
   for (const node of nodes) {
     if (node.kind !== "familyUnit" || node.parentIds.length !== 2) continue;
 
@@ -204,10 +219,13 @@ function centerTwoParentUnits(
     const centerB = parentB.x + parentB.width / 2;
     const midpoint = (centerA + centerB) / 2;
     const newX = midpoint - unitPosition.width / 2;
+    if (newX === unitPosition.x) continue;
 
     if (wouldCollide(node.id, newX, positionById)) continue;
     positionById.set(node.id, { ...unitPosition, x: newX });
+    changed = true;
   }
+  return changed;
 }
 
 /**
@@ -217,13 +235,26 @@ function centerTwoParentUnits(
  * after `centerTwoParentUnits`, so an only child of a two-parent couple
  * ends up centered under the couple too, not just under the dot.
  */
-function centerSoleChildren(graph: FamilyGraph, positionById: Map<string, PositionedNode>): void {
+function centerSoleChildren(graph: FamilyGraph, positionById: Map<string, PositionedNode>): boolean {
+  let changed = false;
   const childrenByUnit = new Map<string, string[]>();
   for (const edge of graph.edges) {
     if (edge.kind !== "unitToChild") continue;
     const children = childrenByUnit.get(edge.source) ?? [];
     children.push(edge.target);
     childrenByUnit.set(edge.source, children);
+  }
+
+  // Every person's OWN spouse candidates, from every two-parent union they
+  // belong to (as a parent) — used below to find whichever one is actually
+  // sitting right beside them at the same row (their real visual partner;
+  // see the doc comment further down for why this matters).
+  const spouseCandidatesOf = new Map<string, string[]>();
+  for (const node of graph.nodes) {
+    if (node.kind !== "familyUnit" || node.parentIds.length !== 2) continue;
+    const [a, b] = node.parentIds;
+    spouseCandidatesOf.set(a, [...(spouseCandidatesOf.get(a) ?? []), b]);
+    spouseCandidatesOf.set(b, [...(spouseCandidatesOf.get(b) ?? []), a]);
   }
 
   for (const [unitId, childIds] of childrenByUnit) {
@@ -234,12 +265,47 @@ function centerSoleChildren(graph: FamilyGraph, positionById: Map<string, Positi
     if (!unitPosition || !childPosition) continue;
 
     const unitCenterX = unitPosition.x + unitPosition.width / 2;
-    const newX = unitCenterX - childPosition.width / 2;
 
     // The child may have their own spouse sitting right beside them at
-    // the same layer — recentering the child alone (without their family
-    // unit / partner in tow) must not shove them into that neighbor.
+    // the same layer (they're a married-in-turn couple themselves) — the
+    // connector targets the *child's* box specifically (the spouse isn't
+    // a sibling, just married in), so it's the child's own center that
+    // needs to land under the dot, not the couple's shared midpoint
+    // (already the case as often as not, leaving the line kinked all the
+    // same — real bug report, Мария Сидоровна Кисель's line down to her
+    // daughter Галина, married to Павел Лыков, never straightened).
+    // Recentering the child alone, without shifting that partner by the
+    // same amount, would instead shove the child straight into them —
+    // silently blocked by `wouldCollide`, which is exactly why the old
+    // single-box version of this function could never fix this case.
+    const spouseId = (spouseCandidatesOf.get(childIds[0]) ?? []).find((candidateId) => {
+      const candidate = positionById.get(candidateId);
+      return candidate && candidate.y === childPosition.y;
+    });
+    const spousePosition = spouseId ? positionById.get(spouseId) : undefined;
+
+    if (spouseId && spousePosition) {
+      const childCenterX = childPosition.x + childPosition.width / 2;
+      const delta = unitCenterX - childCenterX;
+      if (delta === 0) continue;
+
+      const newChildX = childPosition.x + delta;
+      const newSpouseX = spousePosition.x + delta;
+      const excludeEachOther = new Set([childIds[0], spouseId]);
+      if (wouldCollide(childIds[0], newChildX, positionById, excludeEachOther)) continue;
+      if (wouldCollide(spouseId, newSpouseX, positionById, excludeEachOther)) continue;
+
+      positionById.set(childIds[0], { ...childPosition, x: newChildX });
+      positionById.set(spouseId, { ...spousePosition, x: newSpouseX });
+      changed = true;
+      continue;
+    }
+
+    const newX = unitCenterX - childPosition.width / 2;
+    if (newX === childPosition.x) continue;
     if (wouldCollide(childIds[0], newX, positionById)) continue;
     positionById.set(childIds[0], { ...childPosition, x: newX });
+    changed = true;
   }
+  return changed;
 }
