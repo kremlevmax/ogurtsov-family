@@ -191,7 +191,7 @@ export function PersonForm({ mode, personId, defaultValues, quickRelation }: Per
           <Input {...register("birthPlace")} autoComplete="off" />
         </Field>
         {isDeceased && (
-          <Field label="Место смерти">
+          <Field label="Место погребения">
             <Input {...register("deathPlace")} autoComplete="off" />
           </Field>
         )}

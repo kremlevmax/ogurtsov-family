@@ -103,7 +103,7 @@ export function PersonDetailContent({
               </VitalRow>
             )}
             {isDeceased && person.deathPlace && (
-              <VitalRow icon={MapPin} label="Место смерти">
+              <VitalRow icon={MapPin} label="Место погребения">
                 {person.deathPlace}
               </VitalRow>
             )}
