@@ -33,10 +33,15 @@ function buildContentSecurityPolicy(): string {
         `https://*.${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       ]
     : [];
-  // Photos render inline from the public media worker.
+  // Photos render inline from the public media worker; without a
+  // `media-src` entry too, `<audio>` inherits `default-src 'self'` and
+  // Chrome silently refuses the cross-origin source before even
+  // requesting it ("Media load rejected by URL safety check" — real
+  // bug report, the /audio page's player never loaded).
   const mediaOrigin = originOf(process.env.NEXT_PUBLIC_MEDIA_BASE_URL);
 
   const imgSrc = ["img-src", "'self'", "data:", "blob:", mediaOrigin].filter(Boolean).join(" ");
+  const mediaSrc = ["media-src", "'self'", mediaOrigin].filter(Boolean).join(" ");
   const connectSrc = ["connect-src", "'self'", ...r2Origins].filter(Boolean).join(" ");
 
   return [
@@ -44,6 +49,7 @@ function buildContentSecurityPolicy(): string {
     scriptSrc,
     "style-src 'self' 'unsafe-inline'",
     imgSrc,
+    mediaSrc,
     "font-src 'self' data:",
     connectSrc,
     "frame-ancestors 'none'",

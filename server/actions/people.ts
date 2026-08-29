@@ -28,7 +28,7 @@ export async function createPersonAction(input: unknown): Promise<PersonActionSt
 
   try {
     const personId = await peopleRepo.createPerson(editor.supabase, parsed.data, editor.editorId);
-    revalidatePath("/");
+    revalidatePath("/tree");
     revalidatePath(`/people/${personId}`);
     revalidatePath("/edit");
     return { ok: true, personId };
@@ -52,7 +52,7 @@ export async function updatePersonAction(personId: string, input: unknown): Prom
 
   try {
     await peopleRepo.updatePerson(editor.supabase, personId, parsed.data, editor.editorId);
-    revalidatePath("/");
+    revalidatePath("/tree");
     revalidatePath(`/people/${personId}`);
     return { ok: true, personId };
   } catch (error) {
@@ -75,7 +75,7 @@ export async function softDeletePersonAction(personId: string): Promise<DeletePe
 
   try {
     await peopleRepo.softDeletePerson(editor.supabase, personId, editor.editorId);
-    revalidatePath("/");
+    revalidatePath("/tree");
     revalidatePath(`/people/${personId}`);
     revalidatePath("/edit");
     return { ok: true };
@@ -94,7 +94,7 @@ export async function restorePersonAction(personId: string): Promise<DeletePerso
 
   try {
     await peopleRepo.restorePerson(editor.supabase, personId);
-    revalidatePath("/");
+    revalidatePath("/tree");
     revalidatePath(`/people/${personId}`);
     revalidatePath("/edit");
     return { ok: true };

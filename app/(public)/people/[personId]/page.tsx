@@ -28,7 +28,7 @@ export async function generateMetadata(props: PageProps<"/people/[personId]">): 
 export default async function PersonPage(props: PageProps<"/people/[personId]">) {
   const { personId } = await props.params;
   const supabase = await createSupabaseServerClient();
-  const [person, people, relationships, media, editor] = await Promise.all([
+  const [person, people, relationships, allMedia, editor] = await Promise.all([
     getPersonById(supabase, personId),
     listPeople(supabase),
     listRelationships(supabase),
@@ -36,6 +36,9 @@ export default async function PersonPage(props: PageProps<"/people/[personId]">)
     getEditorSession(),
   ]);
   if (!person) notFound();
+  // Public page — a file linked here only for the upload pipeline's
+  // sake (`unlisted`) never appears in this person's own gallery.
+  const media = allMedia.filter((item) => !item.unlisted);
 
   const parents = getParents(person.id, people, relationships);
   const partners = getPartners(person.id, people, relationships);
@@ -47,7 +50,7 @@ export default async function PersonPage(props: PageProps<"/people/[personId]">)
       <Header />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 py-8">
         <Link
-          href="/"
+          href="/tree"
           className="text-label inline-flex w-fit items-center gap-1.5 text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent)"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />

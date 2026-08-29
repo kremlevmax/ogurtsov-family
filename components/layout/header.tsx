@@ -20,6 +20,12 @@ export function Header({ search }: HeaderProps) {
         {search && <div className="min-w-0 flex-1 sm:flex sm:justify-center">{search}</div>}
         <nav className="flex shrink-0 items-center gap-4">
           <Link
+            href="/tree"
+            className="text-label text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent)"
+          >
+            Древо
+          </Link>
+          <Link
             href="/gallery"
             className="text-label hidden text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent) sm:inline"
           >

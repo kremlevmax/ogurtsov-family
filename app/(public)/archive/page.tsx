@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function ArchivePage() {
   const supabase = await createSupabaseServerClient();
   const allMedia = await listAllMediaForPicker(supabase);
-  const documents = allMedia.filter((item) => item.kind !== "photo");
+  const documents = allMedia.filter((item) => item.kind !== "photo" && !item.unlisted);
 
   return (
     <div className="flex flex-1 flex-col">

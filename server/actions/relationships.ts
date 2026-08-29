@@ -26,7 +26,7 @@ export async function createRelationshipAction(input: unknown): Promise<Relation
 
   try {
     await relationshipsRepo.createRelationship(editor.supabase, parsed.data, editor.editorId);
-    revalidatePath("/");
+    revalidatePath("/tree");
     revalidatePath(`/people/${parsed.data.fromPersonId}`);
     revalidatePath(`/people/${parsed.data.toPersonId}`);
     revalidatePath(`/edit/people/${parsed.data.fromPersonId}`);
@@ -50,7 +50,7 @@ export async function deleteRelationshipAction(
 
   try {
     await relationshipsRepo.softDeleteRelationship(editor.supabase, relationshipId);
-    revalidatePath("/");
+    revalidatePath("/tree");
     for (const id of relatedPersonIds) {
       revalidatePath(`/people/${id}`);
       revalidatePath(`/edit/people/${id}`);

@@ -19,7 +19,7 @@ export default function LoginPage() {
           <h1 className="font-heading text-xl font-bold text-(--color-fg)">Вход для редакторов</h1>
           <LoginForm />
         </div>
-        <Link href="/" className="text-sm text-(--color-fg-muted) hover:underline">
+        <Link href="/tree" className="text-sm text-(--color-fg-muted) hover:underline">
           Вернуться к дереву
         </Link>
       </main>

@@ -33,9 +33,10 @@ export interface FamilyTreeExplorerProps {
 
 /**
  * Owns the tree/drawer selection state and keeps it mirrored in the URL
- * (`/?person=<uuid>`) via the History API directly — this route doesn't
- * read `searchParams` on the server, so updating the query string never
- * triggers a server refetch that would reset pan/zoom (CLAUDE.md 3.6, 9, 11).
+ * (`/tree?person=<uuid>`) via the History API directly — this route
+ * doesn't read `searchParams` on the server, so updating the query
+ * string never triggers a server refetch that would reset pan/zoom
+ * (CLAUDE.md 3.6, 9, 11).
  */
 export function FamilyTreeExplorer({
   people,
@@ -53,7 +54,7 @@ export function FamilyTreeExplorer({
 
   const selectPerson = useCallback((personId: string | null) => {
     setSelectedPersonIdState(personId);
-    const url = personId ? `/?person=${personId}` : "/";
+    const url = personId ? `/tree?person=${personId}` : "/tree";
     window.history.pushState(null, "", url);
   }, []);
 

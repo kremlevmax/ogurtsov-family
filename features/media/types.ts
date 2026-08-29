@@ -17,6 +17,8 @@ export interface PersonMedia {
   isProfile: boolean;
   /** True when this file is also linked to at least one other person — controls whether "delete" removes it everywhere or just unlinks it here (CLAUDE.md 3.7). */
   linkedToOtherPeople: boolean;
+  /** True for a file that's linked here only so it exists in the database — hidden from this person's own public gallery/document list; public pages filter these out themselves (repositories always return the full set so the editor can still see and manage them). */
+  unlisted: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export interface MediaPickerItem {
   objectKey: string;
   linkedPersonIds: string[];
   linkedPersonNames: string[];
+  unlisted: boolean;
 }
 
 /** A soft-deleted file, for the editor's "Корзина файлов" (CLAUDE.md 13: restore safety for accidental deletes). */

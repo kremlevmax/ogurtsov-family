@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function GalleryPage() {
   const supabase = await createSupabaseServerClient();
   const allMedia = await listAllMediaForPicker(supabase);
-  const photos = allMedia.filter((item) => item.kind === "photo");
+  const photos = allMedia.filter((item) => item.kind === "photo" && !item.unlisted);
 
   return (
     <div className="flex flex-1 flex-col">

@@ -59,7 +59,7 @@ export default async function EditHomePage() {
           <Link href="/edit/people/new">
             <Button type="button">Создать человека</Button>
           </Link>
-          <Link href="/">
+          <Link href="/tree">
             <Button type="button" variant="secondary">
               Вернуться к дереву
             </Button>

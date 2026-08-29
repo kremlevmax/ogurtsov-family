@@ -84,6 +84,7 @@ export interface CreateMediaInput {
   sizeBytes: number;
   width: number | null;
   height: number | null;
+  unlisted: boolean;
 }
 
 export async function createMedia(supabase: Client, input: CreateMediaInput, editorId: string): Promise<string> {
@@ -101,6 +102,7 @@ export async function createMedia(supabase: Client, input: CreateMediaInput, edi
       size_bytes: input.sizeBytes,
       width: input.width,
       height: input.height,
+      unlisted: input.unlisted,
       created_by: editorId,
       updated_by: editorId,
     })
@@ -192,6 +194,7 @@ function rowToPersonMedia(row: MediaRow, isProfile: boolean, linkedToOtherPeople
     objectKey: row.object_key,
     isProfile,
     linkedToOtherPeople,
+    unlisted: row.unlisted,
   };
 }
 
@@ -312,7 +315,7 @@ export async function getProfilePhotoObjectKeys(
 export async function listAllMediaForPicker(supabase: Client): Promise<MediaPickerItem[]> {
   const { data: mediaRows, error: mediaError } = await supabase
     .from("media")
-    .select("id, kind, title, caption, extension, original_filename, size_bytes, object_key")
+    .select("id, kind, title, caption, extension, original_filename, size_bytes, object_key, unlisted")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (mediaError) throw mediaError;
@@ -353,8 +356,28 @@ export async function listAllMediaForPicker(supabase: Client): Promise<MediaPick
       objectKey: row.object_key,
       linkedPersonIds: linked.ids,
       linkedPersonNames: linked.names,
+      unlisted: row.unlisted,
     };
   });
+}
+
+/**
+ * Site-wide audio recordings meant to be reachable only via a direct
+ * link (e.g. the family-history audio page) — never a specific
+ * person's own gallery or the general archive. Ordered oldest first so
+ * a "part 1 / part 2" series plays in the order it was recorded.
+ */
+export async function listUnlistedAudio(supabase: Client): Promise<PersonMedia[]> {
+  const { data: mediaRows, error } = await supabase
+    .from("media")
+    .select("*")
+    .eq("kind", "audio")
+    .eq("unlisted", true)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+
+  return (mediaRows ?? []).map((row) => rowToPersonMedia(row, false, false));
 }
 
 /** Soft-deleted media, newest-deleted first — editor-only "trash" list, same pattern as `listDeletedPeople` (CLAUDE.md 13). */

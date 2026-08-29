@@ -62,6 +62,7 @@ export interface FinalizeUploadInput {
   personId: string;
   width: number | null;
   height: number | null;
+  unlisted: boolean;
 }
 
 export interface FinalizeUploadState {
@@ -124,6 +125,7 @@ export async function finalizeUploadAction(input: FinalizeUploadInput): Promise<
         sizeBytes: head.sizeBytes,
         width: input.width,
         height: input.height,
+        unlisted: input.unlisted,
       },
       editor.editorId,
     );
@@ -133,7 +135,7 @@ export async function finalizeUploadAction(input: FinalizeUploadInput): Promise<
 
     revalidatePath(`/people/${input.personId}`);
     revalidatePath(`/edit/people/${input.personId}`);
-    revalidatePath("/");
+    revalidatePath("/tree");
 
     return { ok: true, mediaId };
   } catch (error) {
@@ -159,7 +161,7 @@ export async function deleteMediaAction(mediaId: string, personId: string): Prom
     await mediaRepo.softDeleteMedia(editor.supabase, mediaId);
     revalidatePath(`/people/${personId}`);
     revalidatePath(`/edit/people/${personId}`);
-    revalidatePath("/");
+    revalidatePath("/tree");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось удалить файл. Попробуйте ещё раз.") };
@@ -177,7 +179,7 @@ export async function restoreMediaAction(mediaId: string): Promise<MediaActionSt
   try {
     await mediaRepo.restoreMedia(editor.supabase, mediaId);
     revalidatePath("/edit");
-    revalidatePath("/");
+    revalidatePath("/tree");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось восстановить файл. Попробуйте ещё раз.") };
@@ -196,7 +198,7 @@ export async function setProfilePhotoAction(personId: string, mediaId: string): 
     await mediaRepo.setProfilePhoto(editor.supabase, personId, mediaId);
     revalidatePath(`/people/${personId}`);
     revalidatePath(`/edit/people/${personId}`);
-    revalidatePath("/");
+    revalidatePath("/tree");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось назначить фото профиля. Попробуйте ещё раз.") };
@@ -215,7 +217,7 @@ export async function unsetProfilePhotoAction(personId: string, mediaId: string)
     await mediaRepo.unsetProfilePhoto(editor.supabase, personId, mediaId);
     revalidatePath(`/people/${personId}`);
     revalidatePath(`/edit/people/${personId}`);
-    revalidatePath("/");
+    revalidatePath("/tree");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось убрать фото профиля. Попробуйте ещё раз.") };
@@ -235,7 +237,7 @@ export async function linkExistingMediaAction(personId: string, mediaId: string)
     await mediaRepo.linkMediaToPerson(editor.supabase, personId, mediaId);
     revalidatePath(`/people/${personId}`);
     revalidatePath(`/edit/people/${personId}`);
-    revalidatePath("/");
+    revalidatePath("/tree");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось привязать файл. Попробуйте ещё раз.") };

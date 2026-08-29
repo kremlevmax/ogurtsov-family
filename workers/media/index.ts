@@ -96,9 +96,18 @@ function buildHeaders(
   return headers;
 }
 
-/** Inline only for browser-displayable images; TIFF scans and everything else always download (CLAUDE.md 3.8). */
+/**
+ * Inline for browser-displayable images and audio; TIFF scans, video,
+ * and documents always download (CLAUDE.md 3.7 — "документы скачиваются,
+ * а не встраиваются"; audio is played, not downloaded, e.g. the
+ * family-history recording on `/audio`, and a forced `attachment`
+ * disposition makes Chrome's `<audio>` element refuse the source
+ * entirely instead of just suggesting a download).
+ */
 function isInlineType(contentType: string | null): boolean {
-  return !!contentType && contentType.startsWith("image/") && contentType !== "image/tiff";
+  if (!contentType) return false;
+  if (contentType.startsWith("image/")) return contentType !== "image/tiff";
+  return contentType.startsWith("audio/");
 }
 
 /** ASCII fallback plus RFC 5987 filename* so non-Latin names still display correctly. */

@@ -60,6 +60,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [sourceOrOwner, setSourceOrOwner] = useState("");
+  const [unlisted, setUnlisted] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
     setTitle("");
     setCaption("");
     setSourceOrOwner("");
+    setUnlisted(false);
     setStatus("idle");
     setProgress(0);
     setError(null);
@@ -126,6 +128,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
       personId,
       width: dimensions?.width ?? null,
       height: dimensions?.height ?? null,
+      unlisted,
     });
 
     if (!finalizeResult.ok) {
@@ -175,6 +178,16 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
               disabled={isBusy}
             />
           </Field>
+          <label className="flex items-start gap-2 text-sm text-(--color-fg)">
+            <input
+              type="checkbox"
+              checked={unlisted}
+              onChange={(event) => setUnlisted(event.target.checked)}
+              disabled={isBusy}
+              className="mt-0.5"
+            />
+            Не показывать в списке файлов этого человека и в общем архиве — только по прямой ссылке
+          </label>
         </>
       )}
 
