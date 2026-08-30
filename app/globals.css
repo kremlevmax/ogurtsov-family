@@ -1,34 +1,49 @@
 @import "tailwindcss";
 
 /*
- * Design tokens for the "warm archive" theme, derived from the
- * owner's reference screenshots in docs/design-references/. See
+ * Design tokens for the "family archive" theme, redesigned from the
+ * owner's Figma handoff (docs/DECISIONS.md, 2026-08-29): warm paper,
+ * dark forest green primary accent, muted gold secondary accent. See
  * docs/DESIGN_SYSTEM.md for the full breakdown.
  */
 :root {
-  --color-bg: #f1e9d8;
-  --color-bg-elevated: #faf6ec;
-  --color-bg-inset: #ece0c5;
-  --color-fg: #2b2118;
-  --color-fg-muted: #726048;
-  --color-border: #ddd0b4;
-  --color-accent: #9c4a2e;
-  --color-accent-fg: #ffffff;
+  --color-bg: #fbf8ef;
+  --color-bg-elevated: #fcf9f1;
+  --color-bg-inset: #eae8d8;
+  --color-fg: #4e5148;
+  /* Darkened from the handoff's #858579 (3.51:1 on --color-bg) to meet
+   * WCAG 4.5:1 for normal-size text — same fix pattern as the previous
+   * theme's --color-fg-muted (docs/DESIGN_SYSTEM.md contrast table). */
+  --color-fg-muted: #666253;
+  --color-border: #d8d0bb;
+  --color-accent: #273c2d;
+  /* Darker forest for hover states and the site footer band
+   * (app/(public)/page.tsx). */
+  --color-accent-deep: #1d2d20;
+  --color-accent-fg: var(--color-bg);
   --color-danger: #b3413a;
   --color-danger-fg: #ffffff;
 
+  /* Secondary accent: decorative only (icons, dividers, large
+   * background glyphs) — #aa8b4e only reaches 3.68:1 on --color-accent
+   * and 3.04:1 on --color-bg, short of 4.5:1, so it never carries body
+   * text; --color-gold-light is for gold decoration on dark bands
+   * (7.41:1 on --color-accent). Real link/label text stays
+   * --color-accent, as elsewhere on the site. */
+  --color-gold: #aa8b4e;
+  --color-gold-light: #d9cbaf;
+
   /* "Викторианский альбом" card-frame ornament (docs/DECISIONS.md,
-   * 2026-08-20): border + corner-scroll colors for every tree card's
-   * frame specifically — deliberately separate from --color-accent,
-   * which stays terracotta for buttons/links/focus across the rest of
-   * the site (owner chose fonts + this frame treatment, not a site-wide
-   * palette change). */
+   * 2026-08-20) — every tree card's frame specifically. Deliberately
+   * kept out of the 2026-08-29 redesign at the owner's explicit
+   * request: the Figma handoff doesn't depict person cards at all, and
+   * this frame was already tuned through several rounds of feedback. */
   --color-frame: #5c1a24;
   --color-frame-accent: #b8933f;
 
-  --font-heading: var(--font-prata);
-  --font-body: var(--font-eb-garamond);
-  --font-label: var(--font-geist-mono);
+  --font-heading: var(--font-cormorant-garamond);
+  --font-body: var(--font-cormorant-garamond);
+  --font-label: var(--font-inter);
 
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;

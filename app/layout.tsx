@@ -1,31 +1,34 @@
 import type { Metadata } from "next";
-import { EB_Garamond, Geist_Mono, Prata } from "next/font/google";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import { OfflineBanner } from "@/components/layout/offline-banner";
 import "./globals.css";
 
-// Merriweather -> Prata (CLAUDE.md 24 decision log, docs/DECISIONS.md):
-// chosen alongside the "Victorian album" redesign direction — Prata's
-// engraved, high-contrast display serif reads as more formal/archival
-// for names and headings. Only one weight exists, so founder/heading
-// emphasis leans on size and letter-spacing rather than a bold cut.
-const prata = Prata({
-  weight: "400",
-  variable: "--font-prata",
+// Site-wide redesign to the owner's Figma handoff (docs/DECISIONS.md,
+// 2026-08-29): Prata + EB Garamond -> one serif family for both
+// headings and body copy. `desktop-layout.svg`'s own CSS names "Noto
+// Serif", but that SVG's glyphs are vector outlines (text-to-path),
+// not live text — the `font-family` declaration is leftover export
+// metadata, not what actually produced those shapes. Noto Serif's
+// sturdier, more geometric look didn't match the reference PNGs on a
+// direct visual check (owner: "тонкий и красивый" — thin/elegant), so
+// this follows Cormorant Garamond, matching DESIGN_SPEC.md's own text
+// and the thin, high-contrast strokes visible in the PNGs. Person-node.tsx's
+// own "Викторianский альбом" card frame is explicitly out of scope for
+// this redesign and keeps referencing these same --font-heading/
+// --font-body tokens, so its look changes along with the rest of the
+// site (still one serif family for names/dates).
+const cormorantGaramond = Cormorant_Garamond({
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant-garamond",
   subsets: ["latin", "cyrillic"],
 });
 
-// Lora -> EB Garamond, same redesign pass — a classic Garamond-style
-// body face pairs with Prata's display character better than Lora's
-// more contemporary curves, and its italic (used for approximate/life-
-// span dates) has genuine calligraphic swashes instead of a slanted
-// roman.
-const ebGaramond = EB_Garamond({
-  variable: "--font-eb-garamond",
-  subsets: ["latin", "cyrillic"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Geist Mono -> Inter for nav/buttons/eyebrow labels (`.text-label`) —
+// the reference's nav ("ГЛАВНАЯ ДРЕВО ИСТОРИЯ…") and buttons use a
+// plain tracked sans, not a monospaced face.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin", "cyrillic"],
 });
 
@@ -42,7 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ru"
-      className={`${prata.variable} ${ebGaramond.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${cormorantGaramond.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-(--color-bg) text-(--color-fg)">
         <OfflineBanner />

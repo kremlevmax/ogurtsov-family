@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
-import { Ornament } from "@/components/ui/ornament";
+import { BranchLine, Ornament } from "@/components/ui/ornament";
 
 export const metadata: Metadata = {
   description: "История семьи Огурцовых, возвращённая из архивов и памяти — родословное древо, документы, фотографии и родовые места.",
@@ -30,59 +30,82 @@ const ARCHIVE_TILES = [
 export default function HomePage() {
   return (
     <div className="flex flex-1 flex-col">
-      <Header />
-
-      <section className="relative flex min-h-[640px] items-center justify-center overflow-hidden py-16 sm:min-h-[720px]">
-        <Image
-          src="/map-ogurtsovyh.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
+      <section className="relative min-h-[700px] overflow-hidden bg-(--color-bg) sm:min-h-[820px]">
+        <div className="absolute inset-x-6 top-16 bottom-0 overflow-hidden sm:inset-x-10 sm:top-28">
+          <Image
+            src="/map-ogurtsovyh.png"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-top"
+          />
+        </div>
         <div className="absolute inset-0 bg-(--color-bg)/55" />
 
-        <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-4 text-center">
-          <div className="w-full rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated)/90 p-8 shadow-(--shadow-md) backdrop-blur-sm sm:p-10">
-            <p className="text-label mb-3 text-xs text-(--color-fg-muted)">Семейный архив · Смоленская земля</p>
-            <h1 className="font-heading text-4xl font-bold text-(--color-fg) sm:text-6xl">Род Огурцовых</h1>
-            <p className="font-body mt-3 text-lg italic text-(--color-fg-muted) sm:text-xl">
-              История семьи, возвращённая из архивов и памяти
-            </p>
+        <div className="relative flex min-h-[700px] flex-col justify-between gap-6 p-6 sm:min-h-[820px] sm:p-10">
+          {/* Title card — eyebrow+H1 on the left, subtitle on the right, matching the Figma hero (not a single centered stack). */}
+          <div className="w-full rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated)/90 p-6 shadow-(--shadow-md) backdrop-blur-sm sm:mr-16 sm:p-10">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
+              <h1 className="font-heading text-4xl font-bold uppercase tracking-wide text-(--color-fg) sm:text-6xl">
+                Род Огурцовых
+              </h1>
+              <div className="sm:pt-2 sm:text-right">
+                <p className="font-body text-lg italic text-(--color-fg-muted) sm:text-xl lg:whitespace-nowrap">
+                  История семьи, возвращённая из архивов и памяти
+                </p>
+                <p className="text-label mt-3 text-xs text-(--color-fg-muted)">Семейный архив · Смоленская земля</p>
+              </div>
+            </div>
           </div>
 
-          <div className="w-full rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated)/90 p-8 shadow-(--shadow-md) backdrop-blur-sm">
-            <p className="mx-auto max-w-xl text-base leading-relaxed text-(--color-fg)">
-              Перед вами — родословное древо семьи Огурцовых, корни которой уходят в деревни Смоленской земли. Здесь
-              собраны история рода, архивные документы и семейные воспоминания.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/tree"
-                className="text-label inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-(--color-accent) px-6 text-xs text-(--color-accent-fg) transition-opacity hover:opacity-90"
-              >
-                Открыть родословное древо
-              </Link>
-              <a
-                href="#story"
-                className="text-label inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg) px-6 text-xs text-(--color-fg) transition-colors hover:bg-(--color-bg-inset)"
-              >
-                Читать историю
-              </a>
-              <Link
-                href="/audio"
-                className="text-label inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg) px-6 text-xs text-(--color-fg) transition-colors hover:bg-(--color-bg-inset)"
-              >
-                Слушать аудиоверсию
-              </Link>
+          {/* CTA card bottom-right, scroll hint centered beneath it — both anchored to the bottom of the hero. */}
+          <div className="flex flex-1 flex-col justify-end gap-6">
+            <div className="flex justify-end">
+              <div className="w-full rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated)/90 p-6 text-center shadow-(--shadow-md) backdrop-blur-sm sm:max-w-lg sm:p-8">
+                <p className="text-base leading-relaxed text-(--color-fg)">
+                  Перед вами — родословное древо семьи Огурцовых, корни которой уходят в деревни Смоленской земли.
+                  Здесь собраны история рода, архивные документы и семейные воспоминания.
+                </p>
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <Link
+                    href="/tree"
+                    className="text-label inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-md)] bg-(--color-accent) px-6 text-xs text-(--color-accent-fg) transition-opacity hover:opacity-90"
+                  >
+                    Открыть родословное древо
+                  </Link>
+                  <div className="flex w-full flex-wrap gap-3 sm:flex-nowrap">
+                    <a
+                      href="#story"
+                      className="text-label inline-flex h-11 flex-1 items-center justify-center whitespace-nowrap rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg) px-4 text-xs text-(--color-fg) transition-colors hover:bg-(--color-bg-inset)"
+                    >
+                      Читать историю
+                    </a>
+                    <Link
+                      href="/audio"
+                      className="text-label inline-flex h-11 flex-1 items-center justify-center whitespace-nowrap rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg) px-4 text-xs text-(--color-fg) transition-colors hover:bg-(--color-bg-inset)"
+                    >
+                      Слушать аудиоверсию
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <a
+              href="#welcome"
+              className="text-label hidden text-center text-[10px] text-(--color-fg-muted) transition-opacity hover:opacity-80 sm:block"
+            >
+              Листать дальше ↓
+            </a>
           </div>
         </div>
       </section>
 
+      <Header />
+
       <section className="mx-auto max-w-3xl px-4 py-20 text-center sm:py-28" id="welcome">
-        <Ornament className="mx-auto mb-6 h-4 w-32 text-(--color-frame-accent)" />
+        <Ornament className="mx-auto mb-6 h-4 w-32 text-(--color-gold)" />
         <p className="text-label mb-3 text-xs text-(--color-fg-muted)">Семейная память</p>
         <h2 className="font-heading text-3xl font-bold text-(--color-fg) sm:text-4xl">Добро пожаловать</h2>
         <p className="font-body mt-6 text-xl italic text-(--color-fg-muted)">
@@ -131,13 +154,13 @@ export default function HomePage() {
           <div className="mt-6 flex flex-wrap gap-6">
             <Link
               href="/story"
-              className="text-label border-b border-(--color-accent) pb-1 text-xs text-(--color-accent) transition-opacity hover:opacity-80"
+              className="text-label text-xs text-(--color-accent) transition-opacity hover:opacity-80"
             >
               Читать полностью →
             </Link>
             <Link
               href="/audio"
-              className="text-label border-b border-(--color-accent) pb-1 text-xs text-(--color-accent) transition-opacity hover:opacity-80"
+              className="text-label text-xs text-(--color-accent) transition-opacity hover:opacity-80"
             >
               ▷ Слушать аудио
             </Link>
@@ -145,8 +168,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-(--color-frame) px-4 py-24 text-center text-(--color-accent-fg) sm:py-28" id="tree">
-        <p className="text-label mb-3 text-xs text-(--color-frame-accent)">Поколение за поколением</p>
+      <section className="bg-(--color-accent) px-4 py-24 text-center text-(--color-accent-fg) sm:py-28" id="tree">
+        <BranchLine className="mx-auto mb-6 h-8 w-32 text-(--color-gold-light)" />
+        <p className="text-label mb-3 text-xs text-(--color-gold-light)">Поколение за поколением</p>
         <h2 className="font-heading text-3xl font-bold sm:text-4xl">Родословное древо</h2>
         <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-(--color-bg)">
           Три основные ветви рода, берущие начало от братьев Игната, Сафрона и Степана Гавриловичей.
@@ -167,9 +191,9 @@ export default function HomePage() {
             <Link
               key={tile.title}
               href={tile.href}
-              className="group flex flex-col items-start rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-6 text-left shadow-(--shadow-sm) transition-all hover:-translate-y-1 hover:border-(--color-accent) hover:shadow-(--shadow-md)"
+              className="group flex flex-col items-start rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-6 text-left transition-colors hover:border-(--color-gold)"
             >
-              <span className="text-2xl text-(--color-frame-accent)">{tile.icon}</span>
+              <span className="text-2xl text-(--color-gold)">{tile.icon}</span>
               <h3 className="font-heading mt-5 text-lg font-bold text-(--color-fg)">{tile.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-(--color-fg-muted)">{tile.text}</p>
               <span className="text-label mt-4 text-xs text-(--color-accent)">Открыть →</span>
@@ -197,14 +221,14 @@ export default function HomePage() {
           </p>
           <Link
             href="/tree"
-            className="text-label mt-6 inline-block w-fit border-b border-(--color-accent) pb-1 text-xs text-(--color-accent) transition-opacity hover:opacity-80"
+            className="text-label mt-6 inline-block w-fit text-xs text-(--color-accent) transition-opacity hover:opacity-80"
           >
             Смотреть на родословном древе →
           </Link>
         </div>
       </section>
 
-      <section className="bg-(--color-frame) px-4 py-24 text-center text-(--color-accent-fg) sm:py-28" id="join">
+      <section className="bg-(--color-accent) px-4 py-24 text-center text-(--color-accent-fg) sm:py-28" id="join">
         <h2 className="font-heading mx-auto max-w-3xl text-3xl font-bold sm:text-4xl">
           Это древо не закончено.
           <br />
@@ -218,10 +242,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="flex flex-col items-center gap-3 px-4 py-8 text-center text-(--color-fg-muted) sm:flex-row sm:justify-between sm:text-left">
-        <p className="font-heading text-lg font-bold text-(--color-fg)">Род Огурцовых</p>
-        <p className="text-label text-xs">© Семейный архив рода Огурцовых · 2026</p>
-        <a href="#top" className="text-label text-xs text-(--color-fg-muted) transition-colors hover:text-(--color-accent)">
+      <footer className="flex flex-col items-center gap-2 bg-(--color-accent-deep) px-4 py-5 text-center text-(--color-gold-light) sm:flex-row sm:justify-between sm:text-left">
+        <p className="font-heading text-base font-bold text-(--color-bg)">Род Огурцовых</p>
+        <p className="text-label text-xs">© Семейный архив рода Огурцовых · {new Date().getFullYear()}</p>
+        <a href="#top" className="text-label text-xs transition-opacity hover:opacity-80">
           Наверх ↑
         </a>
       </footer>

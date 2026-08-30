@@ -63,6 +63,34 @@ export function CornerScroll({ className, style }: { className?: string; style?:
 }
 
 /**
+ * The small "line + three dots" branch schematic above the tree-teaser
+ * band on the landing page (2026-08-29 Figma redesign, docs/DECISIONS.md)
+ * — a horizontal tie between two dots with a third, larger dot at the
+ * center carrying a stem upward, echoing a family-tree fork without
+ * depicting an actual person card. Own drawing, not traced from the
+ * reference (see `CornerScroll`'s note).
+ */
+export function BranchLine({ className, style }: { className?: string; style?: CSSProperties }) {
+  return (
+    <svg
+      viewBox="0 0 160 40"
+      aria-hidden="true"
+      className={className}
+      style={style}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M10 25H150" />
+      <path d="M80 25V5" />
+      <circle cx="10" cy="25" r="3" fill="currentColor" stroke="none" />
+      <circle cx="150" cy="25" r="3" fill="currentColor" stroke="none" />
+      <circle cx="80" cy="25" r="4.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/**
  * The small wave-and-drop crest on all four sides of every tree card's
  * frame in the "Викторианский альбом" direction (docs/DECISIONS.md,
  * 2026-08-20) — top/bottom sit just inside the card's own border
