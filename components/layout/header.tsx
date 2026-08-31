@@ -40,7 +40,7 @@ export function Header({ search }: HeaderProps) {
             <Link
               key={link.label}
               href={link.href}
-              className="text-label text-xs font-bold text-(--color-fg-muted) transition-colors hover:text-(--color-accent)"
+              className="text-label text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:text-(--color-heading)"
             >
               {link.label}
             </Link>
@@ -75,7 +75,7 @@ export function Header({ search }: HeaderProps) {
               key={link.label}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="text-label rounded-[var(--radius-sm)] px-2 py-2 text-xs font-bold text-(--color-fg-muted) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-accent)"
+              className="text-label rounded-[var(--radius-sm)] px-2 py-2 text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-heading)"
             >
               {link.label}
             </Link>
