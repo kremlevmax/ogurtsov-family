@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { ChevronDown } from "lucide-react";
 import { Header } from "@/components/layout/header";
@@ -15,6 +16,8 @@ import { presignLoungeAttachmentAction, finalizeLoungeAttachmentAction } from "@
 import type { LoungeMessageRow } from "@/server/repositories/lounge";
 import type { LoungeViewer } from "@/server/auth/require-lounge-member";
 import { DeleteLoungeMessageButton } from "./delete-lounge-message-button";
+import { LikeButton } from "./like-button";
+import { ReplyComposer } from "./reply-composer";
 import styles from "./family-lounge.module.css";
 import {
   LOUNGE_ATTACH_LABEL,
@@ -34,7 +37,6 @@ import {
   LOUNGE_RULES_TITLE,
   LOUNGE_SORT_LABEL,
   LOUNGE_SUBTITLE,
-  LOUNGE_SUPPORT_LABEL,
   LOUNGE_TITLE,
   LOUNGE_TOPIC_LABEL,
   LOUNGE_TOPIC_PLACEHOLDER,
@@ -81,13 +83,18 @@ export interface FamilyLoungeProps {
  * name. Sort order, the author-name search the sidebar hint always
  * promised, and each card's topic are all real too now (owner's
  * requests, beyond the source design — that button had no second
- * state and that search field didn't exist in Figma at all). Still
- * not connected, honestly: "Ответить"/"Поддержать" (no threads or
- * reactions yet).
+ * state and that search field didn't exist in Figma at all).
+ * "♡ Поддержать" is a real like now, renamed "Нравится" (owner's
+ * request); "Ответить" opens a real single-level reply form
+ * (0013_lounge_message_replies.sql) — none of this existed in the
+ * source Figma design at all, which is why there's no "second state"
+ * to match there either.
  */
 export function FamilyLounge({ viewer, messages, loadError = false }: FamilyLoungeProps) {
+  const router = useRouter();
   const [activeFilterId, setActiveFilterId] = useState<FilterId>("all");
   const [openImageMessageId, setOpenImageMessageId] = useState<string | null>(null);
+  const [openReplyMessageId, setOpenReplyMessageId] = useState<string | null>(null);
   const [authorQuery, setAuthorQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [topic, setTopic] = useState("");
@@ -185,6 +192,14 @@ export function FamilyLounge({ viewer, messages, loadError = false }: FamilyLoun
       resetAttachmentState();
     }
   }
+
+  // A real refresh (not just revalidatePath() inside the action) —
+  // same reason as DeleteLoungeMessageButton/LikeButton — kept in an
+  // effect, not the render-phase block above, because it's a genuine
+  // external-system side effect rather than a plain state reset.
+  useEffect(() => {
+    if (composeState.ok) router.refresh();
+  }, [composeState, router]);
 
   const filterCounts = useMemo(() => {
     const counts: Record<FilterId, number> = { all: messages.length, news: 0, memories: 0, search: 0, thanks: 0 };
@@ -351,12 +366,28 @@ export function FamilyLounge({ viewer, messages, loadError = false }: FamilyLoun
                         </a>
                       ))}
                     <div className={styles.actions}>
-                      <button type="button" className={clsx(styles.actionButton, styles.actionReply)}>
-                        {LOUNGE_REPLY_LABEL}
-                      </button>
-                      <button type="button" className={styles.actionButton}>
-                        {LOUNGE_SUPPORT_LABEL}
-                      </button>
+                      {viewer.isMember ? (
+                        <button
+                          type="button"
+                          className={clsx(styles.actionButton, styles.actionReply)}
+                          onClick={() => setOpenReplyMessageId((current) => (current === post.id ? null : post.id))}
+                        >
+                          {LOUNGE_REPLY_LABEL}
+                        </button>
+                      ) : (
+                        <Link href="/lounge/login" className={clsx(styles.actionButton, styles.actionReply)}>
+                          {LOUNGE_REPLY_LABEL}
+                        </Link>
+                      )}
+                      <LikeButton
+                        messageId={post.id}
+                        liked={post.likedByViewer}
+                        count={post.likeCount}
+                        canLike={viewer.isMember}
+                        className={styles.actionButton}
+                        activeClassName={styles.actionLiked}
+                        errorClassName={styles.errorText}
+                      />
                       {post.canManage && (
                         <DeleteLoungeMessageButton
                           messageId={post.id}
@@ -365,6 +396,56 @@ export function FamilyLounge({ viewer, messages, loadError = false }: FamilyLoun
                         />
                       )}
                     </div>
+
+                    {openReplyMessageId === post.id && (
+                      <ReplyComposer
+                        parentMessageId={post.id}
+                        onDone={() => setOpenReplyMessageId(null)}
+                        formClassName={styles.replyForm}
+                        textareaClassName={clsx(styles.input, styles.textarea, styles.replyTextarea)}
+                        buttonRowClassName={styles.replyButtonRow}
+                        submitClassName={clsx(styles.control, styles.controlPrimary, styles.replySubmit)}
+                        cancelClassName={styles.replyCancel}
+                        errorClassName={styles.errorText}
+                      />
+                    )}
+
+                    {post.replies.length > 0 && (
+                      <div className={styles.replyList}>
+                        {post.replies.map((reply) => (
+                          <div key={reply.id} className={styles.reply}>
+                            <div className={styles.authorRow}>
+                              <div className={styles.avatarSmall} aria-hidden="true">
+                                {initialsOf(reply.authorFirstName, reply.authorLastName)}
+                              </div>
+                              <div className={styles.authorBlock}>
+                                <p className={styles.authorName}>{reply.authorDisplayName}</p>
+                                <p className={styles.messageDate}>{formatLoungeMessageDate(reply.createdAt)}</p>
+                              </div>
+                            </div>
+                            <p className={styles.messageText}>{reply.body}</p>
+                            <div className={styles.actions}>
+                              <LikeButton
+                                messageId={reply.id}
+                                liked={reply.likedByViewer}
+                                count={reply.likeCount}
+                                canLike={viewer.isMember}
+                                className={styles.actionButton}
+                                activeClassName={styles.actionLiked}
+                                errorClassName={styles.errorText}
+                              />
+                              {reply.canManage && (
+                                <DeleteLoungeMessageButton
+                                  messageId={reply.id}
+                                  buttonClassName={styles.actionButton}
+                                  errorClassName={styles.errorText}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </article>
                 );
               })

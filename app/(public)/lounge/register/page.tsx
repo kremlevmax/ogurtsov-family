@@ -29,9 +29,6 @@ export default async function LoungeRegisterPage(props: PageProps<"/lounge/regis
         <Link href={loginHref} className="text-sm text-(--color-fg-muted) hover:underline">
           Уже есть аккаунт? Войти
         </Link>
-        <Link href="/lounge" className="text-sm text-(--color-fg-muted) hover:underline">
-          Вернуться в гостиную
-        </Link>
       </main>
     </div>
   );

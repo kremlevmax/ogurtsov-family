@@ -22,11 +22,12 @@ export async function createLoungeMessageAction(
     return { ok: false, error: "Нужно войти в гостиную, чтобы опубликовать сообщение." };
   }
 
-  const imageMediaIdRaw = formData.get("imageMediaId");
+  const asStringOrNull = (value: FormDataEntryValue | null) => (typeof value === "string" && value !== "" ? value : null);
   const parsed = loungeMessageSchema.safeParse({
-    topic: formData.get("topic"),
+    topic: asStringOrNull(formData.get("topic")),
     body: formData.get("body"),
-    imageMediaId: typeof imageMediaIdRaw === "string" && imageMediaIdRaw !== "" ? imageMediaIdRaw : null,
+    imageMediaId: asStringOrNull(formData.get("imageMediaId")),
+    parentMessageId: asStringOrNull(formData.get("parentMessageId")),
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Проверьте поля формы." };
@@ -35,9 +36,10 @@ export async function createLoungeMessageAction(
   try {
     await loungeRepo.createLoungeMessage(member.supabase, {
       authorId: member.userId,
-      topic: parsed.data.topic,
+      topic: parsed.data.topic ?? null,
       body: parsed.data.body,
       imageMediaId: parsed.data.imageMediaId ?? null,
+      parentMessageId: parsed.data.parentMessageId ?? null,
     });
     revalidatePath("/lounge");
     return { ok: true };
@@ -66,5 +68,28 @@ export async function deleteLoungeMessageAction(messageId: string): Promise<Dele
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось удалить сообщение.") };
+  }
+}
+
+export interface ToggleLoungeMessageLikeState {
+  ok: boolean;
+  liked?: boolean;
+  error?: string;
+}
+
+export async function toggleLoungeMessageLikeAction(messageId: string): Promise<ToggleLoungeMessageLikeState> {
+  let member: Awaited<ReturnType<typeof requireLoungeMember>>;
+  try {
+    member = await requireLoungeMember();
+  } catch {
+    return { ok: false, error: "Нужно войти, чтобы отметить «Нравится»." };
+  }
+
+  try {
+    const { liked } = await loungeRepo.toggleLoungeMessageLike(member.supabase, messageId, member.userId);
+    revalidatePath("/lounge");
+    return { ok: true, liked };
+  } catch (error) {
+    return { ok: false, error: toUserMessage(error, "Не удалось отметить «Нравится». Попробуйте ещё раз.") };
   }
 }

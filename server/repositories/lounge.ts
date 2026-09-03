@@ -24,15 +24,20 @@ export interface LoungeMessageRow {
   attachment: LoungeMessageAttachment | null;
   createdAt: string;
   canManage: boolean;
+  likeCount: number;
+  likedByViewer: boolean;
+  /** Always [] on a reply itself — replies are a single level deep, not threaded further. */
+  replies: LoungeMessageRow[];
 }
 
 const FEED_LIMIT = 200;
 
 /**
- * Fetches the current feed (newest first) plus, for each message,
- * whether the given viewer may edit/delete it (own message, or an
- * editor). A family lounge is small enough that fetching up to
- * FEED_LIMIT messages and letting the client filter/sort in memory is
+ * Fetches the current feed (newest-first top-level messages, each with
+ * its replies nested underneath in chronological order) plus, for each
+ * message, whether the given viewer may edit/delete it and whether
+ * they've liked it. A family lounge is small enough that fetching up
+ * to FEED_LIMIT rows and letting the client filter/sort in memory is
  * simpler than a server round-trip per filter click (CLAUDE.md 14).
  */
 export async function listLoungeMessages(
@@ -47,16 +52,16 @@ export async function listLoungeMessages(
   // longer excludes their own deleted messages from a plain SELECT.
   // Same pattern people.ts's listPeople/relationships.ts's
   // listRelationships already used before this ever came up.
-  const { data: messages, error } = await supabase
+  const { data: rows, error } = await supabase
     .from("lounge_messages")
-    .select("id, author_id, topic, body, image_media_id, created_at")
+    .select("id, author_id, topic, body, image_media_id, parent_message_id, created_at")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(FEED_LIMIT);
   if (error) throw error;
-  if (!messages || messages.length === 0) return [];
+  if (!rows || rows.length === 0) return [];
 
-  const authorIds = Array.from(new Set(messages.map((m) => m.author_id)));
+  const authorIds = Array.from(new Set(rows.map((m) => m.author_id)));
   const { data: profiles, error: profilesError } = await supabase
     .from("lounge_profiles")
     .select("user_id, first_name, last_name")
@@ -65,7 +70,7 @@ export async function listLoungeMessages(
 
   const profileByAuthor = new Map((profiles ?? []).map((p) => [p.user_id, p]));
 
-  const attachmentMediaIds = messages.map((m) => m.image_media_id).filter((id): id is string => id !== null);
+  const attachmentMediaIds = rows.map((m) => m.image_media_id).filter((id): id is string => id !== null);
   let mediaById = new Map<string, { objectKey: string; kind: MediaKind; filename: string }>();
   if (attachmentMediaIds.length > 0) {
     const { data: mediaRows, error: mediaError } = await supabase
@@ -81,12 +86,27 @@ export async function listLoungeMessages(
     );
   }
 
-  return messages.map((m) => {
+  const messageIds = rows.map((m) => m.id);
+  const { data: likeRows, error: likesError } = await supabase
+    .from("lounge_message_likes")
+    .select("message_id, user_id")
+    .in("message_id", messageIds);
+  if (likesError) throw likesError;
+
+  const likesByMessage = new Map<string, string[]>();
+  for (const like of likeRows ?? []) {
+    const list = likesByMessage.get(like.message_id) ?? [];
+    list.push(like.user_id);
+    likesByMessage.set(like.message_id, list);
+  }
+
+  function toRow(m: NonNullable<typeof rows>[number]): LoungeMessageRow {
     const profile = profileByAuthor.get(m.author_id);
     const firstName = profile?.first_name ?? "Участник";
     const lastName = profile?.last_name ?? "гостиной";
     const attachmentMedia = m.image_media_id ? mediaById.get(m.image_media_id) : undefined;
     const attachmentUrl = attachmentMedia ? getMediaPublicUrl(attachmentMedia.objectKey) : null;
+    const likers = likesByMessage.get(m.id) ?? [];
 
     return {
       id: m.id,
@@ -107,8 +127,26 @@ export async function listLoungeMessages(
           : null,
       createdAt: m.created_at,
       canManage: viewer.isEditor || viewer.userId === m.author_id,
+      likeCount: likers.length,
+      likedByViewer: viewer.userId !== null && likers.includes(viewer.userId),
+      replies: [],
     };
-  });
+  }
+
+  const repliesByParent = new Map<string, LoungeMessageRow[]>();
+  for (const m of rows) {
+    if (!m.parent_message_id) continue;
+    const list = repliesByParent.get(m.parent_message_id) ?? [];
+    list.push(toRow(m));
+    repliesByParent.set(m.parent_message_id, list);
+  }
+  for (const list of repliesByParent.values()) {
+    list.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
+  return rows
+    .filter((m) => !m.parent_message_id)
+    .map((m) => ({ ...toRow(m), replies: repliesByParent.get(m.id) ?? [] }));
 }
 
 export async function isLoungeMember(supabase: Client, userId: string): Promise<boolean> {
@@ -123,13 +161,34 @@ export async function isLoungeMember(supabase: Client, userId: string): Promise<
 
 export async function createLoungeMessage(
   supabase: Client,
-  input: { authorId: string; topic: LoungeTopic; body: string; imageMediaId: string | null },
+  input: {
+    authorId: string;
+    /** Required for a top-level post; ignored (the parent's own topic is copied instead) for a reply. */
+    topic: LoungeTopic | null;
+    body: string;
+    imageMediaId: string | null;
+    parentMessageId: string | null;
+  },
 ): Promise<void> {
+  let topic = input.topic;
+
+  if (input.parentMessageId) {
+    const { data: parent, error: parentError } = await supabase
+      .from("lounge_messages")
+      .select("topic")
+      .eq("id", input.parentMessageId)
+      .single();
+    if (parentError) throw parentError;
+    topic = parent.topic;
+  }
+  if (!topic) throw new Error("Выберите тему.");
+
   const { error } = await supabase.from("lounge_messages").insert({
     author_id: input.authorId,
-    topic: input.topic,
+    topic,
     body: input.body,
     image_media_id: input.imageMediaId,
+    parent_message_id: input.parentMessageId,
   });
   if (error) throw error;
 }
@@ -154,4 +213,33 @@ export async function softDeleteLoungeMessage(supabase: Client, messageId: strin
     .select("id")
     .single();
   if (error) throw error;
+}
+
+/** Toggle: like if not already liked, unlike if already liked. Requires an existing lounge_profiles row (RLS: lounge_message_likes_member_insert, 0012_lounge_message_likes.sql). */
+export async function toggleLoungeMessageLike(
+  supabase: Client,
+  messageId: string,
+  userId: string,
+): Promise<{ liked: boolean }> {
+  const { data: existing, error: selectError } = await supabase
+    .from("lounge_message_likes")
+    .select("user_id")
+    .eq("message_id", messageId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (selectError) throw selectError;
+
+  if (existing) {
+    const { error } = await supabase
+      .from("lounge_message_likes")
+      .delete()
+      .eq("message_id", messageId)
+      .eq("user_id", userId);
+    if (error) throw error;
+    return { liked: false };
+  }
+
+  const { error } = await supabase.from("lounge_message_likes").insert({ message_id: messageId, user_id: userId });
+  if (error) throw error;
+  return { liked: true };
 }

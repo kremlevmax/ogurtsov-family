@@ -219,6 +219,7 @@ export interface Database {
           topic: LoungeTopic;
           body: string;
           image_media_id: string | null;
+          parent_message_id: string | null;
           created_at: string;
           updated_at: string;
           deleted_at: string | null;
@@ -229,11 +230,18 @@ export interface Database {
           topic: LoungeTopic;
           body: string;
           image_media_id?: string | null;
+          parent_message_id?: string | null;
           created_at?: string;
           updated_at?: string;
           deleted_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["lounge_messages"]["Row"]>;
+        Relationships: [];
+      };
+      lounge_message_likes: {
+        Row: { message_id: string; user_id: string; created_at: string };
+        Insert: { message_id: string; user_id: string; created_at?: string };
+        Update: Partial<{ message_id: string; user_id: string }>;
         Relationships: [];
       };
     };

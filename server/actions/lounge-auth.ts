@@ -97,5 +97,5 @@ export async function signInLoungeMemberAction(
 export async function signOutLoungeMemberAction(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/lounge");
+  redirect("/");
 }

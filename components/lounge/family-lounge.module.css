@@ -421,6 +421,73 @@
   color: var(--lounge-gold);
 }
 
+.actionLiked {
+  color: var(--lounge-gold);
+}
+
+/* ---------- Reply form + nested replies ---------- */
+
+.replyForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--lounge-line);
+}
+
+.replyTextarea {
+  height: 64px;
+}
+
+.replyButtonRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.replySubmit {
+  height: 36px;
+  padding: 8px 16px;
+  width: auto;
+}
+
+.replyCancel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: 500 12px/17px var(--lounge-sans);
+  color: var(--lounge-muted);
+}
+
+.replyList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding-left: 20px;
+  border-left: 2px solid var(--lounge-line);
+}
+
+.reply {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avatarSmall {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--lounge-sage);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 11px/1 var(--lounge-sans);
+  color: var(--lounge-green);
+}
+
 /* ---------- Right: compose + rules ---------- */
 
 .right {

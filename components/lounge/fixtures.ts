@@ -22,7 +22,8 @@ export const LOUNGE_PINNED_LABEL = "ЗАКРЕПЛЕНО";
 export const LOUNGE_PINNED_TEXT = "Дорогие родные! Добавляйте в ленту семейные новости, вопросы и воспоминания.";
 
 export const LOUNGE_REPLY_LABEL = "Ответить";
-export const LOUNGE_SUPPORT_LABEL = "♡  Поддержать";
+// "♡ Поддержать" is gone — LikeButton (components/lounge/like-button.tsx)
+// builds its own "♥/♡ Нравится · N" label instead (owner's rename).
 
 export const LOUNGE_COMPOSE_TITLE = "Написать в гостиную";
 export const LOUNGE_COMPOSE_HINT = "Поделитесь новостью, воспоминанием или задайте вопрос родным.";

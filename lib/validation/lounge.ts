@@ -28,8 +28,20 @@ export const loungeSignInSchema = z.object({
   password: z.string().min(1, "Введите пароль"),
 });
 
-export const loungeMessageSchema = z.object({
-  topic: z.enum(LOUNGE_TOPICS, { message: "Выберите тему" }),
-  body: z.string().trim().min(1, "Напишите текст сообщения").max(2000),
-  imageMediaId: z.uuid().nullable().optional(),
-});
+/**
+ * Covers both a top-level post (topic required, no parentMessageId)
+ * and a reply (parentMessageId required, topic omitted — the reply
+ * copies its parent's topic server-side instead of asking again,
+ * server/repositories/lounge.ts's createLoungeMessage).
+ */
+export const loungeMessageSchema = z
+  .object({
+    topic: z.enum(LOUNGE_TOPICS, { message: "Выберите тему" }).nullable().optional(),
+    body: z.string().trim().min(1, "Напишите текст сообщения").max(2000),
+    imageMediaId: z.uuid().nullable().optional(),
+    parentMessageId: z.uuid().nullable().optional(),
+  })
+  .refine((data) => data.parentMessageId || data.topic, {
+    message: "Выберите тему",
+    path: ["topic"],
+  });
