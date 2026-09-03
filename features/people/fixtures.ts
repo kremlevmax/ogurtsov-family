@@ -39,6 +39,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-maria",
@@ -58,6 +59,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-petr",
@@ -77,6 +79,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-natalia",
@@ -96,6 +99,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-elena",
@@ -115,6 +119,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-olga",
@@ -134,6 +139,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-viktor",
@@ -153,6 +159,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-nikolai",
@@ -172,6 +179,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-unknown-mother-oksana",
@@ -191,6 +199,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-sergei",
@@ -210,6 +219,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-dmitry",
@@ -229,6 +239,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-anna",
@@ -248,6 +259,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
   {
     id: "p-oksana",
@@ -267,6 +279,7 @@ export const fixturePeople: FixturePerson[] = [
     photoUrl: null,
     branchColor: null,
     highlightColor: null,
+    createdBy: null,
   },
 ];
 

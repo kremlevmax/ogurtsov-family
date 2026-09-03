@@ -27,8 +27,7 @@ export interface FamilyTreeExplorerProps {
   relationships: Relationship[];
   mediaByPersonId: Record<string, PersonMedia[]>;
   searchablePeople: (SearchablePerson & { lifeSpan: string | null })[];
-  isEditor: boolean;
-  editorName: string | null;
+  viewer: { isEditor: boolean; memberId: string | null; displayName: string | null };
 }
 
 /**
@@ -44,8 +43,7 @@ export function FamilyTreeExplorer({
   relationships,
   mediaByPersonId,
   searchablePeople,
-  isEditor,
-  editorName,
+  viewer,
 }: FamilyTreeExplorerProps) {
   const searchParams = useSearchParams();
   const [selectedPersonId, setSelectedPersonIdState] = useState<string | null>(() =>
@@ -103,11 +101,14 @@ export function FamilyTreeExplorer({
     <div className="flex flex-1 flex-col">
       <Header search={<SearchBox people={searchablePeople} onSelect={selectPerson} />} />
       <main className="flex flex-1 flex-col gap-4 p-4">
-        {isEditor && (
+        {viewer.memberId && (
           <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-4 py-2">
-            <p className="text-sm text-(--color-fg-muted)">Вы вошли как {editorName}</p>
-            <Link href="/edit" className="text-label text-xs text-(--color-accent) hover:underline">
-              Панель редактора
+            <p className="text-sm text-(--color-fg-muted)">Вы вошли как {viewer.displayName}</p>
+            <Link
+              href={viewer.isEditor ? "/edit" : "/tree/add"}
+              className="text-label text-xs text-(--color-accent) hover:underline"
+            >
+              {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
             </Link>
           </div>
         )}
@@ -125,7 +126,7 @@ export function FamilyTreeExplorer({
               people={people}
               relationships={relationships}
               media={mediaByPersonId[selectedPerson.id] ?? []}
-              isEditor={isEditor}
+              viewer={{ isEditor: viewer.isEditor, memberId: viewer.memberId }}
               onClose={() => selectPerson(null)}
               onPersonSelect={selectPerson}
             />
@@ -177,12 +178,17 @@ export function FamilyTreeExplorer({
         {people.length === 0 && (
           <p className="text-sm text-(--color-fg-muted)">
             В дереве пока никого нет.{" "}
-            {isEditor ? (
-              <Link href="/edit/people/new" className="text-(--color-accent) hover:underline">
+            {viewer.memberId ? (
+              <Link
+                href={viewer.isEditor ? "/edit/people/new" : "/tree/add"}
+                className="text-(--color-accent) hover:underline"
+              >
                 Добавить первого человека
               </Link>
             ) : (
-              "Войдите как редактор, чтобы начать заполнять дерево."
+              <Link href="/lounge/register" className="text-(--color-accent) hover:underline">
+                Зарегистрируйтесь, чтобы начать заполнять дерево.
+              </Link>
             )}
           </p>
         )}

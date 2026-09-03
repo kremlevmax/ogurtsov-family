@@ -10,7 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listPeople, getPersonById } from "@/server/repositories/people";
 import { listRelationships } from "@/server/repositories/relationships";
 import { listMediaForPerson } from "@/server/repositories/media";
-import { getEditorSession } from "@/server/auth/require-editor";
+import { getLoungeViewer } from "@/server/auth/require-lounge-member";
 
 export async function generateMetadata(props: PageProps<"/people/[personId]">): Promise<Metadata> {
   const { personId } = await props.params;
@@ -28,12 +28,12 @@ export async function generateMetadata(props: PageProps<"/people/[personId]">): 
 export default async function PersonPage(props: PageProps<"/people/[personId]">) {
   const { personId } = await props.params;
   const supabase = await createSupabaseServerClient();
-  const [person, people, relationships, allMedia, editor] = await Promise.all([
+  const [person, people, relationships, allMedia, viewer] = await Promise.all([
     getPersonById(supabase, personId),
     listPeople(supabase),
     listRelationships(supabase),
     listMediaForPerson(supabase, personId),
-    getEditorSession(),
+    getLoungeViewer(),
   ]);
   if (!person) notFound();
   // Public page — a file linked here only for the upload pipeline's
@@ -64,7 +64,7 @@ export default async function PersonPage(props: PageProps<"/people/[personId]">)
           childPeople={children}
           siblings={siblings}
           media={media}
-          isEditor={editor !== null}
+          viewer={{ isEditor: viewer.isEditor, memberId: viewer.userId }}
         />
       </main>
     </div>

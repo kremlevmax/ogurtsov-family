@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listPeople } from "@/server/repositories/people";
 import { listRelationships } from "@/server/repositories/relationships";
 import { listAllMediaGroupedByPerson } from "@/server/repositories/media";
-import { getEditorSession } from "@/server/auth/require-editor";
+import { getLoungeViewer } from "@/server/auth/require-lounge-member";
 
 export const metadata: Metadata = {
   title: "Родословное древо",
@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 
 export default async function TreePage() {
   const supabase = await createSupabaseServerClient();
-  const [people, relationships, allMediaByPersonId, editor] = await Promise.all([
+  const [people, relationships, allMediaByPersonId, viewer] = await Promise.all([
     listPeople(supabase),
     listRelationships(supabase),
     listAllMediaGroupedByPerson(supabase),
-    getEditorSession(),
+    getLoungeViewer(),
   ]);
   // Public tree/drawer — a file linked to someone only for the upload
   // pipeline's sake (`unlisted`) never appears in their card here.
@@ -48,8 +48,7 @@ export default async function TreePage() {
         relationships={relationships}
         mediaByPersonId={mediaByPersonId}
         searchablePeople={searchablePeople}
-        isEditor={editor !== null}
-        editorName={editor?.displayName ?? null}
+        viewer={{ isEditor: viewer.isEditor, memberId: viewer.userId, displayName: viewer.displayName }}
       />
     </Suspense>
   );

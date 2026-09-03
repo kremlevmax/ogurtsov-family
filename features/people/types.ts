@@ -27,6 +27,8 @@ export interface Person {
   branchColor: string | null;
   /** Non-null highlights just this one card — no inheritance, independent of branchColor. */
   highlightColor: string | null;
+  /** auth.users id of whoever added this person — an editor, or a registered contributor (CLAUDE.md deviation, docs/DECISIONS.md). Drives the "edit/delete your own additions" UI gating. */
+  createdBy: string | null;
 }
 
 export interface Relationship {

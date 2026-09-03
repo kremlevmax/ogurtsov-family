@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { personFormSchema, type PersonFormInput } from "@/lib/validation/person";
 import { requireEditor } from "@/server/auth/require-editor";
+import { requireLoungeMember } from "@/server/auth/require-lounge-member";
 import * as peopleRepo from "@/server/repositories/people";
 import { toUserMessage } from "./errors";
 
@@ -13,12 +14,21 @@ export interface PersonActionState {
   personId?: string;
 }
 
+/**
+ * Any registered site member can add a person and edit/delete the ones
+ * they added — not just the two editors (owner's explicit decision,
+ * docs/DECISIONS.md). `requireLoungeMember()` only confirms there's a
+ * registered account; RLS on `people` (0008_add_tree_contributions.sql)
+ * is what actually restricts edit/delete to a member's own rows, same
+ * as CLAUDE.md 13's "never just one gate" for every other write path
+ * here.
+ */
 export async function createPersonAction(input: unknown): Promise<PersonActionState> {
-  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  let member: Awaited<ReturnType<typeof requireLoungeMember>>;
   try {
-    editor = await requireEditor();
+    member = await requireLoungeMember();
   } catch {
-    return { ok: false, error: "Нужно войти как редактор." };
+    return { ok: false, error: "Нужно войти, чтобы добавить человека." };
   }
 
   const parsed = personFormSchema.safeParse(input);
@@ -27,7 +37,7 @@ export async function createPersonAction(input: unknown): Promise<PersonActionSt
   }
 
   try {
-    const personId = await peopleRepo.createPerson(editor.supabase, parsed.data, editor.editorId);
+    const personId = await peopleRepo.createPerson(member.supabase, parsed.data, member.userId);
     revalidatePath("/tree");
     revalidatePath(`/people/${personId}`);
     revalidatePath("/edit");
@@ -38,11 +48,11 @@ export async function createPersonAction(input: unknown): Promise<PersonActionSt
 }
 
 export async function updatePersonAction(personId: string, input: unknown): Promise<PersonActionState> {
-  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  let member: Awaited<ReturnType<typeof requireLoungeMember>>;
   try {
-    editor = await requireEditor();
+    member = await requireLoungeMember();
   } catch {
-    return { ok: false, error: "Нужно войти как редактор." };
+    return { ok: false, error: "Нужно войти, чтобы изменить человека." };
   }
 
   const parsed = personFormSchema.safeParse(input);
@@ -51,12 +61,15 @@ export async function updatePersonAction(personId: string, input: unknown): Prom
   }
 
   try {
-    await peopleRepo.updatePerson(editor.supabase, personId, parsed.data, editor.editorId);
+    await peopleRepo.updatePerson(member.supabase, personId, parsed.data, member.userId);
     revalidatePath("/tree");
     revalidatePath(`/people/${personId}`);
     return { ok: true, personId };
   } catch (error) {
-    return { ok: false, error: toUserMessage(error, "Не удалось сохранить изменения. Попробуйте ещё раз.") };
+    return {
+      ok: false,
+      error: toUserMessage(error, "Не удалось сохранить изменения. Изменять можно только добавленных вами людей."),
+    };
   }
 }
 
@@ -66,21 +79,24 @@ export interface DeletePersonState {
 }
 
 export async function softDeletePersonAction(personId: string): Promise<DeletePersonState> {
-  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  let member: Awaited<ReturnType<typeof requireLoungeMember>>;
   try {
-    editor = await requireEditor();
+    member = await requireLoungeMember();
   } catch {
-    return { ok: false, error: "Нужно войти как редактор." };
+    return { ok: false, error: "Нужно войти, чтобы удалить человека." };
   }
 
   try {
-    await peopleRepo.softDeletePerson(editor.supabase, personId, editor.editorId);
+    await peopleRepo.softDeletePerson(member.supabase, personId, member.userId);
     revalidatePath("/tree");
     revalidatePath(`/people/${personId}`);
     revalidatePath("/edit");
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: toUserMessage(error, "Не удалось удалить человека. Попробуйте ещё раз.") };
+    return {
+      ok: false,
+      error: toUserMessage(error, "Не удалось удалить человека. Удалять можно только добавленных вами людей."),
+    };
   }
 }
 

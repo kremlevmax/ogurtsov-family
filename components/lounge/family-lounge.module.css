@@ -1,0 +1,674 @@
+/*
+ * Locally-scoped styles for /lounge, translated 1:1 from the Figma
+ * handoff geometry (ogurtsov-lounge-handoff/spec, IMPLEMENTATION_SPEC.md,
+ * FIGMA_NOTES.md). CSS Modules already namespace every class below, so
+ * these never touch the site's global h1/button/header selectors or the
+ * shared color/radius design tokens (which mean something different
+ * site-wide: 0px radius, forest-green accent). This page owns its own
+ * palette, radii and fonts entirely.
+ */
+
+.root {
+  --lounge-paper: #f7f3e8;
+  --lounge-card: #fffdf6;
+  --lounge-green: #284235;
+  --lounge-muted: #786f60;
+  --lounge-gold: #b58a43;
+  --lounge-line: #d8cfba;
+  --lounge-sage: #e7e9dc;
+  /* Only used as button/text-on-dark-fill contrast color now — no
+     surface on the page uses a plain white background (owner's
+     request: nothing here should read as a white box). */
+  --lounge-white: #ffffff;
+  /* Not from the Figma 8-color palette — added for real error/empty
+     states once publishing/deleting became real (owner's request),
+     which the source design doesn't depict. Matches the site's own
+     --color-danger for consistency. */
+  --lounge-danger: #b3413a;
+  --lounge-serif: var(--font-cormorant-garamond), serif;
+  --lounge-sans: var(--font-inter), sans-serif;
+
+  background: var(--lounge-paper);
+  color: var(--lounge-green);
+  font-family: var(--lounge-sans);
+  min-height: 100vh;
+}
+
+.root,
+.root * {
+  box-sizing: border-box;
+}
+
+.root :where(h1, h2, p) {
+  margin: 0;
+}
+
+.root :where(button, input, textarea, select) {
+  font: inherit;
+  color: inherit;
+}
+
+.root :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.root :where(button) {
+  cursor: pointer;
+}
+
+.root :where(a, button, input, textarea, select):focus-visible {
+  outline: 2px solid var(--lounge-gold);
+  outline-offset: 3px;
+}
+
+/* Matches the shared Header's own horizontal padding (px-6 sm:px-10)
+   instead of the source's fixed 1248px/96px-margin container, so the
+   page content lines up edge-to-edge with the header above it (owner's
+   request) rather than sitting narrower than it. */
+.container {
+  width: 100%;
+  padding-inline: 24px;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-inline: 40px;
+  }
+}
+
+/* ---------- Page title ---------- */
+
+/* The top nav bar/logo is the site's own shared <Header/> now (owner's
+   request), not a page-local recreation — nothing to style here for it.
+   This band just carries the page's own eyebrow/title/subtitle, and
+   sits directly on the page background (no white/cream card behind
+   it, also per owner's request — see family-lounge.tsx). */
+.hero {
+  padding: 48px 0 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.eyebrow {
+  font: 500 12px/15px var(--lounge-sans);
+  letter-spacing: 2.8px;
+  color: var(--lounge-gold);
+  /* Same trailing-tracking correction as .brand (176px source width). */
+  width: 176px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.title {
+  font: 600 58px/62px var(--lounge-serif);
+}
+
+.subtitle {
+  font: 400 22px/30px var(--lounge-serif);
+  color: var(--lounge-muted);
+}
+
+/* ---------- Main grid ---------- */
+
+.main {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr) 328px;
+  align-items: start;
+  gap: 24px;
+  padding-block: 36px 64px;
+}
+
+/* Inset box-shadow used only as a 1px inward border, never a decorative
+   drop shadow — doesn't consume any of the Figma padding. */
+.surface {
+  border: 0;
+  border-radius: 8px;
+  background: var(--lounge-card);
+  box-shadow: inset 0 0 0 1px var(--lounge-line);
+}
+
+/* ---------- Left: filters ---------- */
+
+.filters {
+  height: 620px;
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.filters > * {
+  flex: none;
+}
+
+.filtersTitle {
+  font: 600 25px/36px var(--lounge-serif);
+  width: fit-content;
+}
+
+.filter {
+  border: 0;
+  border-radius: 6px;
+  height: 36px;
+  width: 180px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--lounge-line);
+  text-align: left;
+}
+
+.filterActive {
+  background: var(--lounge-sage);
+}
+
+.filterLabel {
+  font: 400 13px/19px var(--lounge-sans);
+}
+
+.filterLabelActive {
+  font-weight: 500;
+}
+
+.filterCount {
+  font: 500 12px/17px var(--lounge-sans);
+  color: var(--lounge-muted);
+}
+
+.filterCountActive {
+  color: var(--lounge-gold);
+}
+
+.filtersDivider {
+  height: 1px;
+  flex: none;
+  background: var(--lounge-line);
+}
+
+.filtersHint {
+  width: 180px;
+  font: 400 12px/17px var(--lounge-sans);
+  color: var(--lounge-muted);
+}
+
+/* Owner's request: the hint above promises author-name search — make it
+   real. transparent background, not white — matches .filter's own fix
+   (owner's earlier "no white surfaces on this page" request). */
+.authorSearch {
+  width: 180px;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--lounge-line);
+  font: 400 13px/19px var(--lounge-sans);
+}
+
+.authorSearch::placeholder {
+  color: var(--lounge-muted);
+  opacity: 1;
+}
+
+/* ---------- Middle: feed ---------- */
+
+.feed {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feedHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+}
+
+.feedTitle {
+  font: 600 30px/44px var(--lounge-serif);
+}
+
+.control {
+  height: 43px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--lounge-line);
+  background: var(--lounge-card);
+  font: 500 13px/19px var(--lounge-sans);
+  white-space: pre;
+}
+
+.sortWrap {
+  position: relative;
+  /* Wider than the source's 135px (owner's request to make this look
+     nicer) — the custom chevron's padding otherwise clips "Сначала
+     новые". */
+  width: 172px;
+}
+
+.sort {
+  width: 100%;
+  padding-right: 34px;
+  appearance: none;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.sort:hover {
+  box-shadow: inset 0 0 0 1px var(--lounge-gold);
+}
+
+.sortIcon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 15px;
+  height: 15px;
+  color: var(--lounge-gold);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.pinned {
+  height: 112px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 8px;
+  background: var(--lounge-sage);
+  box-shadow: inset 0 0 0 1px var(--lounge-gold);
+  overflow: hidden;
+}
+
+.pinnedLabel {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lounge-gold);
+  font: 600 11px/16px var(--lounge-sans);
+}
+
+.pinnedDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lounge-gold);
+  flex: none;
+}
+
+.pinnedText {
+  font: 400 14px/20px var(--lounge-sans);
+}
+
+.message {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.authorRow {
+  height: 42px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Owner's request: show which topic a message was posted under. */
+.topicBadge {
+  margin-left: auto;
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--lounge-sage);
+  font: 500 11px/16px var(--lounge-sans);
+  color: var(--lounge-green);
+  white-space: nowrap;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--lounge-sage);
+  /* Owner's request: initials instead of an empty circle. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 13px/1 var(--lounge-sans);
+  color: var(--lounge-green);
+}
+
+.authorBlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 36px;
+}
+
+.authorName {
+  font: 600 14px/20px var(--lounge-sans);
+  width: fit-content;
+}
+
+.messageDate {
+  font: 400 11px/16px var(--lounge-sans);
+  color: var(--lounge-muted);
+  width: fit-content;
+}
+
+.messageText {
+  font: 400 14px/20px var(--lounge-sans);
+  overflow-wrap: anywhere;
+}
+
+/* Owner's request: the inline thumbnail crops (object-fit: cover) — click it to see the full image (components/media/photo-lightbox.tsx). */
+.messageImageButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.messageImage {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--lounge-line);
+}
+
+.messageFile {
+  align-self: flex-start;
+  font: 500 13px/19px var(--lounge-sans);
+  color: var(--lounge-gold);
+  text-decoration: underline;
+}
+
+.actions {
+  align-self: flex-start;
+  display: flex;
+  gap: 20px;
+  height: 17px;
+}
+
+.actionButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  white-space: pre;
+  font: 500 12px/17px var(--lounge-sans);
+  color: var(--lounge-muted);
+}
+
+.actionReply {
+  color: var(--lounge-gold);
+}
+
+/* ---------- Right: compose + rules ---------- */
+
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.compose {
+  /* Auto height, not the source's fixed 430px — the hint now wraps to
+     two lines (owner's request) instead of clipping, so a fixed height
+     would cut the Publish button off. */
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.compose > * {
+  flex: none;
+}
+
+.composeTitle {
+  font: 600 28px/41px var(--lounge-serif);
+  width: fit-content;
+}
+
+/* Owner's request: wrap onto two lines instead of the source's clipped
+   single-line box (which would otherwise overflow the 328px card). */
+.composeHint {
+  color: var(--lounge-muted);
+  font: 400 12px/17px var(--lounge-sans);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font: 500 12px/17px var(--lounge-sans);
+}
+
+.input {
+  width: 100%;
+  height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--lounge-paper);
+  box-shadow: inset 0 0 0 1px var(--lounge-line);
+  font: 400 13px/19px var(--lounge-sans);
+}
+
+.select {
+  appearance: none;
+}
+
+.select.placeholderShown {
+  color: var(--lounge-muted);
+}
+
+.textarea {
+  height: 88px;
+  display: block;
+  resize: none;
+}
+
+.textarea::placeholder,
+.input::placeholder {
+  color: var(--lounge-muted);
+  opacity: 1;
+}
+
+.attach {
+  width: 216px;
+  align-self: flex-start;
+}
+
+.controlPrimary {
+  background: var(--lounge-green);
+  color: var(--lounge-white);
+  box-shadow: inset 0 0 0 1px var(--lounge-green);
+}
+
+.controlPrimary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.publish {
+  composes: controlPrimary;
+  width: 128px;
+  align-self: flex-start;
+}
+
+.errorText {
+  font: 400 12px/17px var(--lounge-sans);
+  color: var(--lounge-danger);
+}
+
+.attachmentStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 12px/17px var(--lounge-sans);
+  color: var(--lounge-muted);
+}
+
+.attachmentRemove {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: 500 12px/17px var(--lounge-sans);
+  color: var(--lounge-gold);
+}
+
+.emptyState {
+  padding: 24px 20px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--lounge-line);
+  background: var(--lounge-card);
+  font: 400 14px/20px var(--lounge-sans);
+  color: var(--lounge-muted);
+}
+
+.emptyStateError {
+  color: var(--lounge-danger);
+}
+
+.composeAuthGate {
+  font: 400 13px/20px var(--lounge-sans);
+  color: var(--lounge-muted);
+}
+
+.composeAuthActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rules {
+  height: 170px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--lounge-sage);
+  overflow: hidden;
+}
+
+.rulesTitle {
+  font: 600 23px/33px var(--lounge-serif);
+  width: fit-content;
+}
+
+.rulesText {
+  font: 400 12px/17px var(--lounge-sans);
+  color: var(--lounge-muted);
+  white-space: pre-line;
+}
+
+/* ---------- Responsive adaptation (proposed, not extracted from Figma) ---------- */
+
+@media (max-width: 1199px) {
+  .main {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .filters {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    padding-inline: 10px;
+  }
+
+  .feed {
+    grid-column: 2;
+  }
+
+  .right {
+    grid-column: 2;
+  }
+
+  .compose,
+  .rules {
+    height: auto;
+    min-height: 0;
+  }
+
+  .composeHint {
+    white-space: normal;
+    width: auto;
+  }
+
+  .pinned {
+    height: auto;
+    min-height: 112px;
+  }
+
+  .feedHeading {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero {
+    padding: 32px 0 28px;
+  }
+
+  .title {
+    font-size: 40px;
+    line-height: 44px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+    line-height: 27px;
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    padding-block: 24px 40px;
+  }
+
+  .main > * {
+    width: 100%;
+  }
+
+  .filters {
+    height: auto;
+    padding: 24px 22px;
+  }
+
+  .filter {
+    width: 100%;
+  }
+
+  .filtersHint {
+    width: auto;
+  }
+
+  .feedTitle {
+    font-size: 27px;
+    line-height: 38px;
+  }
+}

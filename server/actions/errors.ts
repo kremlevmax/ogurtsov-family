@@ -28,5 +28,13 @@ export function toUserMessage(error: unknown, fallback: string): string {
     return error.message;
   }
 
+  // Repositories' own "{count:'exact'} came back 0" checks (RLS silently
+  // matched no rows — server/repositories/people.ts, relationships.ts,
+  // lounge.ts) already raise a specific, safe Russian message — pass it
+  // through instead of genericizing it away.
+  if (error.message.includes("нет прав")) {
+    return error.message;
+  }
+
   return fallback;
 }

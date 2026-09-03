@@ -15,7 +15,7 @@ export interface PersonDrawerProps {
   people: Person[];
   relationships: Relationship[];
   media: PersonMedia[];
-  isEditor: boolean;
+  viewer: { isEditor: boolean; memberId: string | null };
   onClose: () => void;
   onPersonSelect: (personId: string) => void;
 }
@@ -40,7 +40,7 @@ const DESKTOP_STYLE: CSSProperties = { position: "fixed", top: 0, right: 0, bott
  * fixed` never sits inside the tree box's `overflow: hidden` ancestor
  * — another category of cross-browser inconsistency avoided outright.
  */
-export function PersonDrawer({ person, people, relationships, media, isEditor, onClose, onPersonSelect }: PersonDrawerProps) {
+export function PersonDrawer({ person, people, relationships, media, viewer, onClose, onPersonSelect }: PersonDrawerProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const parents = getParents(person.id, people, relationships);
   const partners = getPartners(person.id, people, relationships);
@@ -82,7 +82,7 @@ export function PersonDrawer({ person, people, relationships, media, isEditor, o
           childPeople={children}
           siblings={siblings}
           media={media}
-          isEditor={isEditor}
+          viewer={viewer}
           onPersonSelect={onPersonSelect}
         />
       </div>

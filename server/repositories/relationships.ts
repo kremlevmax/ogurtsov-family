@@ -47,10 +47,17 @@ export async function createRelationship(
 }
 
 export async function softDeleteRelationship(supabase: Client, id: string): Promise<void> {
+  // .select().single() — see people.ts's softDeletePerson comment.
+  // Relies on relationships_own_select (0011_own_row_select_visibility.sql):
+  // without it, a member deleting their own relationship would find it
+  // invisible to this same request's RETURNING clause and get a false
+  // "not found" even though the delete succeeded.
   const { error } = await supabase
     .from("relationships")
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id")
+    .single();
   if (error) throw error;
 }
 

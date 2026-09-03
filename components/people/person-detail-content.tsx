@@ -23,7 +23,8 @@ export interface PersonDetailContentProps {
   childPeople: Person[];
   siblings: Person[];
   media: PersonMedia[];
-  isEditor: boolean;
+  /** Editors can manage everyone; a plain member can only manage the people they added themselves (docs/DECISIONS.md). */
+  viewer: { isEditor: boolean; memberId: string | null };
   /**
    * When provided, clicking a related person calls this instead of a
    * <Link> navigation — used inside the tree drawer so switching between
@@ -45,9 +46,11 @@ export function PersonDetailContent({
   childPeople,
   siblings,
   media,
-  isEditor,
+  viewer,
   onPersonSelect,
 }: PersonDetailContentProps) {
+  const isMember = viewer.memberId !== null;
+  const canManage = viewer.isEditor || (viewer.memberId !== null && viewer.memberId === person.createdBy);
   const isDeceased = person.isDeceased;
   const lifeSpan = formatLifeSpan(person.birth, person.death, isDeceased);
 
@@ -80,7 +83,9 @@ export function PersonDetailContent({
           {lifeSpan && <p className="font-body mt-3 text-base italic text-(--color-fg-muted)">{lifeSpan}</p>}
         </div>
 
-        {isEditor && <EditorQuickActions personId={person.id} parents={parents} />}
+        {isMember && (
+          <MemberQuickActions personId={person.id} parents={parents} isEditor={viewer.isEditor} canManage={canManage} />
+        )}
       </div>
 
       <hr className="border-(--color-border)" />
@@ -153,29 +158,50 @@ export function PersonDetailContent({
   );
 }
 
-function EditorQuickActions({ personId, parents }: { personId: string; parents: ParentLink[] }) {
+/**
+ * "Добавить..." is shown to any registered member (editor or not) — a
+ * new person they add is theirs regardless of whose card they clicked
+ * from, so the resulting relationship is always allowed (0008_add_tree_contributions.sql:
+ * touches_own_person). "Редактировать" only shows when the viewer can
+ * actually save this specific person — an editor, or its own
+ * contributor — and points at the admin form vs. the lighter
+ * contributor one accordingly.
+ */
+function MemberQuickActions({
+  personId,
+  parents,
+  isEditor,
+  canManage,
+}: {
+  personId: string;
+  parents: ParentLink[];
+  isEditor: boolean;
+  canManage: boolean;
+}) {
   const hasMother = parents.some((link) => link.role === "mother");
   const hasFather = parents.some((link) => link.role === "father");
+  const newPersonBase = isEditor ? "/edit/people/new" : "/tree/add";
+  const editHref = isEditor ? `/edit/people/${personId}` : `/tree/edit/${personId}`;
 
   const actions = [
     !hasMother && {
       label: "Добавить карточку матери",
-      href: `/edit/people/new?relationTo=${personId}&relationKind=mother`,
+      href: `${newPersonBase}?relationTo=${personId}&relationKind=mother`,
       icon: UserPlus,
     },
     !hasFather && {
       label: "Добавить карточку отца",
-      href: `/edit/people/new?relationTo=${personId}&relationKind=father`,
+      href: `${newPersonBase}?relationTo=${personId}&relationKind=father`,
       icon: UserPlus,
     },
     {
       label: "Добавить карточку супруга/партнёра",
-      href: `/edit/people/new?relationTo=${personId}&relationKind=spouse`,
+      href: `${newPersonBase}?relationTo=${personId}&relationKind=spouse`,
       icon: Heart,
     },
     {
       label: "Добавить карточку ребёнка",
-      href: `/edit/people/new?relationTo=${personId}&relationKind=child`,
+      href: `${newPersonBase}?relationTo=${personId}&relationKind=child`,
       icon: Baby,
     },
   ].filter((action): action is { label: string; href: string; icon: typeof UserPlus } => Boolean(action));
@@ -193,14 +219,16 @@ function EditorQuickActions({ personId, parents }: { personId: string; parents: 
           {action.label}
         </Link>
       ))}
-      <Link
-        href={`/edit/people/${personId}`}
-        title="Редактировать"
-        className="text-label inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-(--color-accent) bg-(--color-accent) px-2.5 py-1.5 text-[10px] text-(--color-accent-fg) hover:opacity-90"
-      >
-        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-        Редактировать
-      </Link>
+      {canManage && (
+        <Link
+          href={editHref}
+          title="Редактировать"
+          className="text-label inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-(--color-accent) bg-(--color-accent) px-2.5 py-1.5 text-[10px] text-(--color-accent-fg) hover:opacity-90"
+        >
+          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+          Редактировать
+        </Link>
+      )}
     </div>
   );
 }

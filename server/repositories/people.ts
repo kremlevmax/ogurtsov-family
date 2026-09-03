@@ -56,6 +56,7 @@ async function rowsToPeople(supabase: Client, rows: PersonRow[]): Promise<Person
       photoUrl: profileObjectKey ? getMediaPublicUrl(profileObjectKey) : null,
       branchColor: row.branch_color,
       highlightColor: row.highlight_color,
+      createdBy: row.created_by,
     };
   });
 }
@@ -181,16 +182,32 @@ export async function updatePerson(
 ): Promise<void> {
   const { birthPlaceId, deathPlaceId } = await resolvePlaceIds(supabase, input);
 
+  // .select().single() turns "RLS silently matched zero rows" into a
+  // real error instead of a no-op that looks like success. Relies on
+  // people_own_select (0011_own_row_select_visibility.sql): without
+  // it, a contributor editing their own already-soft-deleted person
+  // would find their own row invisible to this same request's
+  // RETURNING clause and get a false "not found".
   const { error } = await supabase
     .from("people")
     .update({ ...toDbFields(input, birthPlaceId, deathPlaceId), updated_by: editorId })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id")
+    .single();
   if (error) throw error;
 }
 
 export async function softDeletePerson(supabase: Client, id: string, editorId: string): Promise<void> {
   const deletedAt = new Date().toISOString();
-  const { error } = await supabase.from("people").update({ deleted_at: deletedAt }).eq("id", id);
+  // .select().single() — see updatePerson's comment above; same
+  // people_own_select dependency, this time for the row this very
+  // update is soft-deleting.
+  const { error } = await supabase
+    .from("people")
+    .update({ deleted_at: deletedAt })
+    .eq("id", id)
+    .select("id")
+    .single();
   if (error) throw error;
 
   // Same timestamp on both, so restorePerson can undo precisely this

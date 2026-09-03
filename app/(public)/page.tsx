@@ -14,6 +14,7 @@ const ARCHIVE_TILES = [
   { title: "Карта мест", text: "География семейной истории", icon: "⌖", href: "#places" },
   { title: "История", text: "Как возвращались забытые имена", icon: "✧", href: "/story" },
   { title: "Аудио", text: "История рода в записи", icon: "◉", href: "/audio" },
+  { title: "Отзывы и связь", text: "Сообщения потомков семьи", icon: "✉", href: "/lounge" },
 ] as const;
 
 /**
@@ -21,11 +22,13 @@ const ARCHIVE_TILES = [
  * itself — content and structure are the owner's mother's own draft
  * (made with ChatGPT), carried over as-is; only the markup/styling were
  * rebuilt on this site's own tokens (CLAUDE.md 10) and the placeholder
- * `href="#"` links were pointed at real routes. Two things stay
- * deliberately inert, not real features: a "descendant" application
- * and a reviews/contact box — this site has no public data-collection
- * form or comments (CLAUDE.md 4), so both are non-interactive with a
- * "скоро" note rather than a dead link.
+ * `href="#"` links were pointed at real routes. The "descendant"
+ * application stays deliberately inert, not a real feature — this site
+ * has no public data-collection form (CLAUDE.md 4), so it's
+ * non-interactive with a "скоро" note rather than a dead link. The
+ * "Отзывы и связь" card now links to /lounge (components/lounge),
+ * an exact port of a separate Figma handoff for that page; see that
+ * component's own doc comment for what is and isn't wired up there.
  *
  * Typography (font-size/line-height/letter-spacing/color) throughout
  * this file follows the owner's Figma-plugin extraction
@@ -40,7 +43,13 @@ const ARCHIVE_TILES = [
 export default function HomePage() {
   return (
     <div className="flex flex-1 flex-col">
-      <section className="relative mx-[15px] mt-[15px] h-[calc(100vh-15px)] overflow-hidden bg-(--color-bg)">
+      <Header />
+
+      {/* mt-[15px] dropped now that Header sits directly above (used to be
+          the hero's own offset from the bare top of the page) — height
+          adjusted from the sticky header's own fixed 81px (h-20 + 1px
+          border) so the hero still fills exactly one screen, as before. */}
+      <section className="relative mx-[15px] h-[calc(100vh-81px)] overflow-hidden bg-(--color-bg)">
         {/* Map has its own 20px margin on top/sides (owner's explicit measurement) — separate from the hero content's own, larger margins below. */}
         <div className="absolute inset-x-[20px] top-[20px] bottom-0 overflow-hidden">
           <Image
@@ -124,8 +133,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <Header />
 
       <section className="mx-auto max-w-3xl px-4 py-20 text-center sm:py-28" id="welcome">
         <Ornament className="mx-auto mb-6 h-4 w-32 text-(--color-gold)" />
@@ -216,12 +223,6 @@ export default function HomePage() {
               <span className="font-label mt-4 text-[16px] leading-[18px] font-bold text-(--color-heading)">Открыть →</span>
             </Link>
           ))}
-          <div className="flex flex-col items-start rounded-[var(--radius-md)] border border-dashed border-(--color-border) bg-(--color-bg) p-6 text-left opacity-70">
-            <span className="text-2xl text-(--color-fg-muted)">✉</span>
-            <h3 className="font-heading mt-5 text-[24px] leading-[30px] text-(--color-fg)">Отзывы и связь</h3>
-            <p className="font-heading mt-2 text-[16px] leading-[21px] text-(--color-fg-muted)">Сообщения потомков семьи</p>
-            <span className="font-label mt-4 text-[16px] text-(--color-fg-muted) uppercase">Скоро</span>
-          </div>
         </div>
       </section>
 

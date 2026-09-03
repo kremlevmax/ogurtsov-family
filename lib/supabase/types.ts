@@ -21,6 +21,8 @@ export type MediaKind = "photo" | "document" | "audio" | "video" | "archive" | "
 
 export type PendingUploadStatus = "pending" | "completed" | "expired" | "failed";
 
+export type LoungeTopic = "news" | "memories" | "search" | "thanks";
+
 export interface Database {
   public: {
     Tables: {
@@ -202,6 +204,36 @@ export interface Database {
           expires_at: string;
         };
         Update: Partial<Database["public"]["Tables"]["pending_uploads"]["Row"]>;
+        Relationships: [];
+      };
+      lounge_profiles: {
+        Row: { user_id: string; first_name: string; last_name: string; created_at: string };
+        Insert: { user_id: string; first_name: string; last_name?: string; created_at?: string };
+        Update: Partial<{ first_name: string; last_name: string }>;
+        Relationships: [];
+      };
+      lounge_messages: {
+        Row: {
+          id: string;
+          author_id: string;
+          topic: LoungeTopic;
+          body: string;
+          image_media_id: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          author_id: string;
+          topic: LoungeTopic;
+          body: string;
+          image_media_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["lounge_messages"]["Row"]>;
         Relationships: [];
       };
     };

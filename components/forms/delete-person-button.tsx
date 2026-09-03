@@ -9,10 +9,21 @@ export interface DeletePersonButtonProps {
   personId: string;
   /** Active relationships this person is part of — shown as a warning before deletion. */
   dependentCount: number;
+  /** Where to send the viewer after a successful delete — defaults to the editor panel. */
+  redirectTo?: string;
+  /** Who can actually undo this later — differs for a contributor (only an editor can restore it, not them). */
+  restoreNote?: string;
 }
 
+const DEFAULT_RESTORE_NOTE = "Удалённого человека можно восстановить позже из панели редактора.";
+
 /** Two-step delete: click once to reveal the warning, click again to confirm (CLAUDE.md 10, 12). */
-export function DeletePersonButton({ personId, dependentCount }: DeletePersonButtonProps) {
+export function DeletePersonButton({
+  personId,
+  dependentCount,
+  redirectTo = "/edit",
+  restoreNote = DEFAULT_RESTORE_NOTE,
+}: DeletePersonButtonProps) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -32,7 +43,7 @@ export function DeletePersonButton({ personId, dependentCount }: DeletePersonBut
         {dependentCount > 0
           ? `У этого человека ${dependentCount} ${dependentCount === 1 ? "связь" : "связи"} с другими людьми — при удалении они тоже станут неактивными. `
           : ""}
-        Удалённого человека можно восстановить позже из панели редактора. Точно удалить?
+        {restoreNote} Точно удалить?
       </p>
 
       {error && (
@@ -51,7 +62,7 @@ export function DeletePersonButton({ personId, dependentCount }: DeletePersonBut
             startTransition(async () => {
               const result = await softDeletePersonAction(personId);
               if (result.ok) {
-                router.push("/edit");
+                router.push(redirectTo);
               } else {
                 setError(result.error ?? "Не удалось удалить человека.");
               }

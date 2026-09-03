@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { relationshipInputSchema } from "@/lib/validation/person";
-import { requireEditor } from "@/server/auth/require-editor";
+import { requireLoungeMember } from "@/server/auth/require-lounge-member";
 import * as relationshipsRepo from "@/server/repositories/relationships";
 import { toUserMessage } from "./errors";
 
@@ -11,12 +11,13 @@ export interface RelationshipActionState {
   error?: string;
 }
 
+/** Any registered member for a relationship touching a person they created — see people.ts's doc comment and 0008_add_tree_contributions.sql. */
 export async function createRelationshipAction(input: unknown): Promise<RelationshipActionState> {
-  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  let member: Awaited<ReturnType<typeof requireLoungeMember>>;
   try {
-    editor = await requireEditor();
+    member = await requireLoungeMember();
   } catch {
-    return { ok: false, error: "Нужно войти как редактор." };
+    return { ok: false, error: "Нужно войти, чтобы добавить связь." };
   }
 
   const parsed = relationshipInputSchema.safeParse(input);
@@ -25,7 +26,7 @@ export async function createRelationshipAction(input: unknown): Promise<Relation
   }
 
   try {
-    await relationshipsRepo.createRelationship(editor.supabase, parsed.data, editor.editorId);
+    await relationshipsRepo.createRelationship(member.supabase, parsed.data, member.userId);
     revalidatePath("/tree");
     revalidatePath(`/people/${parsed.data.fromPersonId}`);
     revalidatePath(`/people/${parsed.data.toPersonId}`);
@@ -33,7 +34,10 @@ export async function createRelationshipAction(input: unknown): Promise<Relation
     revalidatePath(`/edit/people/${parsed.data.toPersonId}`);
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: toUserMessage(error, "Не удалось сохранить связь. Попробуйте ещё раз.") };
+    return {
+      ok: false,
+      error: toUserMessage(error, "Не удалось сохранить связь. Связать можно только людей, которых вы добавили."),
+    };
   }
 }
 
@@ -41,15 +45,15 @@ export async function deleteRelationshipAction(
   relationshipId: string,
   relatedPersonIds: [string, string],
 ): Promise<RelationshipActionState> {
-  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  let member: Awaited<ReturnType<typeof requireLoungeMember>>;
   try {
-    editor = await requireEditor();
+    member = await requireLoungeMember();
   } catch {
-    return { ok: false, error: "Нужно войти как редактор." };
+    return { ok: false, error: "Нужно войти, чтобы удалить связь." };
   }
 
   try {
-    await relationshipsRepo.softDeleteRelationship(editor.supabase, relationshipId);
+    await relationshipsRepo.softDeleteRelationship(member.supabase, relationshipId);
     revalidatePath("/tree");
     for (const id of relatedPersonIds) {
       revalidatePath(`/people/${id}`);
@@ -57,6 +61,9 @@ export async function deleteRelationshipAction(
     }
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: toUserMessage(error, "Не удалось удалить связь. Попробуйте ещё раз.") };
+    return {
+      ok: false,
+      error: toUserMessage(error, "Не удалось удалить связь. Удалять можно только связи людей, которых вы добавили."),
+    };
   }
 }
