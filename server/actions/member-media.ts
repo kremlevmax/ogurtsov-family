@@ -9,19 +9,29 @@ import * as mediaRepo from "@/server/repositories/media";
 import { toUserMessage } from "./errors";
 
 /**
- * Lets a member upload and manage PHOTOS (only — not documents) for a
- * person they created themselves, on /tree/add and /tree/edit/[id]
- * (owner's request: contributors should be able to add a photo of
- * their relative, not just names/dates). Mirrors the editor's own
+ * Lets a member upload and manage PHOTOS and DOCUMENTS (only those two
+ * kinds — not audio/video/archives) for a person they created
+ * themselves, on /tree/add and /tree/edit/[id] (owner's request:
+ * contributors should be able to add a photo or an archival document
+ * of their relative, not just names/dates). Mirrors the editor's own
  * presign/finalize/link pipeline (server/actions/media.ts) but gated
  * by requireLoungeMember() + an explicit ownership check on every call
  * (RLS — 0015_member_person_photos.sql — is the real gate; this check
  * only turns a blocked write into a clear message instead of a raw
- * Postgres error).
+ * Postgres error). RLS itself doesn't restrict by media kind — this
+ * file is the only place "photo or document, nothing else" is
+ * enforced, same as CLAUDE.md 13's "server checks, not just UI"
+ * principle applied the other direction (narrower than RLS allows).
+ *
+ * A photo/document created here is never `unlisted` — it shows on the
+ * person's own card AND, respectively, in the public /gallery or
+ * /archive list (owner's request; those pages already just list every
+ * non-unlisted photo/document site-wide, editor-uploaded or not).
  */
 
-const NOT_LOGGED_IN_ERROR = "Нужно войти, чтобы загрузить фото.";
-const NOT_OWN_PERSON_ERROR = "Вы можете управлять фотографиями только у людей, которых добавили сами.";
+const NOT_LOGGED_IN_ERROR = "Нужно войти, чтобы загрузить файл.";
+const NOT_OWN_PERSON_ERROR = "Вы можете управлять файлами только у людей, которых добавили сами.";
+const WRONG_KIND_ERROR = "Сюда можно загружать только фотографии и документы.";
 
 async function requireOwnPerson(personId: string) {
   const member = await requireLoungeMember();
@@ -30,21 +40,21 @@ async function requireOwnPerson(personId: string) {
   return member;
 }
 
-export interface PresignPersonPhotoInput {
+export interface PresignPersonMediaInput {
   personId: string;
   originalFilename: string;
   mimeType: string;
   sizeBytes: number;
 }
 
-export interface PresignPersonPhotoState {
+export interface PresignPersonMediaState {
   ok: boolean;
   error?: string;
   pendingUploadId?: string;
   uploadUrl?: string;
 }
 
-export async function presignPersonPhotoAction(input: PresignPersonPhotoInput): Promise<PresignPersonPhotoState> {
+export async function presignPersonMediaAction(input: PresignPersonMediaInput): Promise<PresignPersonMediaState> {
   let member: Awaited<ReturnType<typeof requireLoungeMember>> | null;
   try {
     member = await requireOwnPerson(input.personId);
@@ -57,8 +67,8 @@ export async function presignPersonPhotoAction(input: PresignPersonPhotoInput): 
   if (!validation.ok || !validation.extension) {
     return { ok: false, error: validation.error ?? "Файл не прошёл проверку." };
   }
-  if (validation.kind !== "photo") {
-    return { ok: false, error: "Сюда можно загружать только фотографии." };
+  if (validation.kind !== "photo" && validation.kind !== "document") {
+    return { ok: false, error: WRONG_KIND_ERROR };
   }
 
   const objectKey = `media/${crypto.randomUUID()}.${validation.extension}`;
@@ -77,7 +87,7 @@ export async function presignPersonPhotoAction(input: PresignPersonPhotoInput): 
   }
 }
 
-export interface FinalizePersonPhotoInput {
+export interface FinalizePersonMediaInput {
   personId: string;
   pendingUploadId: string;
   originalFilename: string;
@@ -86,13 +96,13 @@ export interface FinalizePersonPhotoInput {
   height: number | null;
 }
 
-export interface FinalizePersonPhotoState {
+export interface FinalizePersonMediaState {
   ok: boolean;
   error?: string;
   mediaId?: string;
 }
 
-export async function finalizePersonPhotoAction(input: FinalizePersonPhotoInput): Promise<FinalizePersonPhotoState> {
+export async function finalizePersonMediaAction(input: FinalizePersonMediaInput): Promise<FinalizePersonMediaState> {
   let member: Awaited<ReturnType<typeof requireLoungeMember>> | null;
   try {
     member = await requireOwnPerson(input.personId);
@@ -113,12 +123,17 @@ export async function finalizePersonPhotoAction(input: FinalizePersonPhotoInput)
   }
 
   const metaValidation = validateFileMetadata(input.originalFilename, pending.expectedMimeType, head.sizeBytes);
-  if (!metaValidation.ok || !metaValidation.extension || metaValidation.kind !== "photo") {
+  if (
+    !metaValidation.ok ||
+    !metaValidation.extension ||
+    (metaValidation.kind !== "photo" && metaValidation.kind !== "document")
+  ) {
     await deleteR2Object(pending.objectKey).catch(() => {});
     await mediaRepo.markPendingUploadStatus(member.supabase, pending.id, "failed");
-    return { ok: false, error: metaValidation.kind && metaValidation.kind !== "photo"
-      ? "Сюда можно загружать только фотографии."
-      : (metaValidation.error ?? "Файл не прошёл проверку.") };
+    return {
+      ok: false,
+      error: metaValidation.ok ? WRONG_KIND_ERROR : (metaValidation.error ?? "Файл не прошёл проверку."),
+    };
   }
 
   const headBytes = await readR2ObjectHeadBytes(pending.objectKey, 16).catch(() => new Uint8Array());
@@ -132,7 +147,7 @@ export async function finalizePersonPhotoAction(input: FinalizePersonPhotoInput)
     const mediaId = await mediaRepo.createMedia(
       member.supabase,
       {
-        kind: "photo",
+        kind: metaValidation.kind,
         title: input.originalFilename,
         caption: input.caption,
         sourceOrOwner: null,
@@ -149,14 +164,17 @@ export async function finalizePersonPhotoAction(input: FinalizePersonPhotoInput)
     );
     await mediaRepo.linkMediaToPerson(member.supabase, input.personId, mediaId);
 
-    // The first photo for this person becomes the profile portrait
+    // The first PHOTO for this person becomes the profile portrait
     // automatically — without this, an uploaded photo would never show
     // as the tree node's portrait (CLAUDE.md 3.6) unless the member
-    // also knew to click "сделать главным" separately.
-    const currentPhotos = await mediaRepo.listMediaForPerson(member.supabase, input.personId);
-    const hasProfileAlready = currentPhotos.some((item) => item.isProfile && item.id !== mediaId);
-    if (!hasProfileAlready) {
-      await mediaRepo.setProfilePhoto(member.supabase, input.personId, mediaId);
+    // also knew to click "сделать главным" separately. Documents never
+    // participate in this.
+    if (metaValidation.kind === "photo") {
+      const currentPhotos = await mediaRepo.listMediaForPerson(member.supabase, input.personId);
+      const hasProfileAlready = currentPhotos.some((item) => item.isProfile && item.id !== mediaId);
+      if (!hasProfileAlready) {
+        await mediaRepo.setProfilePhoto(member.supabase, input.personId, mediaId);
+      }
     }
 
     await mediaRepo.markPendingUploadStatus(member.supabase, pending.id, "completed");
@@ -164,12 +182,12 @@ export async function finalizePersonPhotoAction(input: FinalizePersonPhotoInput)
     revalidatePath(`/people/${input.personId}`);
     revalidatePath(`/tree/edit/${input.personId}`);
     revalidatePath("/tree");
-    revalidatePath("/gallery");
+    revalidatePath(metaValidation.kind === "photo" ? "/gallery" : "/archive");
 
     return { ok: true, mediaId };
   } catch (error) {
     await deleteR2Object(pending.objectKey).catch(() => {});
-    return { ok: false, error: toUserMessage(error, "Не удалось сохранить фото. Попробуйте ещё раз.") };
+    return { ok: false, error: toUserMessage(error, "Не удалось сохранить файл. Попробуйте ещё раз.") };
   }
 }
 
@@ -178,6 +196,7 @@ export interface MemberMediaActionState {
   error?: string;
 }
 
+/** Photo-only — documents have no "profile portrait" concept. */
 export async function togglePersonPhotoProfileAction(
   personId: string,
   mediaId: string,
@@ -203,7 +222,8 @@ export async function togglePersonPhotoProfileAction(
   }
 }
 
-export async function removePersonPhotoAction(personId: string, mediaId: string): Promise<MemberMediaActionState> {
+/** Unlinks a photo or document from the member's own person — works for either kind. */
+export async function removePersonMediaAction(personId: string, mediaId: string): Promise<MemberMediaActionState> {
   let member: Awaited<ReturnType<typeof requireLoungeMember>> | null;
   try {
     member = await requireOwnPerson(personId);
@@ -218,8 +238,9 @@ export async function removePersonPhotoAction(personId: string, mediaId: string)
     revalidatePath(`/tree/edit/${personId}`);
     revalidatePath("/tree");
     revalidatePath("/gallery");
+    revalidatePath("/archive");
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: toUserMessage(error, "Не удалось удалить фото.") };
+    return { ok: false, error: toUserMessage(error, "Не удалось удалить файл.") };
   }
 }

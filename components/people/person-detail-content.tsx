@@ -9,7 +9,7 @@ import type { PersonMedia } from "@/features/media/types";
 import { buildDisplayName } from "@/lib/names/display-name";
 import { formatDateValue, formatLifeSpan } from "@/lib/dates/date-value";
 import { MediaSection } from "./media-section";
-import { PersonPhotoUpload } from "@/components/forms/person-photo-upload";
+import { PersonMediaUpload } from "@/components/forms/person-media-upload";
 
 const PARTNER_LABELS: Record<string, string> = {
   spouse: "Супруг(а)",
@@ -141,7 +141,7 @@ export function PersonDetailContent({
       <MediaSection media={media} />
 
       {!viewer.isEditor && viewer.memberId !== null && viewer.memberId === person.createdBy && (
-        <PersonPhotoUpload personId={person.id} media={media} />
+        <PersonMediaUpload personId={person.id} media={media} />
       )}
 
       <div className="flex flex-col gap-6">

@@ -4,8 +4,9 @@
 export const UPLOAD_ACCEPT =
   ".jpg,.jpeg,.png,.webp,.avif,.gif,.tif,.tiff,.pdf,.txt,.rtf,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.mp3,.m4a,.aac,.wav,.flac,.ogg,.mp4,.mov,.m4v,.webm,.zip,.7z,.tar,.gz";
 
-/** Photo-only subset, for the member-facing person photo upload (components/forms/person-photo-upload.tsx) — matches lib/validation/media.ts's "photo" kind extensions. */
+/** Photo/document-only subsets, for the member-facing person media upload (components/forms/person-media-upload.tsx) — matches lib/validation/media.ts's "photo"/"document" kind extensions. */
 export const PHOTO_UPLOAD_ACCEPT = ".jpg,.jpeg,.png,.webp,.avif,.gif";
+export const DOCUMENT_UPLOAD_ACCEPT = ".tif,.tiff,.pdf,.txt,.rtf,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp";
 
 export function readImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
   if (!file.type.startsWith("image/")) return Promise.resolve(null);

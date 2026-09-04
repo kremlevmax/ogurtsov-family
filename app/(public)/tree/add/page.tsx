@@ -67,7 +67,7 @@ export default async function AddPersonPage(props: PageProps<"/tree/add">) {
         <p className="text-sm text-(--color-fg-muted)">
           Вы сможете редактировать и удалить только добавленных вами людей.
         </p>
-        <PersonForm mode="create" quickRelation={quickRelation} />
+        <PersonForm mode="create" quickRelation={quickRelation} redirectAfterCreate="tree-edit" />
       </main>
     </div>
   );

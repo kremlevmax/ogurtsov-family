@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { PersonForm } from "@/components/forms/person-form";
-import { PersonPhotoUpload } from "@/components/forms/person-photo-upload";
+import { PersonMediaUpload } from "@/components/forms/person-media-upload";
 import { RelationshipManager } from "@/components/forms/relationship-manager";
 import { DeletePersonButton } from "@/components/forms/delete-person-button";
 import { requireLoungeMember, NotLoungeMemberError } from "@/server/auth/require-lounge-member";
@@ -25,9 +25,9 @@ const EMPTY_DATE: DateValue = { precision: "unknown", start: null, end: null, te
  * scoped to a person the current member actually added themselves (RLS
  * enforces this on every write regardless, but there's no reason to
  * even render an edit form the member can't save — CLAUDE.md 15). Photo
- * upload (PersonPhotoUpload) is a member-scoped, photos-only version of
- * the editor's own MediaManager (owner's request); documents, linking
- * existing media, and restore-from-trash stay editor-only tools in
+ * and document upload (PersonMediaUpload) is a member-scoped version of
+ * the editor's own MediaManager (owner's request); linking already-
+ * existing media and restore-from-trash stay editor-only tools in
  * /edit (docs/DECISIONS.md).
  */
 export default async function ContributorEditPersonPage(props: PageProps<"/tree/edit/[personId]">) {
@@ -101,8 +101,8 @@ export default async function ContributorEditPersonPage(props: PageProps<"/tree/
         />
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-label text-xs text-(--color-fg-muted)">Фотографии</h2>
-          <PersonPhotoUpload personId={personId} media={media} />
+          <h2 className="text-label text-xs text-(--color-fg-muted)">Фотографии и документы</h2>
+          <PersonMediaUpload personId={personId} media={media} />
         </section>
 
         <section className="flex flex-col gap-3">

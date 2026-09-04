@@ -33,9 +33,21 @@ export interface PersonFormProps {
   personId?: string;
   defaultValues?: Partial<PersonFormInput>;
   quickRelation?: QuickRelation | null;
+  /**
+   * Where to send the viewer right after a successful CREATE (ignored
+   * for edits, which always return to the person's own page). A plain
+   * string mode, not a href-building function — this prop crosses the
+   * Server → Client Component boundary (the page is a Server
+   * Component), and functions aren't serializable across it. Defaults
+   * to "person" (`/people/[id]`); /tree/add passes "tree-edit" so a
+   * contributor lands straight on the page with photo/document upload
+   * and the relationship form, instead of a bare page they'd have to
+   * navigate away from again to add either (owner's request).
+   */
+  redirectAfterCreate?: "person" | "tree-edit";
 }
 
-export function PersonForm({ mode, personId, defaultValues, quickRelation }: PersonFormProps) {
+export function PersonForm({ mode, personId, defaultValues, quickRelation, redirectAfterCreate }: PersonFormProps) {
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -93,21 +105,33 @@ export function PersonForm({ mode, personId, defaultValues, quickRelation }: Per
       return;
     }
 
+    const afterCreateHref =
+      redirectAfterCreate === "tree-edit" ? `/tree/edit/${result.personId}` : `/people/${result.personId}`;
+
     if (mode === "create" && quickRelation) {
       const relationResult = await createRelationshipAction(
         buildQuickRelationInput(quickRelation, result.personId),
       );
       if (!relationResult.ok) {
-        router.push(`/people/${result.personId}`);
+        router.push(afterCreateHref);
         return;
       }
     }
 
-    router.push(`/people/${result.personId}`);
+    router.push(mode === "create" ? afterCreateHref : `/people/${result.personId}`);
   }
+
+  const isTwoStepCreate = mode === "create" && redirectAfterCreate === "tree-edit";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      {isTwoStepCreate && (
+        <p className="rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-inset) px-4 py-2.5 text-sm text-(--color-fg-muted)">
+          <span className="text-label font-bold text-(--color-fg)">Шаг 1 из 2. </span>
+          Сначала сохраните имя и даты — фото, документы и родственные связи можно будет добавить сразу после, на
+          следующем экране (их нужно к кому-то привязать, а пока человека нет в базе — не к чему).
+        </p>
+      )}
       {quickRelation && (
         <p className="rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-inset) px-4 py-2.5 text-sm text-(--color-fg-muted)">
           {quickRelationHint(quickRelation)}
@@ -278,7 +302,11 @@ export function PersonForm({ mode, personId, defaultValues, quickRelation }: Per
 
       <div>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Сохраняем…" : "Сохранить"}
+          {isSubmitting
+            ? "Сохраняем…"
+            : isTwoStepCreate
+              ? "Сохранить и добавить фото/связи →"
+              : "Сохранить"}
         </Button>
       </div>
     </form>

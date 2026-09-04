@@ -2,9 +2,16 @@ import type { ReactNode } from "react";
 
 export function FormSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="flex flex-col gap-4 rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-4">
+    // The flex layout lives on the inner div, not the <fieldset> itself —
+    // a <fieldset> with display:flex has a genuinely different legend/
+    // border-notch algorithm in Safari than a plain block fieldset (the
+    // notch there was cut around a stretched flex-item box far past the
+    // "ИМЯ"/"ДАТЫ" text, not around the text itself). Keeping the
+    // fieldset a plain block element gives every browser the exact same,
+    // fully standard legend-in-a-border-notch rendering.
+    <fieldset className="rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-4">
       <legend className="text-label px-1 text-xs text-(--color-fg-muted)">{title}</legend>
-      {children}
+      <div className="flex flex-col gap-4">{children}</div>
     </fieldset>
   );
 }
