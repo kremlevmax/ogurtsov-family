@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { Header } from "@/components/layout/header";
+import { StoryAudioPlayer } from "@/components/media/story-audio-player";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { listUnlistedAudio } from "@/server/repositories/media";
 
 export const metadata: Metadata = {
   title: "От безымянного креста к живому дереву",
-  description: "История рода Огурцовых и история одного семейного расследования.",
+  description:
+    "История рода Огурцовых и история одного семейного расследования — текст и аудиоверсия на одной странице.",
 };
 
 /** A short bold, centered aside within a section — the author's own emphasis, not a new heading. */
@@ -593,7 +597,10 @@ const SECTIONS: StorySection[] = [
   },
 ];
 
-export default function StoryPage() {
+export default async function StoryPage() {
+  const supabase = await createSupabaseServerClient();
+  const recordings = await listUnlistedAudio(supabase);
+
   return (
     <div className="flex flex-1 flex-col">
       <Header />
@@ -607,6 +614,8 @@ export default function StoryPage() {
             История рода Огурцовых и история одного семейного расследования
           </p>
         </div>
+
+        <StoryAudioPlayer recordings={recordings} />
 
         <div className="flex flex-col gap-10">
           {SECTIONS.map((section) => (

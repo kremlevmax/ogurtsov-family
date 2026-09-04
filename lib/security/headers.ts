@@ -37,7 +37,7 @@ function buildContentSecurityPolicy(): string {
   // `media-src` entry too, `<audio>` inherits `default-src 'self'` and
   // Chrome silently refuses the cross-origin source before even
   // requesting it ("Media load rejected by URL safety check" — real
-  // bug report, the /audio page's player never loaded).
+  // bug report, the /story page's audio player never loaded).
   const mediaOrigin = originOf(process.env.NEXT_PUBLIC_MEDIA_BASE_URL);
 
   const imgSrc = ["img-src", "'self'", "data:", "blob:", mediaOrigin].filter(Boolean).join(" ");

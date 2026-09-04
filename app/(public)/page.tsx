@@ -12,8 +12,7 @@ const ARCHIVE_TILES = [
   { title: "Документы", text: "Архивные свидетельства и записи", icon: "▤", href: "/archive" },
   { title: "Фотографии", text: "Лица и семейные воспоминания", icon: "◫", href: "/gallery" },
   { title: "Карта мест", text: "География семейной истории", icon: "⌖", href: "#places" },
-  { title: "История", text: "Как возвращались забытые имена", icon: "✧", href: "/story" },
-  { title: "Аудио", text: "История рода в записи", icon: "◉", href: "/audio" },
+  { title: "История", text: "Как возвращались забытые имена — текст и аудио", icon: "✧", href: "/story" },
   { title: "Отзывы и связь", text: "Сообщения потомков семьи", icon: "✉", href: "/lounge" },
 ] as const;
 
@@ -113,7 +112,7 @@ export default function HomePage() {
                         Читать историю
                       </a>
                       <Link
-                        href="/audio"
+                        href="/story#audio"
                         className="font-label flex h-[50px] flex-1 items-center justify-center border border-(--color-border) bg-(--color-bg) px-4 text-[15px] font-bold tracking-[0.065px] text-(--color-heading) uppercase transition-colors hover:bg-(--color-bg-inset)"
                       >
                         Слушать аудиоверсию
@@ -185,7 +184,7 @@ export default function HomePage() {
             <Link href="/story" className="font-label text-[18px] font-bold leading-[22px] text-(--color-heading) transition-opacity hover:opacity-80">
               Читать полностью →
             </Link>
-            <Link href="/audio" className="font-label text-[18px] leading-[22px] font-medium text-(--color-heading) transition-opacity hover:opacity-80">
+            <Link href="/story#audio" className="font-label text-[18px] leading-[22px] font-medium text-(--color-heading) transition-opacity hover:opacity-80">
               ▷ Слушать аудио
             </Link>
           </div>

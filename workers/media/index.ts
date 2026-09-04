@@ -100,7 +100,7 @@ function buildHeaders(
  * Inline for browser-displayable images and audio; TIFF scans, video,
  * and documents always download (CLAUDE.md 3.7 — "документы скачиваются,
  * а не встраиваются"; audio is played, not downloaded, e.g. the
- * family-history recording on `/audio`, and a forced `attachment`
+ * family-history recording on `/story`, and a forced `attachment`
  * disposition makes Chrome's `<audio>` element refuse the source
  * entirely instead of just suggesting a download).
  */
