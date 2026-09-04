@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { registerLoungeMemberAction, type LoungeAuthState } from "@/server/actions/lounge-auth";
@@ -14,6 +14,7 @@ export interface LoungeRegisterFormProps {
 
 export function LoungeRegisterForm({ next }: LoungeRegisterFormProps) {
   const [state, formAction, isPending] = useActionState(registerLoungeMemberAction, initialState);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (state.info) {
     return (
@@ -71,12 +72,21 @@ export function LoungeRegisterForm({ next }: LoungeRegisterFormProps) {
         <Input
           id="password"
           name="password"
-          type="password"
+          type={showPassword ? "text" : "password"}
           autoComplete="new-password"
           required
           minLength={8}
           className="text-lg"
         />
+        <label className="mt-1 flex items-center gap-2 text-base text-(--color-fg-muted)">
+          <input
+            type="checkbox"
+            checked={showPassword}
+            onChange={(event) => setShowPassword(event.target.checked)}
+            className="h-4 w-4"
+          />
+          Показать пароль
+        </label>
       </div>
 
       <div className="flex flex-col gap-1">

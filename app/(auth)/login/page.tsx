@@ -33,7 +33,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
           <LoginForm next={next} />
         </div>
         <Link href={registerHref} className="text-lg text-(--color-fg-muted) hover:underline">
-          Нет аккаунта? Зарегистрироваться в гостиной
+          Нет аккаунта? Зарегистрироваться
         </Link>
       </main>
     </div>
