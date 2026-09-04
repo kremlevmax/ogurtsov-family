@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { PersonForm } from "@/components/forms/person-form";
+import { PersonPhotoUpload } from "@/components/forms/person-photo-upload";
 import { RelationshipManager } from "@/components/forms/relationship-manager";
 import { DeletePersonButton } from "@/components/forms/delete-person-button";
 import { requireLoungeMember, NotLoungeMemberError } from "@/server/auth/require-lounge-member";
 import { getPersonById, listPeople } from "@/server/repositories/people";
 import { listRelationships, countDependentRelationships } from "@/server/repositories/relationships";
+import { listMediaForPerson } from "@/server/repositories/media";
 import { buildDisplayName } from "@/lib/names/display-name";
 import type { DateValue } from "@/lib/dates/date-value";
 
@@ -22,8 +24,10 @@ const EMPTY_DATE: DateValue = { precision: "unknown", start: null, end: null, te
  * The contributor-facing twin of app/edit/people/[personId]/page.tsx —
  * scoped to a person the current member actually added themselves (RLS
  * enforces this on every write regardless, but there's no reason to
- * even render an edit form the member can't save — CLAUDE.md 15). No
- * media manager, no restore-from-trash: both stay editor-only tools in
+ * even render an edit form the member can't save — CLAUDE.md 15). Photo
+ * upload (PersonPhotoUpload) is a member-scoped, photos-only version of
+ * the editor's own MediaManager (owner's request); documents, linking
+ * existing media, and restore-from-trash stay editor-only tools in
  * /edit (docs/DECISIONS.md).
  */
 export default async function ContributorEditPersonPage(props: PageProps<"/tree/edit/[personId]">) {
@@ -43,10 +47,11 @@ export default async function ContributorEditPersonPage(props: PageProps<"/tree/
   if (!person) notFound();
   if (person.createdBy !== member.userId) redirect(`/people/${personId}`);
 
-  const [allPeople, allRelationships, dependentCount] = await Promise.all([
+  const [allPeople, allRelationships, dependentCount, media] = await Promise.all([
     listPeople(member.supabase),
     listRelationships(member.supabase),
     countDependentRelationships(member.supabase, personId),
+    listMediaForPerson(member.supabase, personId),
   ]);
   const personRelationships = allRelationships.filter(
     (rel) => rel.fromPersonId === personId || rel.toPersonId === personId,
@@ -94,6 +99,11 @@ export default async function ContributorEditPersonPage(props: PageProps<"/tree/
             highlightColor: person.highlightColor,
           }}
         />
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-label text-xs text-(--color-fg-muted)">Фотографии</h2>
+          <PersonPhotoUpload personId={personId} media={media} />
+        </section>
 
         <section className="flex flex-col gap-3">
           <h2 className="text-label text-xs text-(--color-fg-muted)">Связи</h2>
