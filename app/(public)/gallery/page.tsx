@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/header";
 import { SiteGallery } from "@/components/media/site-gallery";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listAllMediaForPicker } from "@/server/repositories/media";
+import { getLoungeViewer } from "@/server/auth/require-lounge-member";
 
 export const metadata: Metadata = {
   title: "Фотоальбом",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function GalleryPage() {
   const supabase = await createSupabaseServerClient();
-  const allMedia = await listAllMediaForPicker(supabase);
+  const [allMedia, viewer] = await Promise.all([listAllMediaForPicker(supabase), getLoungeViewer()]);
   const photos = allMedia.filter((item) => item.kind === "photo" && !item.unlisted);
 
   return (
@@ -24,7 +25,7 @@ export default async function GalleryPage() {
             Все фотографии семейного архива — {photos.length}.
           </p>
         </div>
-        <SiteGallery photos={photos} />
+        <SiteGallery photos={photos} isEditor={viewer.isEditor} />
       </main>
     </div>
   );

@@ -169,14 +169,19 @@ export async function deleteMediaAction(mediaId: string, personId: string): Prom
 }
 
 /**
- * Deletes a file from the public `/archive` list (CLAUDE.md 3.7/3.8) —
- * editor-only, same soft-delete as deleteMediaAction, just not scoped
- * to one person's page since an archive item can be linked to several
- * people or none. `linkedPersonIds` comes from the client (SiteArchive
- * already has it for display) purely to revalidate those people's own
- * pages too — RLS still gates the actual delete via requireEditor().
+ * Deletes a file from the public `/archive` or `/gallery` list
+ * (CLAUDE.md 3.7/3.8) — editor-only, same soft-delete as
+ * deleteMediaAction, just not scoped to one person's page since an
+ * item there can be linked to several people or none. `linkedPersonIds`
+ * comes from the client (SiteArchive/SiteGallery already have it for
+ * display) purely to revalidate those people's own pages too — RLS
+ * still gates the actual delete via requireEditor(). Both site-wide
+ * paths are revalidated unconditionally rather than picked by kind:
+ * cheap, and it means a `kind` change (there isn't one today, but nothing
+ * stops an editor re-uploading under a different type later) can never
+ * leave the other list stale.
  */
-export async function deleteArchiveMediaAction(mediaId: string, linkedPersonIds: string[]): Promise<MediaActionState> {
+export async function deleteSiteMediaAction(mediaId: string, linkedPersonIds: string[]): Promise<MediaActionState> {
   let editor: Awaited<ReturnType<typeof requireEditor>>;
   try {
     editor = await requireEditor();
@@ -187,6 +192,7 @@ export async function deleteArchiveMediaAction(mediaId: string, linkedPersonIds:
   try {
     await mediaRepo.softDeleteMedia(editor.supabase, mediaId);
     revalidatePath("/archive");
+    revalidatePath("/gallery");
     revalidatePath("/tree");
     for (const personId of linkedPersonIds) {
       revalidatePath(`/people/${personId}`);

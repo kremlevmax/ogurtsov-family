@@ -5,13 +5,16 @@ import Link from "next/link";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import type { MediaPickerItem } from "@/features/media/types";
 import { PhotoLightbox } from "./photo-lightbox";
+import { DeleteSiteMediaButton } from "./delete-site-media-button";
 
 export interface SiteGalleryProps {
   photos: MediaPickerItem[];
+  /** Shows a delete button per photo when true — editors only (CLAUDE.md 5.3: both editors have equal write rights). */
+  isEditor?: boolean;
 }
 
 /** Every photo across the whole family tree — CLAUDE.md 3.7 gallery, separate from any one person's card. */
-export function SiteGallery({ photos }: SiteGalleryProps) {
+export function SiteGallery({ photos, isEditor = false }: SiteGalleryProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   if (photos.length === 0) {
@@ -25,20 +28,28 @@ export function SiteGallery({ photos }: SiteGalleryProps) {
           const url = getMediaPublicUrl(photo.objectKey);
           if (!url) return null;
           return (
-            <button
+            <div
               key={photo.id}
-              type="button"
-              onClick={() => setOpenIndex(index)}
-              className="aspect-square overflow-hidden rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg-elevated)"
+              className="group relative aspect-square overflow-hidden rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg-elevated)"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt={photo.caption ?? photo.title}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            </button>
+              <button type="button" onClick={() => setOpenIndex(index)} className="block h-full w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={photo.caption ?? photo.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </button>
+              {isEditor && (
+                <DeleteSiteMediaButton
+                  mediaId={photo.id}
+                  linkedPersonIds={photo.linkedPersonIds}
+                  title={photo.title}
+                  variant="icon"
+                />
+              )}
+            </div>
           );
         })}
       </div>

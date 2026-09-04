@@ -3,7 +3,7 @@ import { Download, FileArchive, FileText, Music, Video } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import type { MediaPickerItem } from "@/features/media/types";
 import { formatFileSize } from "@/lib/media/format";
-import { DeleteArchiveMediaButton } from "./delete-archive-media-button";
+import { DeleteSiteMediaButton } from "./delete-site-media-button";
 
 const KIND_ICONS: Partial<Record<MediaPickerItem["kind"], typeof FileText>> = {
   document: FileText,
@@ -70,7 +70,7 @@ export function SiteArchive({ documents, isEditor = false }: SiteArchiveProps) {
               </a>
             )}
             {isEditor && (
-              <DeleteArchiveMediaButton mediaId={doc.id} linkedPersonIds={doc.linkedPersonIds} title={doc.title} />
+              <DeleteSiteMediaButton mediaId={doc.id} linkedPersonIds={doc.linkedPersonIds} title={doc.title} />
             )}
           </li>
         );
