@@ -604,7 +604,7 @@ export default async function StoryPage() {
   return (
     <div className="flex flex-1 flex-col">
       <Header />
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 p-4 py-8 sm:py-12">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 p-4 py-8 sm:py-12">
         <div className="text-center">
           <p className="text-label mb-4 text-xs text-(--color-fg-muted)">Семейная история</p>
           <h1 className="font-heading text-3xl font-bold text-(--color-fg) sm:text-4xl">
@@ -625,11 +625,11 @@ export default async function StoryPage() {
               )}
               {section.blocks.map((block, index) =>
                 typeof block === "string" ? (
-                  <p key={index} className="text-base leading-relaxed text-(--color-fg)">
+                  <p key={index} className="text-xl leading-relaxed text-black">
                     {block}
                   </p>
                 ) : (
-                  <p key={index} className="text-center text-base font-bold leading-relaxed text-(--color-fg)">
+                  <p key={index} className="text-center text-xl font-bold leading-relaxed text-black">
                     {block.emphasis}
                   </p>
                 ),
