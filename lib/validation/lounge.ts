@@ -23,11 +23,6 @@ export const loungeRegisterSchema = z.object({
   inviteCode: z.string().trim().min(1, "Введите код приглашения"),
 });
 
-export const loungeSignInSchema = z.object({
-  email: z.email("Введите корректный email"),
-  password: z.string().min(1, "Введите пароль"),
-});
-
 /**
  * Covers both a top-level post (topic required, no parentMessageId)
  * and a reply (parentMessageId required, topic omitted — the reply

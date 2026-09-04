@@ -186,7 +186,7 @@ export function FamilyTreeExplorer({
                 Добавить первого человека
               </Link>
             ) : (
-              <Link href="/lounge/register" className="text-(--color-accent) hover:underline">
+              <Link href="/register" className="text-(--color-accent) hover:underline">
                 Зарегистрируйтесь, чтобы начать заполнять дерево.
               </Link>
             )}

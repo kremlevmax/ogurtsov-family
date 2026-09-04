@@ -17,7 +17,7 @@ export function LoungeRegisterForm({ next }: LoungeRegisterFormProps) {
 
   if (state.info) {
     return (
-      <p role="status" className="text-sm text-(--color-fg)">
+      <p role="status" className="text-lg text-(--color-fg)">
         {state.info}
       </p>
     );
@@ -27,48 +27,72 @@ export function LoungeRegisterForm({ next }: LoungeRegisterFormProps) {
     <form action={formAction} className="flex w-full flex-col gap-3">
       {next && <input type="hidden" name="next" value={next} />}
       <div className="flex flex-col gap-1">
-        <label htmlFor="firstName" className="text-sm font-medium">
+        <label htmlFor="firstName" className="text-lg font-medium">
           Имя
         </label>
-        <Input id="firstName" name="firstName" type="text" autoComplete="given-name" required maxLength={80} />
+        <Input
+          id="firstName"
+          name="firstName"
+          type="text"
+          autoComplete="given-name"
+          required
+          maxLength={80}
+          className="text-lg"
+        />
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="lastName" className="text-sm font-medium">
+        <label htmlFor="lastName" className="text-lg font-medium">
           Фамилия
         </label>
-        <Input id="lastName" name="lastName" type="text" autoComplete="family-name" required maxLength={80} />
+        <Input
+          id="lastName"
+          name="lastName"
+          type="text"
+          autoComplete="family-name"
+          required
+          maxLength={80}
+          className="text-lg"
+        />
       </div>
-      <p className="-mt-2 text-xs text-(--color-fg-muted)">Имя и фамилия видны всем в гостиной.</p>
+      <p className="-mt-2 text-base text-(--color-fg-muted)">Имя и фамилия видны всем в гостиной.</p>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium">
+        <label htmlFor="email" className="text-lg font-medium">
           Email
         </label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <Input id="email" name="email" type="email" autoComplete="email" required className="text-lg" />
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
+        <label htmlFor="password" className="text-lg font-medium">
           Пароль
         </label>
-        <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} />
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          className="text-lg"
+        />
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="inviteCode" className="text-sm font-medium">
+        <label htmlFor="inviteCode" className="text-lg font-medium">
           Код приглашения
         </label>
-        <Input id="inviteCode" name="inviteCode" type="text" autoComplete="off" required />
+        <Input id="inviteCode" name="inviteCode" type="text" autoComplete="off" required className="text-lg" />
       </div>
 
       {state.error && (
-        <p role="alert" className="text-sm text-(--color-danger)">
+        <p role="alert" className="text-lg text-(--color-danger)">
           {state.error}
         </p>
       )}
 
-      <Button type="submit" disabled={isPending}>
+      <Button type="submit" disabled={isPending} className="text-base">
         {isPending ? "Регистрируем…" : "Зарегистрироваться"}
       </Button>
     </form>

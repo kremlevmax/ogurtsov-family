@@ -78,3 +78,65 @@ insert into editors (user_id, display_name) values
 После этого на сайте должна заработать `/login`: вход по email и
 паролю одного из двух редакторов открывает `/edit` с приветствием;
 попытка зайти на `/edit` без входа перенаправляет на `/login`.
+
+## 7. Письмо подтверждения email для регистрации в гостиной
+
+Когда кто-то регистрируется на `/register` (раздел «Семейная
+гостиная», код приглашения — `LOUNGE_INVITE_CODE`), Supabase сам
+отправляет письмо со ссылкой подтверждения — по умолчанию оно на
+английском и не объясняет, от какого сайта пришло. Замените текст
+письма на понятный русский вариант:
+
+**Authentication → Email Templates → Confirm signup**. Вставьте в поле
+**Subject** и **Message body** то, что ниже, и сохраните.
+
+Subject:
+
+```
+Подтвердите email — Семейная гостиная «Огурцовы»
+```
+
+Message body (HTML — Supabase принимает HTML прямо в этом поле;
+`{{ .ConfirmationURL }}` — переменная Supabase, подставит настоящую
+ссылку сама, менять её текст не нужно):
+
+```html
+<div style="background:#fbf8ef;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;color:#4e5148;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#fcf9f1;border:1px solid #d8d0bb;border-radius:8px;">
+    <tr>
+      <td style="padding:32px 32px 8px;text-align:center;">
+        <p style="margin:0 0 4px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#8a8a7a;">
+          Семейное дерево Огурцовых
+        </p>
+        <h1 style="margin:0 0 20px;font-size:20px;color:#304733;">Подтвердите свой email</h1>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+          Здравствуйте! Этот адрес указали при регистрации в «Семейной гостиной» —
+          разделе сайта, где родственники делятся новостями и воспоминаниями.
+        </p>
+        <p style="margin:0 0 24px;font-size:15px;line-height:1.6;text-align:left;">
+          Чтобы подтвердить, что это ваш email, и завершить регистрацию, нажмите на кнопку ниже.
+        </p>
+        <a href="{{ .ConfirmationURL }}"
+           style="display:inline-block;padding:12px 28px;background:#273c2d;color:#fbf8ef;text-decoration:none;border-radius:4px;font-size:15px;font-weight:bold;">
+          Подтвердить email
+        </a>
+        <p style="margin:24px 0 0;font-size:13px;line-height:1.6;text-align:left;color:#7a7d72;">
+          Если вы не регистрировались на сайте семейного дерева Огурцовых — просто
+          проигнорируйте это письмо, аккаунт не будет создан.
+        </p>
+      </td>
+    </tr>
+  </table>
+</div>
+```
+
+Тот же приём подходит и для других шаблонов на той же странице (например,
+**Reset Password**, если позже добавите восстановление пароля) — меняйте
+только текст, `{{ .ConfirmationURL }}` (или соответствующую переменную
+шаблона) не трогайте.
+
+**Site URL и Redirect URLs** (там же, **Authentication → URL
+Configuration**) должны включать домен сайта — иначе кнопка в письме
+поведёт не туда. Пока сайт не задеплоен, добавьте
+`http://localhost:3000` в Redirect URLs, чтобы подтверждение работало
+локально; после деплоя добавьте туда и боевой домен.

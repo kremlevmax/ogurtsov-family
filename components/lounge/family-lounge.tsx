@@ -372,7 +372,7 @@ export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessag
                           {LOUNGE_REPLY_LABEL}
                         </button>
                       ) : (
-                        <Link href="/lounge/login" className={clsx(styles.actionButton, styles.actionReply)}>
+                        <Link href="/login" className={clsx(styles.actionButton, styles.actionReply)}>
                           {LOUNGE_REPLY_LABEL}
                         </Link>
                       )}
@@ -558,10 +558,10 @@ export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessag
                   Чтобы опубликовать сообщение, войдите в аккаунт гостиной или зарегистрируйтесь по коду приглашения.
                 </p>
                 <div className={styles.composeAuthActions}>
-                  <Link href="/lounge/login" className={styles.control}>
+                  <Link href="/login" className={styles.control}>
                     Войти
                   </Link>
-                  <Link href="/lounge/register" className={clsx(styles.control, styles.controlPrimary)}>
+                  <Link href="/register" className={clsx(styles.control, styles.controlPrimary)}>
                     Зарегистрироваться
                   </Link>
                 </div>

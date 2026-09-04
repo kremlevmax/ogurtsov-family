@@ -34,7 +34,7 @@ export default async function ContributorEditPersonPage(props: PageProps<"/tree/
     member = await requireLoungeMember();
   } catch (error) {
     if (error instanceof NotLoungeMemberError) {
-      redirect(`/lounge/login?next=${encodeURIComponent(`/tree/edit/${personId}`)}`);
+      redirect(`/login?next=${encodeURIComponent(`/tree/edit/${personId}`)}`);
     }
     throw error;
   }

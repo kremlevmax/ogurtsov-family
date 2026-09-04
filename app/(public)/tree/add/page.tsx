@@ -39,7 +39,7 @@ export default async function AddPersonPage(props: PageProps<"/tree/add">) {
     member = await requireLoungeMember();
   } catch (error) {
     if (error instanceof NotLoungeMemberError) {
-      redirect(`/lounge/login?next=${encodeURIComponent(currentPath)}`);
+      redirect(`/login?next=${encodeURIComponent(currentPath)}`);
     }
     throw error;
   }

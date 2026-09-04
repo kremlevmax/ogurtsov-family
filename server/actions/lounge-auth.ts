@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { loungeRegisterSchema, loungeSignInSchema } from "@/lib/validation/lounge";
+import { loungeRegisterSchema } from "@/lib/validation/lounge";
+import { safeNextPath } from "@/lib/utils/safe-next-path";
 
 export interface LoungeAuthState {
   error: string | null;
@@ -10,16 +11,36 @@ export interface LoungeAuthState {
 }
 
 /**
- * Only ever redirect to a same-site path (never an absolute/external
- * URL from an untrusted "next" param). Falls back to the homepage —
- * not /lounge — when there's no explicit "next" (owner's request: a
- * plain login/registration from the header should land on the main
- * title page; /tree/add's own redirect still passes its own "next" and
- * returns there as before).
+ * Turns a GoTrue (Supabase Auth) error code into a Russian message that
+ * says why signup actually failed, instead of one generic "не удалось,
+ * попробуйте ещё раз" for every case (owner's request — the previous
+ * catch-all made even a plain "email already registered" or a rejected
+ * weak password look like an unexplained failure). Codes are GoTrue's
+ * own (https://supabase.com/docs/guides/auth/debugging/error-codes);
+ * an unrecognized one still gets a specific-enough fallback rather than
+ * a raw/technical message.
  */
-function safeNextPath(value: FormDataEntryValue | null): string {
-  if (typeof value === "string" && value.startsWith("/") && !value.startsWith("//")) return value;
-  return "/";
+function toRegistrationErrorMessage(code: string | undefined): string {
+  switch (code) {
+    case "user_already_exists":
+    case "email_exists":
+      return "Этот email уже зарегистрирован. Попробуйте войти или восстановить доступ.";
+    case "weak_password":
+      return "Пароль слишком простой для Supabase. Используйте не менее 8 символов, желательно с цифрами.";
+    case "email_address_invalid":
+    case "validation_failed":
+      return "Такой email не получится использовать — проверьте, нет ли опечатки.";
+    case "email_address_not_authorized":
+      return "Этот email не может зарегистрироваться на сайте. Напишите владельцу сайта.";
+    case "signup_disabled":
+      return "Регистрация сейчас отключена на сервере. Напишите владельцу сайта.";
+    case "over_email_send_rate_limit":
+      return "Слишком много попыток за короткое время. Подождите несколько минут и попробуйте снова.";
+    case "over_request_rate_limit":
+      return "Слишком много попыток. Подождите немного и попробуйте снова.";
+    default:
+      return "Не удалось создать аккаунт — сервер входа ответил ошибкой. Попробуйте ещё раз или напишите владельцу сайта.";
+  }
 }
 
 /**
@@ -60,35 +81,11 @@ export async function registerLoungeMemberAction(
 
   if (error) {
     console.error(error);
-    if (error.code === "user_already_exists") {
-      return { error: "Такой email уже зарегистрирован. Попробуйте войти." };
-    }
-    return { error: "Не удалось зарегистрироваться. Попробуйте ещё раз." };
+    return { error: toRegistrationErrorMessage(error.code) };
   }
 
   if (!data.session) {
     return { error: null, info: "Проверьте почту и подтвердите email, затем войдите." };
-  }
-
-  redirect(safeNextPath(formData.get("next")));
-}
-
-export async function signInLoungeMemberAction(
-  _prevState: LoungeAuthState,
-  formData: FormData,
-): Promise<LoungeAuthState> {
-  const parsed = loungeSignInSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
-  if (!parsed.success) {
-    return { error: "Проверьте правильность email и пароля" };
-  }
-
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error) {
-    return { error: "Неверный email или пароль" };
   }
 
   redirect(safeNextPath(formData.get("next")));

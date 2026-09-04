@@ -40,7 +40,7 @@ export function LikeButton({ messageId, liked, count, canLike, className, active
 
   if (!canLike) {
     return (
-      <Link href="/lounge/login" className={className}>
+      <Link href="/login" className={className}>
         {label}
       </Link>
     );

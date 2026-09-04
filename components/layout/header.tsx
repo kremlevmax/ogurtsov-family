@@ -99,7 +99,7 @@ export function Header({ search }: HeaderProps) {
               Выйти
             </button>
           ) : (
-            <Link href="/lounge/login" className={authLinkClassName}>
+            <Link href="/login" className={authLinkClassName}>
               Вход
             </Link>
           )}
@@ -145,7 +145,7 @@ export function Header({ search }: HeaderProps) {
               Выйти
             </button>
           ) : (
-            <Link href="/lounge/login" onClick={() => setMenuOpen(false)} className={mobileAuthLinkClassName}>
+            <Link href="/login" onClick={() => setMenuOpen(false)} className={mobileAuthLinkClassName}>
               Вход
             </Link>
           )}
