@@ -19,7 +19,10 @@ export const LOUNGE_FEED_TITLE = "Последние сообщения";
 export const LOUNGE_SORT_LABEL = "Сначала новые";
 
 export const LOUNGE_PINNED_LABEL = "ЗАКРЕПЛЕНО";
-export const LOUNGE_PINNED_TEXT = "Дорогие родные! Добавляйте в ленту семейные новости, вопросы и воспоминания.";
+// The fixed banner text is gone — PinnedMessageEditor
+// (components/lounge/pinned-message-editor.tsx) reads/writes a real
+// row instead (0014_lounge_pinned_message.sql, owner's request: an
+// editor can create/edit/delete it).
 
 export const LOUNGE_REPLY_LABEL = "Ответить";
 // "♡ Поддержать" is gone — LikeButton (components/lounge/like-button.tsx)

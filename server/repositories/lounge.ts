@@ -215,6 +215,34 @@ export async function softDeleteLoungeMessage(supabase: Client, messageId: strin
   if (error) throw error;
 }
 
+export interface LoungePinnedMessage {
+  body: string | null;
+  updatedAt: string;
+}
+
+/** The singleton pinned-banner row (0014_lounge_pinned_message.sql) — always exists, `body` is null when nothing is pinned. */
+export async function getLoungePinnedMessage(supabase: Client): Promise<LoungePinnedMessage | null> {
+  const { data, error } = await supabase
+    .from("lounge_pinned_message")
+    .select("body, updated_at")
+    .eq("id", true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { body: data.body, updatedAt: data.updated_at };
+}
+
+/** `body: null` clears the banner — there's nothing to actually delete on a singleton row. RLS: lounge_pinned_message_editor_update. */
+export async function setLoungePinnedMessage(supabase: Client, body: string | null, editorId: string): Promise<void> {
+  const { error } = await supabase
+    .from("lounge_pinned_message")
+    .update({ body, updated_by: editorId })
+    .eq("id", true)
+    .select("id")
+    .single();
+  if (error) throw error;
+}
+
 /** Toggle: like if not already liked, unlike if already liked. Requires an existing lounge_profiles row (RLS: lounge_message_likes_member_insert, 0012_lounge_message_likes.sql). */
 export async function toggleLoungeMessageLike(
   supabase: Client,

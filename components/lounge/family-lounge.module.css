@@ -312,6 +312,33 @@
   font: 400 14px/20px var(--lounge-sans);
 }
 
+/* ---------- Pinned banner: editor create/edit/delete (PinnedMessageEditor) ---------- */
+
+.pinnedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pinnedControls {
+  display: flex;
+  gap: 16px;
+}
+
+/* Editing form and the "nothing pinned yet" empty state both need the
+   box to grow past the display state's fixed 112px. */
+.pinnedEditing,
+.pinnedEmpty {
+  height: auto;
+}
+
+.pinnedButtonRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .message {
   padding: 18px 20px;
   display: flex;

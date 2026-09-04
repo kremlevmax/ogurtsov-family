@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FamilyLounge } from "@/components/lounge/family-lounge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getLoungeViewer } from "@/server/auth/require-lounge-member";
-import { listLoungeMessages } from "@/server/repositories/lounge";
+import { getLoungePinnedMessage, listLoungeMessages } from "@/server/repositories/lounge";
 
 export const metadata: Metadata = {
   title: "Семейная гостиная",
@@ -25,5 +25,15 @@ export default async function LoungePage() {
     loadError = true;
   }
 
-  return <FamilyLounge viewer={viewer} messages={messages} loadError={loadError} />;
+  // Same fallback shape as messages above — before 0014_lounge_pinned_message.sql
+  // is applied, this just degrades to "no banner" rather than a crashed page.
+  let pinnedMessage: string | null = null;
+  try {
+    const pinned = await getLoungePinnedMessage(supabase);
+    pinnedMessage = pinned?.body ?? null;
+  } catch (error) {
+    console.error(error);
+  }
+
+  return <FamilyLounge viewer={viewer} messages={messages} loadError={loadError} pinnedMessage={pinnedMessage} />;
 }

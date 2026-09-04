@@ -244,6 +244,12 @@ export interface Database {
         Update: Partial<{ message_id: string; user_id: string }>;
         Relationships: [];
       };
+      lounge_pinned_message: {
+        Row: { id: boolean; body: string | null; updated_at: string; updated_by: string | null };
+        Insert: Partial<Database["public"]["Tables"]["lounge_pinned_message"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["lounge_pinned_message"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

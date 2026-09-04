@@ -17,6 +17,7 @@ import type { LoungeMessageRow } from "@/server/repositories/lounge";
 import type { LoungeViewer } from "@/server/auth/require-lounge-member";
 import { DeleteLoungeMessageButton } from "./delete-lounge-message-button";
 import { LikeButton } from "./like-button";
+import { PinnedMessageEditor } from "./pinned-message-editor";
 import { ReplyComposer } from "./reply-composer";
 import styles from "./family-lounge.module.css";
 import {
@@ -29,8 +30,6 @@ import {
   LOUNGE_FILTERS_TITLE,
   LOUNGE_MESSAGE_LABEL,
   LOUNGE_MESSAGE_PLACEHOLDER,
-  LOUNGE_PINNED_LABEL,
-  LOUNGE_PINNED_TEXT,
   LOUNGE_PUBLISH_LABEL,
   LOUNGE_REPLY_LABEL,
   LOUNGE_RULES_LINES,
@@ -63,6 +62,8 @@ export interface FamilyLoungeProps {
   messages: LoungeMessageRow[];
   /** True if the feed failed to load (e.g. the DB migration isn't applied yet) — a distinct state from "no messages". */
   loadError?: boolean;
+  /** The pinned banner's current text, null if nothing is pinned (server/repositories/lounge.ts's getLoungePinnedMessage). */
+  pinnedMessage?: string | null;
 }
 
 /**
@@ -88,9 +89,11 @@ export interface FamilyLoungeProps {
  * request); "Ответить" opens a real single-level reply form
  * (0013_lounge_message_replies.sql) — none of this existed in the
  * source Figma design at all, which is why there's no "second state"
- * to match there either.
+ * to match there either. The "ЗАКРЕПЛЕНО" banner (PinnedMessageEditor)
+ * is likewise no longer fixed copy — an editor can create, edit and
+ * delete it (0014_lounge_pinned_message.sql, owner's request).
  */
-export function FamilyLounge({ viewer, messages, loadError = false }: FamilyLoungeProps) {
+export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessage = null }: FamilyLoungeProps) {
   const router = useRouter();
   const [activeFilterId, setActiveFilterId] = useState<FilterId>("all");
   const [openImageMessageId, setOpenImageMessageId] = useState<string | null>(null);
@@ -305,13 +308,7 @@ export function FamilyLounge({ viewer, messages, loadError = false }: FamilyLoun
               </div>
             </div>
 
-            <div className={styles.pinned} data-testid="lounge-pinned">
-              <span className={styles.pinnedLabel} data-testid="lounge-pinned-label">
-                <span className={styles.pinnedDot} aria-hidden="true" data-testid="lounge-pinned-dot" />
-                {LOUNGE_PINNED_LABEL}
-              </span>
-              <p className={styles.pinnedText}>{LOUNGE_PINNED_TEXT}</p>
-            </div>
+            <PinnedMessageEditor initialBody={pinnedMessage} isEditor={viewer.isEditor} />
 
             {loadError ? (
               <p className={clsx(styles.emptyState, styles.emptyStateError)}>

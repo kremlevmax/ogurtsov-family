@@ -45,3 +45,13 @@ export const loungeMessageSchema = z
     message: "Выберите тему",
     path: ["topic"],
   });
+
+/**
+ * The pinned banner (components/lounge/pinned-message-editor.tsx). An
+ * empty string is valid here — the action treats it as "clear the
+ * banner", same as the singleton row's `body` going back to null
+ * (supabase/migrations/0014_lounge_pinned_message.sql).
+ */
+export const loungePinnedMessageSchema = z.object({
+  body: z.string().trim().max(2000, "Слишком длинный текст"),
+});
