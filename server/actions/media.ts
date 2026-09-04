@@ -168,6 +168,36 @@ export async function deleteMediaAction(mediaId: string, personId: string): Prom
   }
 }
 
+/**
+ * Deletes a file from the public `/archive` list (CLAUDE.md 3.7/3.8) —
+ * editor-only, same soft-delete as deleteMediaAction, just not scoped
+ * to one person's page since an archive item can be linked to several
+ * people or none. `linkedPersonIds` comes from the client (SiteArchive
+ * already has it for display) purely to revalidate those people's own
+ * pages too — RLS still gates the actual delete via requireEditor().
+ */
+export async function deleteArchiveMediaAction(mediaId: string, linkedPersonIds: string[]): Promise<MediaActionState> {
+  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  try {
+    editor = await requireEditor();
+  } catch {
+    return { ok: false, error: "Нужно войти как редактор." };
+  }
+
+  try {
+    await mediaRepo.softDeleteMedia(editor.supabase, mediaId);
+    revalidatePath("/archive");
+    revalidatePath("/tree");
+    for (const personId of linkedPersonIds) {
+      revalidatePath(`/people/${personId}`);
+      revalidatePath(`/edit/people/${personId}`);
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toUserMessage(error, "Не удалось удалить файл. Попробуйте ещё раз.") };
+  }
+}
+
 export async function restoreMediaAction(mediaId: string): Promise<MediaActionState> {
   let editor: Awaited<ReturnType<typeof requireEditor>>;
   try {

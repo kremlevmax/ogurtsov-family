@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/header";
 import { SiteArchive } from "@/components/media/site-archive";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listAllMediaForPicker } from "@/server/repositories/media";
+import { getLoungeViewer } from "@/server/auth/require-lounge-member";
 
 export const metadata: Metadata = {
   title: "Архив документов",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function ArchivePage() {
   const supabase = await createSupabaseServerClient();
-  const allMedia = await listAllMediaForPicker(supabase);
+  const [allMedia, viewer] = await Promise.all([listAllMediaForPicker(supabase), getLoungeViewer()]);
   const documents = allMedia.filter((item) => item.kind !== "photo" && !item.unlisted);
 
   return (
@@ -24,7 +25,7 @@ export default async function ArchivePage() {
             Все документы и файлы семейного архива — {documents.length}.
           </p>
         </div>
-        <SiteArchive documents={documents} />
+        <SiteArchive documents={documents} isEditor={viewer.isEditor} />
       </main>
     </div>
   );

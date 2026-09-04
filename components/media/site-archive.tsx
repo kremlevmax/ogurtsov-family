@@ -3,6 +3,7 @@ import { Download, FileArchive, FileText, Music, Video } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import type { MediaPickerItem } from "@/features/media/types";
 import { formatFileSize } from "@/lib/media/format";
+import { DeleteArchiveMediaButton } from "./delete-archive-media-button";
 
 const KIND_ICONS: Partial<Record<MediaPickerItem["kind"], typeof FileText>> = {
   document: FileText,
@@ -15,10 +16,12 @@ const KIND_ICONS: Partial<Record<MediaPickerItem["kind"], typeof FileText>> = {
 
 export interface SiteArchiveProps {
   documents: MediaPickerItem[];
+  /** Shows a delete button per file when true — editors only (CLAUDE.md 5.3: both editors have equal write rights). */
+  isEditor?: boolean;
 }
 
 /** Every document/file across the whole family tree — CLAUDE.md 3.7 archive, separate from any one person's card. */
-export function SiteArchive({ documents }: SiteArchiveProps) {
+export function SiteArchive({ documents, isEditor = false }: SiteArchiveProps) {
   if (documents.length === 0) {
     return <p className="text-sm text-(--color-fg-muted)">Пока нет ни одного файла.</p>;
   }
@@ -65,6 +68,9 @@ export function SiteArchive({ documents }: SiteArchiveProps) {
                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
                 Скачать
               </a>
+            )}
+            {isEditor && (
+              <DeleteArchiveMediaButton mediaId={doc.id} linkedPersonIds={doc.linkedPersonIds} title={doc.title} />
             )}
           </li>
         );
