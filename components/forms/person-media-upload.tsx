@@ -21,6 +21,7 @@ import {
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { formatFileSize } from "@/lib/media/format";
 import type { PersonMedia } from "@/features/media/types";
+import { DOCUMENT_CATEGORIES } from "@/lib/validation/document-category";
 
 type Status = "idle" | "uploading" | "finalizing" | "error";
 
@@ -53,13 +54,15 @@ export function PersonMediaUpload({ personId, media }: PersonMediaUploadProps) {
   );
 }
 
-/** Shared presign → upload → finalize sequence — the only difference between the photo and document blocks is the accept list and the finalize call's dimensions. */
+/** Shared presign → upload → finalize sequence — the only difference between the photo and document blocks is the accept list, the category/transcript fields (documents only), and the finalize call's dimensions. */
 async function runUpload(
   personId: string,
   file: File,
   caption: string,
   onProgress: (percent: number) => void,
   onFinalizing: () => void,
+  category: string | null = null,
+  transcript: string | null = null,
 ): Promise<{ ok: boolean; error?: string }> {
   const presignResult = await presignPersonMediaAction({
     personId,
@@ -84,6 +87,8 @@ async function runUpload(
     pendingUploadId: presignResult.pendingUploadId,
     originalFilename: file.name,
     caption: caption.trim() || null,
+    category,
+    transcript: transcript?.trim() || null,
     width: dimensions?.width ?? null,
     height: dimensions?.height ?? null,
   });
@@ -265,6 +270,8 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [category, setCategory] = useState("");
+  const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -274,6 +281,8 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
   function resetForm() {
     setFile(null);
     setCaption("");
+    setCategory("");
+    setTranscript("");
     setStatus("idle");
     setProgress(0);
     setUploadError(null);
@@ -290,7 +299,15 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
     setStatus("uploading");
     setProgress(0);
 
-    const result = await runUpload(personId, file, caption, setProgress, () => setStatus("finalizing"));
+    const result = await runUpload(
+      personId,
+      file,
+      caption,
+      setProgress,
+      () => setStatus("finalizing"),
+      category || null,
+      transcript,
+    );
     setStatus(result.ok ? "idle" : "error");
     if (!result.ok) {
       setUploadError(result.error ?? null);
@@ -380,9 +397,35 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
         </label>
 
         {file && (
-          <Field label="Пояснение (необязательно)">
-            <Input value={caption} onChange={(event) => setCaption(event.target.value)} disabled={isBusy} />
-          </Field>
+          <>
+            <Field label="Пояснение (необязательно)">
+              <Input value={caption} onChange={(event) => setCaption(event.target.value)} disabled={isBusy} />
+            </Field>
+            <Field label="Категория (необязательно)">
+              <select
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                disabled={isBusy}
+                className="h-10 rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 text-sm text-(--color-fg) focus-visible:outline-none"
+              >
+                <option value="">Без категории</option>
+                {DOCUMENT_CATEGORIES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Расшифровка текста (необязательно)">
+              <textarea
+                value={transcript}
+                onChange={(event) => setTranscript(event.target.value)}
+                disabled={isBusy}
+                rows={4}
+                className="rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-sm text-(--color-fg) focus-visible:outline-none"
+              />
+            </Field>
+          </>
         )}
 
         {status === "uploading" && (

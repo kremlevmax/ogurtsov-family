@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
@@ -33,6 +33,8 @@ export function PhotoLightbox<T extends LightboxPhoto>({
   const photo = photos[index];
   const url = getMediaPublicUrl(photo.objectKey);
   const [isZoomed, setIsZoomed] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<Element | null>(null);
   // Reset zoom when the photo changes — adjusted during render (React's
   // documented pattern for this) rather than an effect, so it can't
   // flash the previous photo at full size for one frame first.
@@ -42,11 +44,37 @@ export function PhotoLightbox<T extends LightboxPhoto>({
     setIsZoomed(false);
   }
 
+  // Focus trap + focus return (mount/unmount only — this dialog stays
+  // mounted across prev/next, only its content changes, so re-running
+  // this on every index change would fight the user's own focus moves).
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement;
+    dialogRef.current?.focus();
+    return () => {
+      if (previouslyFocusedRef.current instanceof HTMLElement) previouslyFocusedRef.current.focus();
+    };
+  }, []);
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowRight") onIndexChange((index + 1) % photos.length);
       if (event.key === "ArrowLeft") onIndexChange((index - 1 + photos.length) % photos.length);
+      if (event.key === "Tab") {
+        const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusable || focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -55,14 +83,20 @@ export function PhotoLightbox<T extends LightboxPhoto>({
   if (typeof document === "undefined" || !url) return null;
 
   return createPortal(
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[60] flex flex-col bg-black/90 p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      className="fixed inset-0 z-[60] flex flex-col bg-black/90 p-4 focus:outline-none"
+    >
       <div className="flex items-center justify-between text-white">
         <p className="text-sm">{photo.title}</p>
         <button
           type="button"
           onClick={onClose}
           aria-label="Закрыть просмотр"
-          className="rounded-full p-1.5 hover:bg-white/10"
+          className="cursor-pointer rounded-full p-1.5 hover:bg-white/10"
         >
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -79,7 +113,7 @@ export function PhotoLightbox<T extends LightboxPhoto>({
             type="button"
             onClick={() => onIndexChange((index - 1 + photos.length) % photos.length)}
             aria-label="Предыдущее фото"
-            className="fixed left-4 top-1/2 -translate-y-1/2 rounded-full p-2 text-white hover:bg-white/10"
+            className="fixed left-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-2 text-white hover:bg-white/10"
           >
             <ChevronLeft className="h-6 w-6" aria-hidden="true" />
           </button>
@@ -100,7 +134,7 @@ export function PhotoLightbox<T extends LightboxPhoto>({
             type="button"
             onClick={() => onIndexChange((index + 1) % photos.length)}
             aria-label="Следующее фото"
-            className="fixed right-4 top-1/2 -translate-y-1/2 rounded-full p-2 text-white hover:bg-white/10"
+            className="fixed right-4 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-2 text-white hover:bg-white/10"
           >
             <ChevronRight className="h-6 w-6" aria-hidden="true" />
           </button>

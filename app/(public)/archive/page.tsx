@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/layout/header";
-import { SiteArchive } from "@/components/media/site-archive";
+import { Suspense } from "react";
+import { DocumentGallery } from "@/components/media/document-gallery";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listAllMediaForPicker } from "@/server/repositories/media";
 import { getLoungeViewer } from "@/server/auth/require-lounge-member";
 
 export const metadata: Metadata = {
-  title: "Архив документов",
-  description: "Все документы и файлы семейного архива Огурцовых в одном месте.",
+  title: "Документы",
+  description: "Архивные документы и файлы семейного архива Огурцовых — по категориям, с поиском.",
 };
 
 export default async function ArchivePage() {
@@ -16,17 +16,8 @@ export default async function ArchivePage() {
   const documents = allMedia.filter((item) => item.kind !== "photo" && !item.unlisted);
 
   return (
-    <div className="flex flex-1 flex-col">
-      <Header />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 py-8">
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-(--color-fg)">Архив документов</h1>
-          <p className="mt-1 text-sm text-(--color-fg-muted)">
-            Все документы и файлы семейного архива — {documents.length}.
-          </p>
-        </div>
-        <SiteArchive documents={documents} isEditor={viewer.isEditor} />
-      </main>
-    </div>
+    <Suspense>
+      <DocumentGallery documents={documents} isMember={viewer.isMember} isEditor={viewer.isEditor} />
+    </Suspense>
   );
 }

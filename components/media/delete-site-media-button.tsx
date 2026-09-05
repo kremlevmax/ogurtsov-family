@@ -46,7 +46,7 @@ export function DeleteSiteMediaButton({ mediaId, linkedPersonIds, title, variant
           title="Удалить файл"
           aria-label={`Удалить файл «${title}»`}
           onClick={handleDelete}
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-(--color-danger) focus-visible:opacity-100 disabled:opacity-100 disabled:hover:bg-black/55 group-hover:opacity-100"
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/55 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-(--color-danger) focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:bg-black/55 group-hover:opacity-100"
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
@@ -67,7 +67,7 @@ export function DeleteSiteMediaButton({ mediaId, linkedPersonIds, title, variant
         title="Удалить файл"
         aria-label={`Удалить файл «${title}»`}
         onClick={handleDelete}
-        className="text-label inline-flex items-center gap-1 text-[10px] text-(--color-fg-muted) hover:text-(--color-danger) disabled:opacity-50"
+        className="text-label inline-flex cursor-pointer items-center gap-1 text-[10px] text-(--color-fg-muted) hover:text-(--color-danger) disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         {isPending ? "Удаляем…" : "Удалить"}

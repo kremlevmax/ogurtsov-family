@@ -48,3 +48,10 @@ next-env.d.ts
 
 # supabase CLI local state
 /supabase/.temp/
+
+# wrangler local dev state (workers/media) — machine-local cache, not source
+.wrangler/
+
+# Figma handoff working package (reference PNGs/specs) — large binary
+# working material, not project source; kept locally only
+/ogurtsovy_pages_handoff_v2/

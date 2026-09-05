@@ -18,21 +18,33 @@ const CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 const mediaWorker = {
   async fetch(request: Request, env: Env): Promise<Response> {
+    // CORS: every object here is already public/unauthenticated
+    // (CLAUDE.md 3.1) — this only exists so cross-origin `fetch()`
+    // reads work (the document viewer's pdf.js needs to parse a PDF's
+    // bytes itself, not just point an <img>/<a> at the URL, which
+    // doesn't need CORS at all). Range is not a CORS-safelisted
+    // request header, so pdf.js's ranged requests trigger a real
+    // preflight — handled below.
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: new Headers(CORS_HEADERS) });
+    }
     if (request.method !== "GET" && request.method !== "HEAD") {
-      return new Response("Метод не поддерживается", { status: 405, headers: { Allow: "GET, HEAD" } });
+      const headers = new Headers(CORS_HEADERS);
+      headers.set("allow", "GET, HEAD, OPTIONS");
+      return new Response("Метод не поддерживается", { status: 405, headers });
     }
 
     const url = new URL(request.url);
     const objectKey = decodeObjectKey(url.pathname);
     if (!objectKey) {
-      return new Response("Не найдено", { status: 404 });
+      return new Response("Не найдено", { status: 404, headers: new Headers(CORS_HEADERS) });
     }
 
     const rangeHeader = request.headers.get("range");
 
     if (request.method === "HEAD") {
       const object = await env.MEDIA_BUCKET.head(objectKey);
-      if (!object) return new Response("Не найдено", { status: 404 });
+      if (!object) return new Response("Не найдено", { status: 404, headers: new Headers(CORS_HEADERS) });
       return new Response(null, { status: 200, headers: buildHeaders(object, null) });
     }
 
@@ -42,7 +54,7 @@ const mediaWorker = {
     });
 
     if (!object) {
-      return new Response("Не найдено", { status: 404 });
+      return new Response("Не найдено", { status: 404, headers: new Headers(CORS_HEADERS) });
     }
 
     if (!("body" in object) || !object.body) {
@@ -80,6 +92,7 @@ function buildHeaders(
   headers.set("cache-control", CACHE_CONTROL);
   headers.set("accept-ranges", "bytes");
   headers.set("x-content-type-options", "nosniff");
+  for (const [key, value] of Object.entries(CORS_HEADERS)) headers.set(key, value);
 
   const contentType = headers.get("content-type");
   const disposition = isInlineType(contentType) ? "inline" : "attachment";
@@ -95,6 +108,21 @@ function buildHeaders(
 
   return headers;
 }
+
+/**
+ * Every object here is already public/unauthenticated (CLAUDE.md 3.1),
+ * so a permissive origin is safe — unlike the presigned-PUT upload flow
+ * (CLAUDE.md 5.4), which deliberately restricts CORS. `Access-Control-
+ * Expose-Headers` is required for pdf.js to read `Content-Range`/
+ * `Content-Length` off a cross-origin response at all; without it the
+ * browser hides them even though the request itself succeeds.
+ */
+const CORS_HEADERS: Record<string, string> = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, HEAD, OPTIONS",
+  "access-control-allow-headers": "Range",
+  "access-control-expose-headers": "Content-Range, Content-Length, Accept-Ranges, ETag",
+};
 
 /**
  * Inline for browser-displayable images and audio; TIFF scans, video,

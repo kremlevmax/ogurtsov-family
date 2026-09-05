@@ -146,6 +146,8 @@ export interface Database {
           updated_by: string | null;
           deleted_at: string | null;
           unlisted: boolean;
+          category: string | null;
+          transcript: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["media"]["Row"]> & {
           kind: MediaKind;

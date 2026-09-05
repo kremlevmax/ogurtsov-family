@@ -34,10 +34,9 @@ const ARCHIVE_TILES = [
  * (rod-ogurtsovykh-homepage-typography.md, docs/DECISIONS.md) layer by
  * layer, with two deliberate deviations: `--color-fg-muted` is
  * darkened from the source's literal #858579 for WCAG contrast (see
- * globals.css), and "Читать полностью →" / "▷ Слушать аудио" /
- * "Смотреть семейные места →" stay without an underline per the
- * owner's explicit, more recent instruction, even though the extracted
- * spec marks them underlined.
+ * globals.css), and "Подробнее о проекте →" / "Смотреть семейные места →"
+ * stay without an underline per the owner's explicit, more recent
+ * instruction, even though the extracted spec marks them underlined.
  */
 export default function HomePage() {
   return (
@@ -105,17 +104,17 @@ export default function HomePage() {
                       Открыть родословное древо
                     </Link>
                     <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-[12px]">
-                      <a
-                        href="#story"
-                        className="font-label flex h-[50px] flex-1 items-center justify-center border border-(--color-border) bg-(--color-bg) px-4 text-[15px] font-bold tracking-[0.065px] text-(--color-heading) uppercase transition-colors hover:bg-(--color-bg-inset)"
-                      >
-                        Читать историю
-                      </a>
                       <Link
-                        href="/story#audio"
+                        href="/archive"
                         className="font-label flex h-[50px] flex-1 items-center justify-center border border-(--color-border) bg-(--color-bg) px-4 text-[15px] font-bold tracking-[0.065px] text-(--color-heading) uppercase transition-colors hover:bg-(--color-bg-inset)"
                       >
-                        Слушать аудиоверсию
+                        Архив
+                      </Link>
+                      <Link
+                        href="/story"
+                        className="font-label flex h-[50px] flex-1 items-center justify-center border border-(--color-border) bg-(--color-bg) px-4 text-[15px] font-bold tracking-[0.065px] text-(--color-heading) uppercase transition-colors hover:bg-(--color-bg-inset)"
+                      >
+                        О проекте
                       </Link>
                     </div>
                   </div>
@@ -182,10 +181,7 @@ export default function HomePage() {
           </p>
           <div className="mt-6 flex flex-wrap gap-6">
             <Link href="/story" className="font-label text-[18px] font-bold leading-[22px] text-(--color-heading) transition-opacity hover:opacity-80">
-              Читать полностью →
-            </Link>
-            <Link href="/story#audio" className="font-label text-[18px] leading-[22px] font-medium text-(--color-heading) transition-opacity hover:opacity-80">
-              ▷ Слушать аудио
+              Подробнее о проекте →
             </Link>
           </div>
         </div>

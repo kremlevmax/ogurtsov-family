@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, MediaKind } from "@/lib/supabase/types";
-import type { DeletedMediaItem, MediaPickerItem, PersonMedia } from "@/features/media/types";
+import type { DeletedMediaItem, DocumentDetail, MediaPickerItem, PersonMedia } from "@/features/media/types";
 
 type Client = SupabaseClient<Database>;
 
@@ -85,6 +85,12 @@ export interface CreateMediaInput {
   width: number | null;
   height: number | null;
   unlisted: boolean;
+  /** Free-text approximate date ("около 1980", "2024 год") — `media.date_text`. Optional: only the Places photo form (server/actions/place-media.ts) sets this today. */
+  dateText?: string | null;
+  /** One of lib/validation/document-category.ts's DOCUMENT_CATEGORIES — documents only, optional. */
+  category?: string | null;
+  /** Free-text transcript of a handwritten/hard-to-read document — the "Расшифровка" viewer tab. Optional. */
+  transcript?: string | null;
 }
 
 export async function createMedia(supabase: Client, input: CreateMediaInput, editorId: string): Promise<string> {
@@ -95,6 +101,9 @@ export async function createMedia(supabase: Client, input: CreateMediaInput, edi
       title: input.title,
       caption: input.caption,
       source_or_owner: input.sourceOrOwner,
+      date_text: input.dateText ?? null,
+      category: input.category ?? null,
+      transcript: input.transcript ?? null,
       object_key: input.objectKey,
       original_filename: input.originalFilename,
       mime_type: input.mimeType,
@@ -315,7 +324,9 @@ export async function getProfilePhotoObjectKeys(
 export async function listAllMediaForPicker(supabase: Client): Promise<MediaPickerItem[]> {
   const { data: mediaRows, error: mediaError } = await supabase
     .from("media")
-    .select("id, kind, title, caption, extension, original_filename, size_bytes, object_key, unlisted")
+    .select(
+      "id, kind, title, caption, date_text, category, extension, original_filename, size_bytes, object_key, unlisted",
+    )
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (mediaError) throw mediaError;
@@ -350,6 +361,8 @@ export async function listAllMediaForPicker(supabase: Client): Promise<MediaPick
       kind: row.kind,
       title: row.title,
       caption: row.caption,
+      dateText: row.date_text,
+      category: row.category,
       extension: row.extension,
       originalFilename: row.original_filename,
       sizeBytes: row.size_bytes,
@@ -359,6 +372,56 @@ export async function listAllMediaForPicker(supabase: Client): Promise<MediaPick
       unlisted: row.unlisted,
     };
   });
+}
+
+/**
+ * Full detail for one document — /archive/[documentId] (DocumentViewer).
+ * Returns null for anything that isn't a real, public document today:
+ * missing/deleted/unlisted, or a photo (photos have their own
+ * lightbox, not this route) — the page 404s in that case.
+ */
+export async function getDocumentDetail(supabase: Client, mediaId: string): Promise<DocumentDetail | null> {
+  const { data: row, error } = await supabase
+    .from("media")
+    .select(
+      "id, kind, title, caption, category, transcript, source_or_owner, date_text, extension, original_filename, mime_type, size_bytes, object_key, unlisted",
+    )
+    .eq("id", mediaId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!row || row.kind === "photo" || row.unlisted) return null;
+
+  const { data: links, error: linksError } = await supabase
+    .from("person_media")
+    .select("person_id")
+    .eq("media_id", mediaId);
+  if (linksError) throw linksError;
+
+  const personIds = (links ?? []).map((link) => link.person_id);
+  const { data: peopleRows, error: peopleError } =
+    personIds.length === 0
+      ? { data: [] as { id: string; display_name: string }[], error: null }
+      : await supabase.from("people").select("id, display_name").in("id", personIds);
+  if (peopleError) throw peopleError;
+
+  return {
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    caption: row.caption,
+    category: row.category,
+    transcript: row.transcript,
+    sourceOrOwner: row.source_or_owner,
+    dateText: row.date_text,
+    extension: row.extension,
+    originalFilename: row.original_filename,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    objectKey: row.object_key,
+    linkedPersonIds: (peopleRows ?? []).map((person) => person.id),
+    linkedPersonNames: (peopleRows ?? []).map((person) => person.display_name),
+  };
 }
 
 /**

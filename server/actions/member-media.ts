@@ -92,6 +92,8 @@ export interface FinalizePersonMediaInput {
   pendingUploadId: string;
   originalFilename: string;
   caption: string | null;
+  category: string | null;
+  transcript: string | null;
   width: number | null;
   height: number | null;
 }
@@ -151,6 +153,8 @@ export async function finalizePersonMediaAction(input: FinalizePersonMediaInput)
         title: input.originalFilename,
         caption: input.caption,
         sourceOrOwner: null,
+        category: input.category,
+        transcript: input.transcript,
         objectKey: pending.objectKey,
         originalFilename: input.originalFilename,
         mimeType: pending.expectedMimeType,

@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Field } from "./form-field";
 import { presignUploadAction, finalizeUploadAction } from "@/server/actions/media";
 import { readImageDimensions, uploadWithProgress, UPLOAD_ACCEPT } from "@/lib/utils/upload";
+import { validateFileMetadata } from "@/lib/validation/media";
+import { DOCUMENT_CATEGORIES } from "@/lib/validation/document-category";
 
 type Status = "idle" | "uploading" | "finalizing" | "error";
 
@@ -22,6 +24,8 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [sourceOrOwner, setSourceOrOwner] = useState("");
+  const [category, setCategory] = useState("");
+  const [transcript, setTranscript] = useState("");
   const [unlisted, setUnlisted] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
@@ -32,6 +36,8 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
     setTitle("");
     setCaption("");
     setSourceOrOwner("");
+    setCategory("");
+    setTranscript("");
     setUnlisted(false);
     setStatus("idle");
     setProgress(0);
@@ -87,6 +93,8 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
       title: title.trim() || file.name,
       caption: caption.trim() || null,
       sourceOrOwner: sourceOrOwner.trim() || null,
+      category: isDocumentLike ? category || null : null,
+      transcript: isDocumentLike ? transcript.trim() || null : null,
       personId,
       width: dimensions?.width ?? null,
       height: dimensions?.height ?? null,
@@ -104,6 +112,12 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
   }
 
   const isBusy = status === "uploading" || status === "finalizing";
+  // Client-side guess only, to decide whether to show the category/
+  // transcript fields (photos don't have them) — the server re-detects
+  // the real kind from the uploaded bytes regardless (CLAUDE.md 13).
+  const isDocumentLike = file
+    ? validateFileMetadata(file.name, file.type || "application/octet-stream", file.size).kind !== "photo"
+    : false;
 
   return (
     <form
@@ -140,6 +154,34 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
               disabled={isBusy}
             />
           </Field>
+          {isDocumentLike && (
+            <>
+              <Field label="Категория (необязательно)">
+                <select
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  disabled={isBusy}
+                  className="h-10 rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 text-sm text-(--color-fg) focus-visible:outline-none"
+                >
+                  <option value="">Без категории</option>
+                  {DOCUMENT_CATEGORIES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Расшифровка текста (необязательно)">
+                <textarea
+                  value={transcript}
+                  onChange={(event) => setTranscript(event.target.value)}
+                  disabled={isBusy}
+                  rows={4}
+                  className="rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-sm text-(--color-fg) focus-visible:outline-none"
+                />
+              </Field>
+            </>
+          )}
           <label className="flex items-start gap-2 text-sm text-(--color-fg)">
             <input
               type="checkbox"

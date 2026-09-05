@@ -32,6 +32,10 @@ export interface MediaPickerItem {
   kind: MediaKind;
   title: string;
   caption: string | null;
+  /** Free-text approximate date ("около 1980", "2024 год") — `media.date_text`. Used by the Places photo tab; null for most people photos, which don't set it. */
+  dateText: string | null;
+  /** One of lib/validation/document-category.ts's DOCUMENT_CATEGORIES, or null (groups under "Другие документы" in the UI) — documents only. */
+  category: string | null;
   extension: string;
   originalFilename: string;
   sizeBytes: number;
@@ -48,5 +52,28 @@ export interface DeletedMediaItem {
   title: string;
   extension: string;
   deletedAt: string;
+  linkedPersonNames: string[];
+}
+
+/**
+ * Full detail for one document — /archive/[documentId] (DocumentViewer).
+ * A superset of MediaPickerItem's fields plus the two viewer-only tabs'
+ * content (transcript, sourceOrOwner) that the gallery card never needs.
+ */
+export interface DocumentDetail {
+  id: string;
+  kind: MediaKind;
+  title: string;
+  caption: string | null;
+  category: string | null;
+  transcript: string | null;
+  sourceOrOwner: string | null;
+  dateText: string | null;
+  extension: string;
+  originalFilename: string;
+  mimeType: string;
+  sizeBytes: number;
+  objectKey: string;
+  linkedPersonIds: string[];
   linkedPersonNames: string[];
 }

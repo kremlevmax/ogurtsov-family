@@ -1,0 +1,32 @@
+/*
+ * Exact tokens from ogurtsovy_pages_handoff_v2/spec/design-tokens.json,
+ * scoped to Photos/Documents only via this class — never overrides the
+ * site-wide --color- and --radius- tokens in app/globals.css, so no other
+ * page is affected. Prefixed --h- to make the scoping obvious in devtools.
+ */
+.scope {
+  --h-paper: #f7f3e8;
+  --h-paper-light: #fffdf6;
+  --h-media-bg: #f4ecdd;
+  --h-forest-900: #0e3d29;
+  --h-forest-800: #173d2b;
+  --h-forest-hover: #22563a;
+  --h-gold-700: #8a651f;
+  --h-gold-500: #b58a43;
+  --h-gold-200: #d8cfba;
+  --h-ink: #302c27;
+  --h-muted: #6b665e;
+  --h-white-warm: #fff8e9;
+
+  --h-radius-panel: 11px;
+  --h-radius-control: 7px;
+  --h-radius-media: 9px;
+  --h-radius-chip: 5px;
+
+  --h-border-hairline: 1px;
+  --h-shadow-panel: 0 3px 12px rgba(108, 75, 30, 0.12);
+  --h-shadow-card: 0 2px 6px rgba(95, 66, 26, 0.08);
+
+  background: var(--h-paper);
+  color: var(--h-ink);
+}

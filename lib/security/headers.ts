@@ -39,10 +39,21 @@ function buildContentSecurityPolicy(): string {
   // requesting it ("Media load rejected by URL safety check" — real
   // bug report, the /story page's audio player never loaded).
   const mediaOrigin = originOf(process.env.NEXT_PUBLIC_MEDIA_BASE_URL);
+  // The browser Supabase client (auth token refresh, session calls —
+  // lib/supabase/client.ts) talks to this origin directly via fetch().
+  // Without it in connect-src, session refresh silently fails.
+  const supabaseOrigin = originOf(process.env.NEXT_PUBLIC_SUPABASE_URL);
 
   const imgSrc = ["img-src", "'self'", "data:", "blob:", mediaOrigin].filter(Boolean).join(" ");
   const mediaSrc = ["media-src", "'self'", mediaOrigin].filter(Boolean).join(" ");
-  const connectSrc = ["connect-src", "'self'", ...r2Origins].filter(Boolean).join(" ");
+  // pdf.js (the document viewer) reads a file's bytes via `fetch()`,
+  // governed by connect-src — separate from img-src/media-src, which
+  // only cover <img>/<audio> tag loads. Without mediaOrigin here too,
+  // the browser blocks the fetch before it even reaches the network,
+  // regardless of the media worker's own CORS headers.
+  const connectSrc = ["connect-src", "'self'", mediaOrigin, supabaseOrigin, ...r2Origins]
+    .filter(Boolean)
+    .join(" ");
 
   return [
     "default-src 'self'",

@@ -16,10 +16,10 @@ export interface HeaderProps {
 const NAV_LINKS = [
   { href: "/", label: "Главная" },
   { href: "/tree", label: "Древо" },
-  { href: "/story", label: "История" },
   { href: "/archive", label: "Архив" },
-  { href: "/#places", label: "Карта" },
+  { href: "/gallery", label: "Фотографии" },
   { href: "/lounge", label: "Гостиная" },
+  { href: "/story", label: "О проекте" },
 ] as const;
 
 // Same font/weight/tracking/color as the other nav links, exactly
@@ -33,7 +33,8 @@ const NAV_LINKS = [
 // DeleteLoungeMessageButton), so the <button> is a direct flex-row
 // item with nothing wrapping it, identical in structure to the <a>
 // siblings it needs to match.
-const authLinkClassName = "text-label text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:text-(--color-heading)";
+const authLinkClassName =
+  "text-label cursor-pointer text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:text-(--color-heading) disabled:cursor-not-allowed";
 const mobileAuthLinkClassName =
   "text-label rounded-[var(--radius-sm)] px-2 py-2 text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-heading)";
 
@@ -111,7 +112,7 @@ export function Header({ search }: HeaderProps) {
           aria-expanded={menuOpen}
           aria-controls="mobile-nav"
           aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
-          className="shrink-0 rounded-[var(--radius-sm)] p-2 text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) lg:hidden"
+          className="shrink-0 cursor-pointer rounded-[var(--radius-sm)] p-2 text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) lg:hidden"
         >
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>

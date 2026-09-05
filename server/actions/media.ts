@@ -59,6 +59,8 @@ export interface FinalizeUploadInput {
   title: string;
   caption: string | null;
   sourceOrOwner: string | null;
+  category: string | null;
+  transcript: string | null;
   personId: string;
   width: number | null;
   height: number | null;
@@ -118,6 +120,8 @@ export async function finalizeUploadAction(input: FinalizeUploadInput): Promise<
         title: input.title,
         caption: input.caption,
         sourceOrOwner: input.sourceOrOwner,
+        category: input.category,
+        transcript: input.transcript,
         objectKey: pending.objectKey,
         originalFilename: input.originalFilename,
         mimeType: pending.expectedMimeType,
