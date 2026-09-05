@@ -12,6 +12,7 @@ import type { Person, Relationship } from "@/features/people/types";
 import type { PersonMedia } from "@/features/media/types";
 import type { SearchablePerson } from "@/features/search/normalize";
 import { buildDisplayNameFirstNameFirst, compareByFirstName, compareByName } from "@/lib/names/display-name";
+import heritageStyles from "@/components/media/heritage-tokens.module.css";
 
 type PeopleListSortMode = "lastName" | "firstName" | "birthYear";
 
@@ -100,99 +101,99 @@ export function FamilyTreeExplorer({
   return (
     <div className="flex flex-1 flex-col">
       <Header search={<SearchBox people={searchablePeople} onSelect={selectPerson} />} />
-      <main className="flex flex-1 flex-col gap-4 p-4">
-        {viewer.memberId && (
-          <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-4 py-2">
-            <p className="text-sm text-(--color-fg-muted)">Вы вошли как {viewer.displayName}</p>
-            <Link
-              href={viewer.isEditor ? "/edit" : "/tree/add"}
-              className="text-label text-xs text-(--color-accent) hover:underline"
-            >
-              {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
-            </Link>
-          </div>
-        )}
-
-        <div className="relative h-[75vh] min-h-[420px] overflow-hidden rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg)">
-          <TreeCanvas
-            people={treePeople}
-            relationships={relationships}
-            selectedPersonId={selectedPersonId}
-            onSelectPerson={selectPerson}
-          />
-          {selectedPerson && (
-            <PersonDrawer
-              person={selectedPerson}
-              people={people}
-              relationships={relationships}
-              media={mediaByPersonId[selectedPerson.id] ?? []}
-              viewer={{ isEditor: viewer.isEditor, memberId: viewer.memberId }}
-              onClose={() => selectPerson(null)}
-              onPersonSelect={selectPerson}
-            />
-          )}
-        </div>
-
-        <details className="rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-4">
-          <summary className="text-label cursor-pointer text-xs text-(--color-fg-muted)">
-            Список всех людей (доступная альтернатива дереву)
-          </summary>
-
-          <div className="mt-3 flex items-center gap-2">
-            <label htmlFor="people-list-sort" className="text-label text-xs text-(--color-fg-muted)">
-              Сортировка
-            </label>
-            <select
-              id="people-list-sort"
-              value={peopleListSort}
-              onChange={(event) => setPeopleListSort(event.target.value as PeopleListSortMode)}
-              className="h-8 rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg) px-2 text-xs text-(--color-fg) focus-visible:outline-none"
-            >
-              {(Object.entries(SORT_MODE_LABELS) as [PeopleListSortMode, string][]).map(([mode, label]) => (
-                <option key={mode} value={mode}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <ul className="mt-3 columns-1 gap-x-6 sm:columns-2">
-            {sortedListPeople.map((person) => (
-              <li key={person.id} className="mb-1 break-inside-avoid">
-                <Link
-                  href={`/people/${person.id}`}
-                  className="text-sm text-(--color-fg) underline-offset-2 hover:underline"
-                >
-                  {person.listLabel || "Без имени"}
-                  {person.lifeSpan && (
-                    <span className="text-label ml-1.5 text-[11px] text-(--color-fg-muted)">
-                      {person.lifeSpan}
-                    </span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </details>
-
-        {people.length === 0 && (
-          <p className="text-sm text-(--color-fg-muted)">
-            В дереве пока никого нет.{" "}
-            {viewer.memberId ? (
+      <div className={heritageStyles.scope}>
+        <main className="mx-auto flex w-full max-w-[1450px] flex-1 flex-col gap-4 p-4 pt-10 pb-16">
+          {viewer.memberId && (
+            <div className="flex items-center justify-between rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-4 py-2">
+              <p className="text-sm text-(--h-muted)">Вы вошли как {viewer.displayName}</p>
               <Link
-                href={viewer.isEditor ? "/edit/people/new" : "/tree/add"}
-                className="text-(--color-accent) hover:underline"
+                href={viewer.isEditor ? "/edit" : "/tree/add"}
+                className="text-label text-xs text-(--h-forest-800) hover:underline"
               >
-                Добавить первого человека
+                {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
               </Link>
-            ) : (
-              <Link href="/register" className="text-(--color-accent) hover:underline">
-                Зарегистрируйтесь, чтобы начать заполнять дерево.
-              </Link>
+            </div>
+          )}
+
+          <div className="relative h-[75vh] min-h-[420px] overflow-hidden rounded-[var(--h-radius-panel)] border border-(--h-gold-500) bg-(--h-paper-light) shadow-(--h-shadow-panel)">
+            <TreeCanvas
+              people={treePeople}
+              relationships={relationships}
+              selectedPersonId={selectedPersonId}
+              onSelectPerson={selectPerson}
+            />
+            {selectedPerson && (
+              <PersonDrawer
+                person={selectedPerson}
+                people={people}
+                relationships={relationships}
+                media={mediaByPersonId[selectedPerson.id] ?? []}
+                viewer={{ isEditor: viewer.isEditor, memberId: viewer.memberId }}
+                onClose={() => selectPerson(null)}
+                onPersonSelect={selectPerson}
+              />
             )}
-          </p>
-        )}
-      </main>
+          </div>
+
+          <details className="rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) p-4">
+            <summary className="text-label cursor-pointer text-xs text-(--h-muted)">
+              Список всех людей (доступная альтернатива дереву)
+            </summary>
+
+            <div className="mt-3 flex items-center gap-2">
+              <label htmlFor="people-list-sort" className="text-label text-xs text-(--h-muted)">
+                Сортировка
+              </label>
+              <select
+                id="people-list-sort"
+                value={peopleListSort}
+                onChange={(event) => setPeopleListSort(event.target.value as PeopleListSortMode)}
+                className="h-8 rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper) px-2 text-xs text-(--h-ink) focus-visible:outline-none"
+              >
+                {(Object.entries(SORT_MODE_LABELS) as [PeopleListSortMode, string][]).map(([mode, label]) => (
+                  <option key={mode} value={mode}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <ul className="mt-3 columns-1 gap-x-6 sm:columns-2">
+              {sortedListPeople.map((person) => (
+                <li key={person.id} className="mb-1 break-inside-avoid">
+                  <Link
+                    href={`/people/${person.id}`}
+                    className="text-sm text-(--h-ink) underline-offset-2 hover:underline"
+                  >
+                    {person.listLabel || "Без имени"}
+                    {person.lifeSpan && (
+                      <span className="text-label ml-1.5 text-[11px] text-(--h-muted)">{person.lifeSpan}</span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+
+          {people.length === 0 && (
+            <p className="text-sm text-(--h-muted)">
+              В дереве пока никого нет.{" "}
+              {viewer.memberId ? (
+                <Link
+                  href={viewer.isEditor ? "/edit/people/new" : "/tree/add"}
+                  className="text-(--h-forest-800) hover:underline"
+                >
+                  Добавить первого человека
+                </Link>
+              ) : (
+                <Link href="/register" className="text-(--h-forest-800) hover:underline">
+                  Зарегистрируйтесь, чтобы начать заполнять дерево.
+                </Link>
+              )}
+            </p>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

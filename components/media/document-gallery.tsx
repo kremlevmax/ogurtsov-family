@@ -8,7 +8,6 @@ import type { MediaPickerItem } from "@/features/media/types";
 import { normalizeSearchText } from "@/features/search/normalize";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
 import { DocumentCard } from "./document-card";
-import styles from "./heritage-tokens.module.css";
 
 const PAGE_SIZE = 6;
 const GALLERY_URL_STORAGE_KEY = "archive:lastGalleryUrl";
@@ -75,7 +74,7 @@ export function DocumentGallery({ documents, isMember, isEditor }: DocumentGalle
   const visible = filtered.slice(0, visibleCount);
 
   return (
-    <div className={styles.scope}>
+    <div>
       <div className="flex flex-col gap-3 px-[38px] pt-9 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative flex-1 sm:max-w-[470px]">
           <Search

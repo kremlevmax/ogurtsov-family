@@ -44,7 +44,7 @@ export function SearchBox({ people, onSelect }: SearchBoxProps) {
           aria-label="Поиск по семейному дереву"
           value={rawQuery}
           onChange={(event) => setRawQuery(event.target.value)}
-          className="border-(--color-border) bg-(--color-bg-inset) pl-9"
+          className="border-(--color-border) bg-(--color-bg-inset) pl-9 text-lg"
         />
       </div>
 

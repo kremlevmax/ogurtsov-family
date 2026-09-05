@@ -26,6 +26,43 @@ export function readImageDimensions(file: File): Promise<{ width: number; height
   });
 }
 
+/**
+ * Renders a PDF's first page to a small PNG, client-side, before
+ * upload — pdf.js is already loaded for the /archive viewer
+ * (components/media/pdf-page-view.tsx), so reusing it here costs
+ * nothing extra and avoids ever re-rendering the real PDF just to
+ * paint a document-gallery card thumbnail. Best-effort: a failure just
+ * means the card falls back to its plain icon tile, never blocks the
+ * actual upload.
+ */
+export async function generatePdfThumbnail(file: File, maxWidth = 480): Promise<Blob | null> {
+  if (file.type !== "application/pdf") return null;
+  try {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+      "pdfjs-dist/build/pdf.worker.min.mjs",
+      import.meta.url,
+    ).toString();
+    const buffer = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ data: buffer });
+    try {
+      const doc = await loadingTask.promise;
+      const page = await doc.getPage(1);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: maxWidth / baseViewport.width });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      await page.render({ canvas, viewport }).promise;
+      return await new Promise<Blob | null>((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
+    } finally {
+      await loadingTask.destroy();
+    }
+  } catch {
+    return null;
+  }
+}
+
 /** Direct-to-R2 PUT with upload progress — `fetch` can't report progress, so this uses XHR (CLAUDE.md 10: upload progress is a required UI state). */
 export function uploadWithProgress(
   url: string,

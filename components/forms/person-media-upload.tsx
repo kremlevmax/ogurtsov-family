@@ -15,6 +15,7 @@ import {
 import {
   readImageDimensions,
   uploadWithProgress,
+  generatePdfThumbnail,
   PHOTO_UPLOAD_ACCEPT,
   DOCUMENT_UPLOAD_ACCEPT,
 } from "@/lib/utils/upload";
@@ -81,7 +82,7 @@ async function runUpload(
   }
 
   onFinalizing();
-  const dimensions = await readImageDimensions(file);
+  const [dimensions, thumbnail] = await Promise.all([readImageDimensions(file), generatePdfThumbnail(file)]);
   const finalizeResult = await finalizePersonMediaAction({
     personId,
     pendingUploadId: presignResult.pendingUploadId,
@@ -89,6 +90,7 @@ async function runUpload(
     caption: caption.trim() || null,
     category,
     transcript: transcript?.trim() || null,
+    thumbnail,
     width: dimensions?.width ?? null,
     height: dimensions?.height ?? null,
   });

@@ -604,17 +604,19 @@ export default async function StoryPage() {
   return (
     <div className="flex flex-1 flex-col">
       <Header />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 p-4 py-8 sm:py-12">
-        <div className="text-center">
-          <p className="text-label mb-4 text-xs text-(--color-fg-muted)">Семейная история</p>
-          <h1 className="font-heading text-3xl font-bold text-(--color-fg) sm:text-4xl">
-            От безымянного креста к живому дереву
-          </h1>
-          <p className="font-body mt-4 text-lg italic text-(--color-fg-muted)">
-            История рода Огурцовых и история одного семейного расследования
-          </p>
-        </div>
+      <div className="mx-auto w-full max-w-5xl px-4 pt-8 text-center sm:pt-12">
+        <p className="text-label mb-2 text-xs font-medium tracking-[2.8px] text-(--color-gold) uppercase">
+          История проекта
+        </p>
+        <h1 className="font-heading text-4xl font-semibold text-(--color-heading) sm:text-5xl">
+          От безымянного креста к живому дереву
+        </h1>
+        <p className="font-body mt-2 text-xl text-(--color-fg-muted)">
+          История рода Огурцовых и история одного семейного расследования
+        </p>
+      </div>
 
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 p-4 py-8 sm:py-12">
         <StoryAudioPlayer recordings={recordings} />
 
         <div className="flex flex-col gap-10">

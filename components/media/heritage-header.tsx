@@ -1,5 +1,4 @@
 import { Ornament } from "@/components/ui/ornament";
-import styles from "./heritage-tokens.module.css";
 
 /**
  * The decorative "Род Огурцовых / НАША ИСТОРИЯ · НАШИ КОРНИ · НАШЕ
@@ -13,7 +12,7 @@ import styles from "./heritage-tokens.module.css";
  */
 export function HeritageHeader() {
   return (
-    <div className={`${styles.scope} flex flex-col items-center gap-2 px-4 pt-10 pb-6 text-center`}>
+    <div className="flex flex-col items-center gap-2 px-4 pt-10 pb-6 text-center">
       <Ornament className="h-4 w-28 text-(--h-gold-500)" />
       <h1 className="font-heading text-4xl text-(--h-forest-800) sm:text-5xl">Род Огурцовых</h1>
       <div className="h-px w-full max-w-3xl bg-(--h-gold-200)" />

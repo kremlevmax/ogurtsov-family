@@ -22,7 +22,6 @@ import { formatFileSize } from "@/lib/media/format";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
 import { cn } from "@/lib/utils/cn";
 import { PdfPageView } from "./pdf-page-view";
-import styles from "./heritage-tokens.module.css";
 
 const GALLERY_URL_STORAGE_KEY = "archive:lastGalleryUrl";
 const MIN_SCALE = 0.5;
@@ -106,7 +105,7 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
   const meta = [doc.dateText, category].filter(Boolean).join(" · ");
 
   return (
-    <div className={styles.scope}>
+    <div>
       <div className="flex flex-col gap-6 px-[38px] py-9">
         <div>
           <Link

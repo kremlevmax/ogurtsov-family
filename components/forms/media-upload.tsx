@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "./form-field";
 import { presignUploadAction, finalizeUploadAction } from "@/server/actions/media";
-import { readImageDimensions, uploadWithProgress, UPLOAD_ACCEPT } from "@/lib/utils/upload";
+import { readImageDimensions, uploadWithProgress, generatePdfThumbnail, UPLOAD_ACCEPT } from "@/lib/utils/upload";
 import { validateFileMetadata } from "@/lib/validation/media";
 import { DOCUMENT_CATEGORIES } from "@/lib/validation/document-category";
 
@@ -85,7 +85,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
     }
 
     setStatus("finalizing");
-    const dimensions = await readImageDimensions(file);
+    const [dimensions, thumbnail] = await Promise.all([readImageDimensions(file), generatePdfThumbnail(file)]);
 
     const finalizeResult = await finalizeUploadAction({
       pendingUploadId: presignResult.pendingUploadId,
@@ -95,6 +95,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
       sourceOrOwner: sourceOrOwner.trim() || null,
       category: isDocumentLike ? category || null : null,
       transcript: isDocumentLike ? transcript.trim() || null : null,
+      thumbnail,
       personId,
       width: dimensions?.width ?? null,
       height: dimensions?.height ?? null,

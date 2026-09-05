@@ -91,6 +91,8 @@ export interface CreateMediaInput {
   category?: string | null;
   /** Free-text transcript of a handwritten/hard-to-read document — the "Расшифровка" viewer tab. Optional. */
   transcript?: string | null;
+  /** Object key of a client-generated first-page PNG (PDF cards only). Optional. */
+  thumbnailObjectKey?: string | null;
 }
 
 export async function createMedia(supabase: Client, input: CreateMediaInput, editorId: string): Promise<string> {
@@ -104,6 +106,7 @@ export async function createMedia(supabase: Client, input: CreateMediaInput, edi
       date_text: input.dateText ?? null,
       category: input.category ?? null,
       transcript: input.transcript ?? null,
+      thumbnail_object_key: input.thumbnailObjectKey ?? null,
       object_key: input.objectKey,
       original_filename: input.originalFilename,
       mime_type: input.mimeType,
@@ -325,7 +328,7 @@ export async function listAllMediaForPicker(supabase: Client): Promise<MediaPick
   const { data: mediaRows, error: mediaError } = await supabase
     .from("media")
     .select(
-      "id, kind, title, caption, date_text, category, extension, original_filename, size_bytes, object_key, unlisted",
+      "id, kind, title, caption, date_text, category, thumbnail_object_key, extension, original_filename, size_bytes, object_key, unlisted",
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -363,6 +366,7 @@ export async function listAllMediaForPicker(supabase: Client): Promise<MediaPick
       caption: row.caption,
       dateText: row.date_text,
       category: row.category,
+      thumbnailObjectKey: row.thumbnail_object_key,
       extension: row.extension,
       originalFilename: row.original_filename,
       sizeBytes: row.size_bytes,

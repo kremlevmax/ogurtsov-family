@@ -8,7 +8,6 @@ import { normalizeSearchText } from "@/features/search/normalize";
 import type { MediaPickerItem } from "@/features/media/types";
 import { PhotoLightbox } from "./photo-lightbox";
 import { DeleteSiteMediaButton } from "./delete-site-media-button";
-import styles from "./heritage-tokens.module.css";
 
 const PAGE_SIZE = 6;
 
@@ -44,7 +43,7 @@ export function PeoplePhotosTab({ photos, isEditor }: PeoplePhotosTabProps) {
   const visible = filtered.slice(0, visibleCount);
 
   return (
-    <div className={styles.scope}>
+    <div>
       <div className="flex flex-col gap-3 px-[38px] py-6 sm:flex-row sm:items-center">
         <label className="relative flex-1 sm:max-w-[650px]">
           <Search

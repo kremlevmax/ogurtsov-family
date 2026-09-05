@@ -26,6 +26,7 @@ export interface DocumentCardProps {
 /** One document tile in the gallery grid — the whole card is a real `<Link>` to /archive/[id] (master prompt §6.2: "card... открывает detail через доступный link/router navigation"). */
 export function DocumentCard({ document, isEditor }: DocumentCardProps) {
   const url = getMediaPublicUrl(document.objectKey);
+  const thumbnailUrl = document.thumbnailObjectKey ? getMediaPublicUrl(document.thumbnailObjectKey) : null;
   const Icon = KIND_ICONS[document.kind] ?? FileText;
   const category = resolveDocumentCategory(document.category);
 
@@ -36,6 +37,9 @@ export function DocumentCard({ document, isEditor }: DocumentCardProps) {
           {isImageLikeDocument(document.extension) && url ? (
             // eslint-disable-next-line @next/next/no-img-element -- external R2 host, arbitrary dims, object-fit:contain required (no crop)
             <img src={url} alt="" loading="lazy" className="h-full w-full object-contain" />
+          ) : thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- external R2 host, arbitrary dims, object-fit:contain required (no crop)
+            <img src={thumbnailUrl} alt="" loading="lazy" className="h-full w-full object-contain" />
           ) : (
             <div className="flex flex-col items-center gap-2 text-(--h-muted)">
               <Icon className="h-9 w-9" aria-hidden="true" />

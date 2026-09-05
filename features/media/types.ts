@@ -36,6 +36,8 @@ export interface MediaPickerItem {
   dateText: string | null;
   /** One of lib/validation/document-category.ts's DOCUMENT_CATEGORIES, or null (groups under "Другие документы" in the UI) — documents only. */
   category: string | null;
+  /** Object key of a small first-page PNG rendered client-side at upload time (PDF cards only) — null for everything else, including a PDF uploaded before this feature existed. */
+  thumbnailObjectKey: string | null;
   extension: string;
   originalFilename: string;
   sizeBytes: number;

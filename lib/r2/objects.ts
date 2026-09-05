@@ -32,6 +32,19 @@ export async function createPresignedUploadUrl(
   return getSignedUrl(client, command, { expiresIn: PRESIGN_EXPIRY_SECONDS });
 }
 
+/**
+ * Direct server-side upload — for small derivative files (PDF card
+ * thumbnails) that arrive as a Blob through a Server Action, unlike the
+ * originals (up to 100 MiB), which always go browser-direct through a
+ * presigned PUT (CLAUDE.md 5.4) rather than through the Next.js server.
+ */
+export async function putR2Object(objectKey: string, body: Uint8Array, contentType: string): Promise<void> {
+  const client = getR2Client();
+  await client.send(
+    new PutObjectCommand({ Bucket: getR2BucketName(), Key: objectKey, Body: body, ContentType: contentType }),
+  );
+}
+
 export interface R2ObjectHead {
   sizeBytes: number;
   contentType: string | null;

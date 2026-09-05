@@ -10,6 +10,7 @@ function photo(overrides: Partial<MediaPickerItem>): MediaPickerItem {
     caption: null,
     dateText: null,
     category: null,
+    thumbnailObjectKey: null,
     extension: "jpg",
     originalFilename: "photo.jpg",
     sizeBytes: 1024,

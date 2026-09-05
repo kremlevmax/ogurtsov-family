@@ -7,6 +7,7 @@ import { validateFileMetadata, verifyMagicBytes } from "@/lib/validation/media";
 import { createPresignedUploadUrl, headR2Object, readR2ObjectHeadBytes, deleteR2Object } from "@/lib/r2/objects";
 import * as mediaRepo from "@/server/repositories/media";
 import { toUserMessage } from "./errors";
+import { uploadMediaThumbnail } from "./media";
 
 /**
  * Lets a member upload and manage PHOTOS and DOCUMENTS (only those two
@@ -94,6 +95,8 @@ export interface FinalizePersonMediaInput {
   caption: string | null;
   category: string | null;
   transcript: string | null;
+  /** Client-rendered first-page PNG (lib/utils/upload.ts's generatePdfThumbnail) — null for non-PDFs or if rendering failed. */
+  thumbnail: Blob | null;
   width: number | null;
   height: number | null;
 }
@@ -146,6 +149,7 @@ export async function finalizePersonMediaAction(input: FinalizePersonMediaInput)
   }
 
   try {
+    const thumbnailObjectKey = await uploadMediaThumbnail(input.thumbnail);
     const mediaId = await mediaRepo.createMedia(
       member.supabase,
       {
@@ -155,6 +159,7 @@ export async function finalizePersonMediaAction(input: FinalizePersonMediaInput)
         sourceOrOwner: null,
         category: input.category,
         transcript: input.transcript,
+        thumbnailObjectKey,
         objectKey: pending.objectKey,
         originalFilename: input.originalFilename,
         mimeType: pending.expectedMimeType,

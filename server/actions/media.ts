@@ -3,9 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { requireEditor } from "@/server/auth/require-editor";
 import { validateFileMetadata, verifyMagicBytes } from "@/lib/validation/media";
-import { createPresignedUploadUrl, headR2Object, readR2ObjectHeadBytes, deleteR2Object } from "@/lib/r2/objects";
+import {
+  createPresignedUploadUrl,
+  headR2Object,
+  readR2ObjectHeadBytes,
+  deleteR2Object,
+  putR2Object,
+} from "@/lib/r2/objects";
 import * as mediaRepo from "@/server/repositories/media";
 import { toUserMessage } from "./errors";
+
+// Real thumbnails render to a few hundred KB at most — anything past this is
+// almost certainly not the small PNG this is meant for, so it's dropped
+// rather than trusted (this is best-effort only, never blocks the real upload).
+const MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024;
+
+/** Uploads a client-generated PDF-page thumbnail (lib/utils/upload.ts's generatePdfThumbnail) to its own object key. Shared with server/actions/member-media.ts. */
+export async function uploadMediaThumbnail(thumbnail: Blob | null | undefined): Promise<string | null> {
+  if (!thumbnail || thumbnail.size === 0 || thumbnail.size > MAX_THUMBNAIL_BYTES) return null;
+  try {
+    const objectKey = `media/${crypto.randomUUID()}-thumb.png`;
+    await putR2Object(objectKey, new Uint8Array(await thumbnail.arrayBuffer()), "image/png");
+    return objectKey;
+  } catch {
+    return null;
+  }
+}
 
 export interface PresignUploadInput {
   originalFilename: string;
@@ -61,6 +84,8 @@ export interface FinalizeUploadInput {
   sourceOrOwner: string | null;
   category: string | null;
   transcript: string | null;
+  /** Client-rendered first-page PNG (lib/utils/upload.ts's generatePdfThumbnail) — null for non-PDFs or if rendering failed. */
+  thumbnail: Blob | null;
   personId: string;
   width: number | null;
   height: number | null;
@@ -113,6 +138,7 @@ export async function finalizeUploadAction(input: FinalizeUploadInput): Promise<
   }
 
   try {
+    const thumbnailObjectKey = await uploadMediaThumbnail(input.thumbnail);
     const mediaId = await mediaRepo.createMedia(
       editor.supabase,
       {
@@ -122,6 +148,7 @@ export async function finalizeUploadAction(input: FinalizeUploadInput): Promise<
         sourceOrOwner: input.sourceOrOwner,
         category: input.category,
         transcript: input.transcript,
+        thumbnailObjectKey,
         objectKey: pending.objectKey,
         originalFilename: input.originalFilename,
         mimeType: pending.expectedMimeType,

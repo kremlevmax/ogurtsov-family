@@ -7,7 +7,6 @@ import type { MediaPickerItem } from "@/features/media/types";
 import { PlacesUploadForm } from "@/components/forms/places-upload-form";
 import { PhotoLightbox } from "./photo-lightbox";
 import { DeleteSiteMediaButton } from "./delete-site-media-button";
-import styles from "./heritage-tokens.module.css";
 
 const PAGE_SIZE = 6;
 const FORM_ID = "places-upload-form";
@@ -33,7 +32,7 @@ export function PlacesPhotosTab({ photos, isMember, isEditor }: PlacesPhotosTabP
   const visible = photos.slice(0, visibleCount);
 
   return (
-    <div className={styles.scope}>
+    <div>
       <div className="flex justify-end px-[38px] py-6">
         {isMember && (
           <button

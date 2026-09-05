@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Header } from "@/components/layout/header";
-import { HeritageHeader } from "@/components/media/heritage-header";
 import { DocumentCategorySidebar } from "@/components/media/document-category-sidebar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listAllMediaForPicker } from "@/server/repositories/media";
@@ -30,8 +29,7 @@ export default async function ArchiveLayout({ children }: { children: ReactNode 
     <div className="flex flex-1 flex-col">
       <Header />
       <div className={styles.scope}>
-        <HeritageHeader />
-        <div className="mx-auto w-full max-w-[1450px] px-4 pb-16">
+        <div className="mx-auto w-full max-w-[1450px] px-4 pt-10 pb-16">
           <div className="grid grid-cols-1 rounded-[var(--h-radius-panel)] border border-(--h-gold-500) bg-(--h-paper-light) shadow-(--h-shadow-panel) md:grid-cols-[280px_1fr]">
             <div className="border-(--h-gold-200) pb-9 md:border-r">
               <DocumentCategorySidebar counts={counts} />

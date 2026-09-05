@@ -148,6 +148,7 @@ export interface Database {
           unlisted: boolean;
           category: string | null;
           transcript: string | null;
+          thumbnail_object_key: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["media"]["Row"]> & {
           kind: MediaKind;

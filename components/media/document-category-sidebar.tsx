@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookMarked, BookOpen, FolderOpen, Landmark, Mail, Files, User } from "lucide-react";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@/lib/validation/document-category";
-import styles from "./heritage-tokens.module.css";
 
 const CATEGORY_ICONS: Record<DocumentCategory, typeof BookOpen> = {
   "Старинные документы": BookOpen,
@@ -45,7 +44,7 @@ export function DocumentCategorySidebar({ counts }: DocumentCategorySidebarProps
   }
 
   return (
-    <nav className={`${styles.scope} flex flex-col gap-1 px-[38px] pt-9`} aria-label="Категории документов">
+    <nav className="flex flex-col gap-1 px-[38px] pt-9" aria-label="Категории документов">
       <h1 className="font-heading text-4xl text-(--h-forest-800)">Документы</h1>
       <div className="mt-6 flex flex-col gap-1">
         <CategoryButton

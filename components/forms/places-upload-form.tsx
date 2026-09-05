@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ImagePlus } from "lucide-react";
 import { presignPlacePhotoAction, finalizePlacePhotoAction } from "@/server/actions/place-media";
 import { readImageDimensions, uploadWithProgress, PHOTO_UPLOAD_ACCEPT } from "@/lib/utils/upload";
-import styles from "@/components/media/heritage-tokens.module.css";
 
 type Status = "idle" | "uploading" | "error";
 
@@ -98,7 +97,7 @@ export function PlacesUploadForm({ id, onDone }: PlacesUploadFormProps) {
     <form
       id={id}
       onSubmit={handleSubmit}
-      className={`${styles.scope} flex flex-col gap-4 border-t border-(--h-gold-200) px-[38px] py-8 sm:flex-row sm:items-end sm:gap-6`}
+      className="flex flex-col gap-4 border-t border-(--h-gold-200) px-[38px] py-8 sm:flex-row sm:items-end sm:gap-6"
     >
       <div className="flex flex-col gap-1.5 sm:w-[260px]">
         <span className="text-lg text-(--h-ink)">Фотографии</span>

@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { MediaPickerItem } from "@/features/media/types";
-import { HeritageHeader } from "./heritage-header";
 import { PeoplePhotosTab } from "./people-photos-tab";
 import { PlacesPhotosTab } from "./places-photos-tab";
 import styles from "./heritage-tokens.module.css";
@@ -40,13 +39,10 @@ export function PhotosShell({ people, places, isMember, isEditor }: PhotosShellP
 
   return (
     <div className={styles.scope}>
-      <HeritageHeader />
-
-      <div className="mx-auto w-full max-w-[1432px] px-4 pb-16">
+      <div className="mx-auto w-full max-w-[1432px] px-4 pt-10 pb-16">
         <div className="rounded-[var(--h-radius-panel)] border border-(--h-gold-500) bg-(--h-paper-light) shadow-(--h-shadow-panel)">
           <div className="px-[38px] pt-9">
-            <p className="text-lg text-(--h-muted)">Главная / Фотографии</p>
-            <h2 className="font-heading mt-1 text-4xl text-(--h-forest-800)">Фотографии</h2>
+            <h2 className="font-heading text-4xl text-(--h-forest-800)">Фотографии</h2>
 
             <div className="mt-6 flex gap-2 border-b border-(--h-gold-200)" role="tablist" aria-label="Раздел фотографий">
               <button
