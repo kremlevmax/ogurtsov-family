@@ -26,6 +26,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
   const [sourceOrOwner, setSourceOrOwner] = useState("");
   const [category, setCategory] = useState("");
   const [transcript, setTranscript] = useState("");
+  const [documentScan, setDocumentScan] = useState(false);
   const [unlisted, setUnlisted] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
@@ -38,6 +39,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
     setSourceOrOwner("");
     setCategory("");
     setTranscript("");
+    setDocumentScan(false);
     setUnlisted(false);
     setStatus("idle");
     setProgress(0);
@@ -48,6 +50,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
   function handleFileChange(selected: File | null) {
     setFile(selected);
     setError(null);
+    setDocumentScan(false);
     if (selected && !title) {
       setTitle(selected.name.replace(/\.[^.]+$/, ""));
     }
@@ -57,6 +60,10 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
     event.preventDefault();
     if (!file) {
       setError("Выберите файл.");
+      return;
+    }
+    if (!caption.trim()) {
+      setError("Укажите подпись или пояснение.");
       return;
     }
 
@@ -93,9 +100,10 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
       title: title.trim() || file.name,
       caption: caption.trim() || null,
       sourceOrOwner: sourceOrOwner.trim() || null,
-      category: isDocumentLike ? category || null : null,
-      transcript: isDocumentLike ? transcript.trim() || null : null,
+      category: effectiveIsDocumentLike ? category || null : null,
+      transcript: effectiveIsDocumentLike ? transcript.trim() || null : null,
       thumbnail,
+      treatImageAsDocument: documentScan,
       personId,
       width: dimensions?.width ?? null,
       height: dimensions?.height ?? null,
@@ -113,12 +121,17 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
   }
 
   const isBusy = status === "uploading" || status === "finalizing";
-  // Client-side guess only, to decide whether to show the category/
-  // transcript fields (photos don't have them) — the server re-detects
-  // the real kind from the uploaded bytes regardless (CLAUDE.md 13).
-  const isDocumentLike = file
-    ? validateFileMetadata(file.name, file.type || "application/octet-stream", file.size).kind !== "photo"
-    : false;
+  // Client-side guesses only — the server re-detects the real kind from
+  // the uploaded bytes regardless (CLAUDE.md 13). isPlainImage decides
+  // whether to offer the "this is a document scan" checkbox at all: a
+  // TIFF is already a document by extension, so only jpg/png/webp/avif/
+  // gif are ambiguous enough to need the choice.
+  const naturalKind = file
+    ? validateFileMetadata(file.name, file.type || "application/octet-stream", file.size).kind
+    : null;
+  const isPlainImage = naturalKind === "photo";
+  const isDocumentLike = naturalKind !== null && naturalKind !== "photo";
+  const effectiveIsDocumentLike = isDocumentLike || (isPlainImage && documentScan);
 
   return (
     <form
@@ -146,7 +159,12 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
             <Input value={title} onChange={(event) => setTitle(event.target.value)} disabled={isBusy} />
           </Field>
           <Field label="Подпись/пояснение">
-            <Input value={caption} onChange={(event) => setCaption(event.target.value)} disabled={isBusy} />
+            <Input
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              disabled={isBusy}
+              required
+            />
           </Field>
           <Field label="Автор / владелец оригинала">
             <Input
@@ -155,7 +173,19 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
               disabled={isBusy}
             />
           </Field>
-          {isDocumentLike && (
+          {isPlainImage && (
+            <label className="flex items-start gap-2 text-sm text-(--color-fg)">
+              <input
+                type="checkbox"
+                checked={documentScan}
+                onChange={(event) => setDocumentScan(event.target.checked)}
+                disabled={isBusy}
+                className="mt-0.5"
+              />
+              Это скан документа, а не фотография человека — попадёт в «Архив», а не в «Фотографии»
+            </label>
+          )}
+          {effectiveIsDocumentLike && (
             <>
               <Field label="Категория (необязательно)">
                 <select

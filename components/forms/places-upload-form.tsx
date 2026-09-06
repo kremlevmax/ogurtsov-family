@@ -38,6 +38,10 @@ export function PlacesUploadForm({ id, onDone }: PlacesUploadFormProps) {
       setError("Выберите хотя бы одну фотографию.");
       return;
     }
+    if (!caption.trim()) {
+      setError("Укажите подпись.");
+      return;
+    }
 
     setError(null);
     setStatus("uploading");
@@ -128,6 +132,7 @@ export function PlacesUploadForm({ id, onDone }: PlacesUploadFormProps) {
           value={caption}
           onChange={(event) => setCaption(event.target.value)}
           disabled={isBusy}
+          required
           maxLength={200}
           className="h-[50px] rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-3 text-lg text-(--h-ink) focus-visible:outline-none"
         />

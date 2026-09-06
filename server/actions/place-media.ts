@@ -92,6 +92,10 @@ export async function finalizePlacePhotoAction(input: FinalizePlacePhotoInput): 
     return { ok: false, error: NOT_LOGGED_IN_ERROR };
   }
 
+  if (!input.caption?.trim()) {
+    return { ok: false, error: "Укажите подпись." };
+  }
+
   const pending = await mediaRepo.getPendingUpload(member.supabase, input.pendingUploadId, member.userId);
   if (!pending) {
     return { ok: false, error: "Загрузка не найдена или истекла. Попробуйте загрузить заново." };

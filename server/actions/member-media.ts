@@ -97,6 +97,8 @@ export interface FinalizePersonMediaInput {
   transcript: string | null;
   /** Client-rendered first-page PNG (lib/utils/upload.ts's generatePdfThumbnail) — null for non-PDFs or if rendering failed. */
   thumbnail: Blob | null;
+  /** "This image is a scanned document, not a photo of a person" — see lib/validation/media.ts's ValidateFileMetadataOptions. Always true from the DocumentBlock form (components/forms/person-media-upload.tsx): that block IS the document uploader, so any image picked there is a scan by definition. */
+  treatImageAsDocument: boolean;
   width: number | null;
   height: number | null;
 }
@@ -116,6 +118,10 @@ export async function finalizePersonMediaAction(input: FinalizePersonMediaInput)
   }
   if (!member) return { ok: false, error: NOT_OWN_PERSON_ERROR };
 
+  if (!input.caption?.trim()) {
+    return { ok: false, error: "Укажите подпись или пояснение." };
+  }
+
   const pending = await mediaRepo.getPendingUpload(member.supabase, input.pendingUploadId, member.userId);
   if (!pending) {
     return { ok: false, error: "Загрузка не найдена или истекла. Попробуйте загрузить заново." };
@@ -127,7 +133,9 @@ export async function finalizePersonMediaAction(input: FinalizePersonMediaInput)
     return { ok: false, error: "Файл не найден в хранилище. Попробуйте загрузить заново." };
   }
 
-  const metaValidation = validateFileMetadata(input.originalFilename, pending.expectedMimeType, head.sizeBytes);
+  const metaValidation = validateFileMetadata(input.originalFilename, pending.expectedMimeType, head.sizeBytes, {
+    treatImageAsDocument: input.treatImageAsDocument,
+  });
   if (
     !metaValidation.ok ||
     !metaValidation.extension ||

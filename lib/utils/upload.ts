@@ -6,7 +6,15 @@ export const UPLOAD_ACCEPT =
 
 /** Photo/document-only subsets, for the member-facing person media upload (components/forms/person-media-upload.tsx) — matches lib/validation/media.ts's "photo"/"document" kind extensions. */
 export const PHOTO_UPLOAD_ACCEPT = ".jpg,.jpeg,.png,.webp,.avif,.gif";
-export const DOCUMENT_UPLOAD_ACCEPT = ".tif,.tiff,.pdf,.txt,.rtf,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp";
+/**
+ * Includes the plain image extensions too — a scanned document (a
+ * certificate, a letter) is very often saved as .jpg, not .tiff. This
+ * block always finalizes with `treatImageAsDocument: true` (it's the
+ * document uploader), so any image picked here is stored as a document
+ * scan, not a person photo (lib/validation/media.ts).
+ */
+export const DOCUMENT_UPLOAD_ACCEPT =
+  ".jpg,.jpeg,.png,.webp,.avif,.gif,.tif,.tiff,.pdf,.txt,.rtf,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp";
 
 export function readImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
   if (!file.type.startsWith("image/")) return Promise.resolve(null);

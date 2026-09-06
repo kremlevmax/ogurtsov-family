@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import type { MediaPickerItem } from "@/features/media/types";
 import { normalizeSearchText } from "@/features/search/normalize";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
+import { ArchiveDocumentUploadForm } from "@/components/forms/archive-document-upload-form";
 import { DocumentCard } from "./document-card";
 
 const PAGE_SIZE = 6;
 const GALLERY_URL_STORAGE_KEY = "archive:lastGalleryUrl";
+const FORM_ID = "archive-document-upload-form";
 
 export interface DocumentGalleryProps {
   documents: MediaPickerItem[];
-  isMember: boolean;
   isEditor: boolean;
 }
 
@@ -27,13 +27,14 @@ export interface DocumentGalleryProps {
  * enough to fetch once and filter in memory (CLAUDE.md 14), same
  * pattern as the Photos tabs.
  */
-export function DocumentGallery({ documents, isMember, isEditor }: DocumentGalleryProps) {
+export function DocumentGallery({ documents, isEditor }: DocumentGalleryProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") ?? "";
   const category = searchParams.get("category");
   const visibleCount = Number(searchParams.get("show")) || PAGE_SIZE;
+  const [formOpen, setFormOpen] = useState(false);
 
   // Remembered so the viewer's "К документам" link can restore this
   // exact search/category/pagination state even after a hard reload —
@@ -90,16 +91,21 @@ export function DocumentGallery({ documents, isMember, isEditor }: DocumentGalle
             className="h-[45px] w-full rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) pl-9 pr-3 text-lg text-(--h-ink) placeholder:text-(--h-muted) focus-visible:outline-none"
           />
         </label>
-        {isMember && (
-          <Link
-            href="/tree"
-            title="Документы прикрепляются на странице человека — откройте нужного и добавьте файл там"
-            className="flex h-[45px] shrink-0 items-center justify-center rounded-[var(--h-radius-control)] bg-(--h-forest-800) px-5 text-lg font-medium text-(--h-white-warm)"
+        {isEditor && (
+          <button
+            type="button"
+            aria-expanded={formOpen}
+            aria-controls={FORM_ID}
+            onClick={() => setFormOpen((open) => !open)}
+            className="flex h-[45px] shrink-0 cursor-pointer items-center gap-2 rounded-[var(--h-radius-control)] bg-(--h-forest-800) px-5 text-lg font-medium text-(--h-white-warm)"
           >
+            <Plus className="h-4 w-4" aria-hidden="true" />
             Добавить документ
-          </Link>
+          </button>
         )}
       </div>
+
+      {formOpen && <ArchiveDocumentUploadForm id={FORM_ID} onDone={() => setFormOpen(false)} />}
 
       {visible.length === 0 ? (
         <p className="px-[38px] pb-10 text-lg text-(--h-muted)">

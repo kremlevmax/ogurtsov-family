@@ -64,7 +64,12 @@ async function runUpload(
   onFinalizing: () => void,
   category: string | null = null,
   transcript: string | null = null,
+  treatImageAsDocument = false,
 ): Promise<{ ok: boolean; error?: string }> {
+  if (!caption.trim()) {
+    return { ok: false, error: "Укажите подпись или пояснение." };
+  }
+
   const presignResult = await presignPersonMediaAction({
     personId,
     originalFilename: file.name,
@@ -91,6 +96,7 @@ async function runUpload(
     category,
     transcript: transcript?.trim() || null,
     thumbnail,
+    treatImageAsDocument,
     width: dimensions?.width ?? null,
     height: dimensions?.height ?? null,
   });
@@ -233,8 +239,13 @@ function PhotoBlock({ personId, photos }: { personId: string; photos: PersonMedi
         </label>
 
         {file && (
-          <Field label="Подпись (необязательно)">
-            <Input value={caption} onChange={(event) => setCaption(event.target.value)} disabled={isBusy} />
+          <Field label="Подпись">
+            <Input
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              disabled={isBusy}
+              required
+            />
           </Field>
         )}
 
@@ -309,6 +320,7 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
       () => setStatus("finalizing"),
       category || null,
       transcript,
+      true,
     );
     setStatus(result.ok ? "idle" : "error");
     if (!result.ok) {
@@ -400,8 +412,13 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
 
         {file && (
           <>
-            <Field label="Пояснение (необязательно)">
-              <Input value={caption} onChange={(event) => setCaption(event.target.value)} disabled={isBusy} />
+            <Field label="Пояснение">
+              <Input
+                value={caption}
+                onChange={(event) => setCaption(event.target.value)}
+                disabled={isBusy}
+                required
+              />
             </Field>
             <Field label="Категория (необязательно)">
               <select

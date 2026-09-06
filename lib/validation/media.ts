@@ -99,6 +99,19 @@ export interface FileMetadataValidation {
   extension?: string;
 }
 
+export interface ValidateFileMetadataOptions {
+  /**
+   * A plain image file (jpg/png/webp/avif/gif — tif/tiff is already a
+   * "document" scan) can't be told apart from a real photo by extension
+   * alone: a scanned certificate saved as .jpg looks identical to a
+   * portrait. This lets the uploader say "this one's a document scan,
+   * not a photo of a person" — the only thing it changes is which kind
+   * the file is stored/listed under (still fully re-validated against
+   * the real bytes at finalize time, same as every other kind).
+   */
+  treatImageAsDocument?: boolean;
+}
+
 /**
  * Validates a file's declared name/MIME/size before issuing a presigned
  * upload URL. Checks extension against the allowlist, cross-checks the
@@ -112,6 +125,7 @@ export function validateFileMetadata(
   originalFilename: string,
   mimeType: string,
   sizeBytes: number,
+  options?: ValidateFileMetadataOptions,
 ): FileMetadataValidation {
   if (!Number.isFinite(sizeBytes) || sizeBytes <= 0 || sizeBytes > MAX_FILE_SIZE_BYTES) {
     return { ok: false, error: "Файл должен быть больше 0 и не более 100 МБ." };
@@ -138,7 +152,8 @@ export function validateFileMetadata(
     return { ok: false, error: "Заявленный тип файла не соответствует расширению." };
   }
 
-  return { ok: true, kind: allowed.kind, extension };
+  const kind = options?.treatImageAsDocument && allowed.kind === "photo" ? "document" : allowed.kind;
+  return { ok: true, kind, extension };
 }
 
 type MagicByteSignature = { bytes: number[]; offset?: number };

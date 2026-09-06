@@ -13,9 +13,9 @@ const KIND_ICONS: Partial<Record<MediaPickerItem["kind"], typeof FileText>> = {
   other: FileText,
 };
 
-/** True for the document kinds that are plain images (scans) — these can preview with an <img>, same MediaFrame rule as photos; everything else (PDF/DOCX/XLS/…) shows an icon tile instead. */
+/** True for the document kinds that are plain images (scans, incl. a JPG/PNG document uploaded with "это скан" checked) — these can preview with an <img>, same MediaFrame rule as photos; everything else (PDF/DOCX/XLS/…) shows an icon tile instead. */
 function isImageLikeDocument(extension: string): boolean {
-  return extension === "tif" || extension === "tiff";
+  return ["tif", "tiff", "jpg", "jpeg", "png", "webp", "avif", "gif"].includes(extension);
 }
 
 export interface DocumentCardProps {

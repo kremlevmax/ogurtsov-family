@@ -17,7 +17,7 @@ export default async function ArchivePage() {
 
   return (
     <Suspense>
-      <DocumentGallery documents={documents} isMember={viewer.isMember} isEditor={viewer.isEditor} />
+      <DocumentGallery documents={documents} isEditor={viewer.isEditor} />
     </Suspense>
   );
 }

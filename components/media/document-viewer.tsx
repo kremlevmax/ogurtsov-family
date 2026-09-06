@@ -44,7 +44,7 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 function isImageLikeDocument(extension: string): boolean {
-  return extension === "tif" || extension === "tiff";
+  return ["tif", "tiff", "jpg", "jpeg", "png", "webp", "avif", "gif"].includes(extension);
 }
 
 export interface DocumentViewerProps {
