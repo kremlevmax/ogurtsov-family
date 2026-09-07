@@ -15,6 +15,8 @@ export interface PersonMedia {
   height: number | null;
   objectKey: string;
   isProfile: boolean;
+  /** Object key of a small first-page PNG rendered client-side at upload time (PDF cards only) — null for everything else, including a PDF uploaded before this feature existed. */
+  thumbnailObjectKey: string | null;
   /** True when this file is also linked to at least one other person — controls whether "delete" removes it everywhere or just unlinks it here (CLAUDE.md 3.7). */
   linkedToOtherPeople: boolean;
   /** True for a file that's linked here only so it exists in the database — hidden from this person's own public gallery/document list; public pages filter these out themselves (repositories always return the full set so the editor can still see and manage them). */

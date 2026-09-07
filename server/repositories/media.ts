@@ -245,6 +245,7 @@ function rowToPersonMedia(
     height: row.height,
     objectKey: row.object_key,
     isProfile,
+    thumbnailObjectKey: row.thumbnail_object_key,
     linkedToOtherPeople: linkedPersonIds.length > 1,
     unlisted: row.unlisted,
     createdBy: row.created_by,

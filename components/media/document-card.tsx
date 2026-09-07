@@ -3,6 +3,7 @@ import { FileArchive, FileText, Music, Video, ZoomIn } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import type { MediaPickerItem } from "@/features/media/types";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
+import { isImageLikeDocument } from "@/lib/media/document-kind";
 import { DeleteSiteMediaButton } from "./delete-site-media-button";
 
 const KIND_ICONS: Partial<Record<MediaPickerItem["kind"], typeof FileText>> = {
@@ -12,11 +13,6 @@ const KIND_ICONS: Partial<Record<MediaPickerItem["kind"], typeof FileText>> = {
   archive: FileArchive,
   other: FileText,
 };
-
-/** True for the document kinds that are plain images (scans, incl. a JPG/PNG document uploaded with "это скан" checked) — these can preview with an <img>, same MediaFrame rule as photos; everything else (PDF/DOCX/XLS/…) shows an icon tile instead. */
-function isImageLikeDocument(extension: string): boolean {
-  return ["tif", "tiff", "jpg", "jpeg", "png", "webp", "avif", "gif"].includes(extension);
-}
 
 export interface DocumentCardProps {
   document: MediaPickerItem;

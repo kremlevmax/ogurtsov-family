@@ -21,6 +21,7 @@ import type { Person } from "@/features/people/types";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { formatFileSize } from "@/lib/media/format";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
+import { isImageLikeDocument } from "@/lib/media/document-kind";
 import { cn } from "@/lib/utils/cn";
 import { PdfPageView } from "./pdf-page-view";
 import { EditMediaDetailsField } from "./edit-media-details-field";
@@ -45,10 +46,6 @@ const TABS = [
   { key: "source", label: "Источник" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
-
-function isImageLikeDocument(extension: string): boolean {
-  return ["tif", "tiff", "jpg", "jpeg", "png", "webp", "avif", "gif"].includes(extension);
-}
 
 export interface DocumentViewerProps {
   document: DocumentDetail;
