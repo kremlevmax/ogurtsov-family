@@ -112,6 +112,15 @@ export function DocumentViewer({ document: doc, viewerId, isEditor, allPeople }:
   const Icon = KIND_ICONS[doc.kind] ?? FileText;
   const category = resolveDocumentCategory(doc.category);
   const meta = [doc.dateText, category].filter(Boolean).join(" · ");
+  // Above 100%, content can be bigger than the frame — a centered flex
+  // container only ever exposes the overflow on the end (bottom/right)
+  // side, never the start (top/left) one, so the corner stays
+  // unreachable no matter how far you scroll (the exact bug reported:
+  // scrolling hits a wall at the top-left while the view shows the
+  // document's middle). Anchoring to the top-left instead, with the
+  // scale growing from that same corner, keeps every part of the
+  // enlarged page reachable by ordinary scrolling.
+  const isZoomedIn = scale > 1;
 
   return (
     <div>
@@ -133,7 +142,8 @@ export function DocumentViewer({ document: doc, viewerId, isEditor, allPeople }:
         <div
           ref={frameRef}
           className={cn(
-            "relative flex min-h-[360px] items-center justify-center overflow-auto rounded-[var(--h-radius-panel)] border border-(--h-gold-200) bg-(--h-media-bg) p-6",
+            "relative flex min-h-[360px] overflow-auto rounded-[var(--h-radius-panel)] border border-(--h-gold-200) bg-(--h-media-bg) p-6",
+            isZoomedIn ? "items-start justify-start" : "items-center justify-center",
             isFullscreen && "bg-(--h-paper)",
           )}
         >
@@ -153,7 +163,7 @@ export function DocumentViewer({ document: doc, viewerId, isEditor, allPeople }:
                 <img
                   src={url}
                   alt={doc.caption ?? doc.title}
-                  style={{ transform: `scale(${scale})` }}
+                  style={{ transform: `scale(${scale})`, transformOrigin: isZoomedIn ? "top left" : "center" }}
                   className="max-h-full max-w-full object-contain transition-transform"
                 />
               )}
