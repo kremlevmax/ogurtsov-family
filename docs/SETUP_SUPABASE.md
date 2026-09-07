@@ -180,3 +180,68 @@ Configuration**) должны включать домен сайта — ина�
 нет своего домена (CLAUDE.md, раздел 24); когда домен появится, можно
 будет перейти на специализированный сервис вроде Resend или Brevo с
 адресом на этом домене.
+
+## 9. Восстановление пароля
+
+Ссылка «Забыли пароль?» на `/login` ведёт на `/forgot-password`
+(`components/auth/forgot-password-form.tsx`) → Supabase присылает
+письмо со ссылкой → она открывает `/reset-password`
+(`components/auth/reset-password-form.tsx`), где можно сразу задать
+новый пароль. Чтобы это заработало, нужны те же два шага, что и для
+подтверждения email (раздел 7 выше):
+
+1. **Authentication → Email Templates → Reset Password** — вставьте
+   Subject и Message body ниже (переменную `{{ .ConfirmationURL }}` не
+   трогайте — Supabase сам подставит в неё настоящую ссылку).
+
+   Subject:
+
+   ```
+   Восстановление пароля — «Семейное дерево Огурцовых»
+   ```
+
+   Message body:
+
+   ```html
+   <div style="background:#fbf8ef;padding:32px 16px;font-family:Georgia,'Times New Roman',serif;color:#4e5148;">
+     <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#fcf9f1;border:1px solid #d8d0bb;border-radius:8px;">
+       <tr>
+         <td style="padding:32px 32px 8px;text-align:center;">
+           <p style="margin:0 0 4px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#8a8a7a;">
+             Семейное дерево Огурцовых
+           </p>
+           <h1 style="margin:0 0 20px;font-size:20px;color:#304733;">Восстановление пароля</h1>
+           <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+             Кто-то (надеемся, что вы) запросил восстановление пароля для этого email на
+             сайте «Семейное дерево Огурцовых».
+           </p>
+           <p style="margin:0 0 24px;font-size:15px;line-height:1.6;text-align:left;">
+             Чтобы задать новый пароль, нажмите на кнопку ниже.
+           </p>
+           <a href="{{ .ConfirmationURL }}"
+              style="display:inline-block;padding:12px 28px;background:#273c2d;color:#fbf8ef;text-decoration:none;border-radius:4px;font-size:15px;font-weight:bold;">
+             Задать новый пароль
+           </a>
+           <p style="margin:24px 0 0;font-size:13px;line-height:1.6;text-align:left;color:#7a7d72;">
+             Если вы не запрашивали восстановление пароля — просто проигнорируйте это
+             письмо, пароль останется прежним.
+           </p>
+         </td>
+       </tr>
+     </table>
+   </div>
+   ```
+
+2. **Authentication → URL Configuration → Redirect URLs** — здесь
+   важно, что путь `/reset-password` тоже должен быть разрешён, а не
+   только корень сайта: если в списке лежит только точный
+   `http://localhost:3000` (без wildcard), Supabase отклонит переход на
+   `http://localhost:3000/reset-password` и отправит вместо этого на
+   Site URL. Проще всего добавить wildcard на весь сайт —
+   `http://localhost:3000/**` (и аналогично `https://ваш-домен/**`
+   после деплоя) — тогда все текущие и будущие маршруты
+   (`/reset-password`, `/register` и т. д.) разрешены одной записью.
+
+Проверка: на `/forgot-password` укажите email одного из редакторов →
+должно прийти письмо → ссылка из письма должна открыть `/reset-password`
+с формой нового пароля, а не страницу с ошибкой.

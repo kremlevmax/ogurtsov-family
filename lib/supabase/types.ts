@@ -23,6 +23,8 @@ export type PendingUploadStatus = "pending" | "completed" | "expired" | "failed"
 
 export type LoungeTopic = "news" | "memories" | "search" | "thanks";
 
+export type LoungeTreeAccessStatus = "granted" | "pending" | "rejected";
+
 export interface Database {
   public: {
     Tables: {
@@ -251,6 +253,28 @@ export interface Database {
         Row: { id: boolean; body: string | null; updated_at: string; updated_by: string | null };
         Insert: Partial<Database["public"]["Tables"]["lounge_pinned_message"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["lounge_pinned_message"]["Row"]>;
+        Relationships: [];
+      };
+      lounge_tree_access: {
+        Row: {
+          user_id: string;
+          email: string;
+          relation_note: string | null;
+          status: LoungeTreeAccessStatus;
+          created_at: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: {
+          user_id: string;
+          email: string;
+          relation_note?: string | null;
+          status?: LoungeTreeAccessStatus;
+          created_at?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["lounge_tree_access"]["Row"]>;
         Relationships: [];
       };
     };

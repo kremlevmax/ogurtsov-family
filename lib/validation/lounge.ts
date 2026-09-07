@@ -14,14 +14,36 @@ export const LOUNGE_TOPIC_LABELS: Record<LoungeTopic, string> = {
  * Server-side validation for lounge member registration. Same schema
  * runs client-side (RHF-free plain form here, but the shape still backs
  * the Server Action) and server-side — CLAUDE.md 13.
+ *
+ * Two registration paths (owner's request): with a real invite code
+ * (`inviteCode` required, tree-editing rights immediate — unchanged),
+ * or without one (`noInviteCode` checked, `relationNote` required
+ * instead — lounge posting is immediate either way, but adding people
+ * to the tree waits for an editor's approval, server/actions/lounge-auth.ts).
  */
-export const loungeRegisterSchema = z.object({
-  email: z.email("Введите корректный email"),
-  password: z.string().min(8, "Минимум 8 символов"),
-  firstName: z.string().trim().min(1, "Укажите имя").max(80),
-  lastName: z.string().trim().min(1, "Укажите фамилию").max(80),
-  inviteCode: z.string().trim().min(1, "Введите код приглашения"),
-});
+export const loungeRegisterSchema = z
+  .object({
+    email: z.email("Введите корректный email"),
+    password: z.string().min(8, "Минимум 8 символов"),
+    firstName: z.string().trim().min(1, "Укажите имя").max(80),
+    lastName: z.string().trim().min(1, "Укажите фамилию").max(80),
+    noInviteCode: z.boolean(),
+    inviteCode: z.string().trim().max(200).optional().default(""),
+    relationNote: z.string().trim().max(2000).optional().default(""),
+  })
+  .superRefine((data, ctx) => {
+    if (data.noInviteCode) {
+      if (data.relationNote.length < 20) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["relationNote"],
+          message: "Расскажите чуть подробнее, как вы связаны с родом Огурцовых",
+        });
+      }
+    } else if (!data.inviteCode) {
+      ctx.addIssue({ code: "custom", path: ["inviteCode"], message: "Введите код приглашения" });
+    }
+  });
 
 /**
  * Covers both a top-level post (topic required, no parentMessageId)

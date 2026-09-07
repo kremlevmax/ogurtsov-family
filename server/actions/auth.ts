@@ -60,3 +60,41 @@ export async function signOutAction(): Promise<void> {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+const emailOnlySchema = z.object({ email: z.email("Введите корректный email") });
+
+export interface RequestPasswordResetState {
+  info: string | null;
+  error: string | null;
+}
+
+/**
+ * Always returns the same neutral message regardless of whether the
+ * email is actually registered — otherwise this form would let anyone
+ * check which emails have an account (same anti-enumeration posture as
+ * the duplicate-registration check in server/actions/lounge-auth.ts).
+ * The reset link Supabase emails lands on /reset-password
+ * (components/auth/reset-password-form.tsx), which listens for the
+ * PASSWORD_RECOVERY auth event and lets the visitor set a new password
+ * directly — no separate server round-trip needed for that step.
+ */
+export async function requestPasswordResetAction(
+  _prevState: RequestPasswordResetState,
+  formData: FormData,
+): Promise<RequestPasswordResetState> {
+  const parsed = emailOnlySchema.safeParse({ email: formData.get("email") });
+  const info = "Если такой email зарегистрирован, на него отправлено письмо со ссылкой для восстановления пароля.";
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Введите email", info: null };
+  }
+
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${siteUrl}/reset-password`,
+  });
+  if (error) console.error(error);
+
+  return { error: null, info };
+}

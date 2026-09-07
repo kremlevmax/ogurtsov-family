@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { signInAction, type SignInState } from "@/server/actions/auth";
@@ -14,6 +14,7 @@ export interface LoginFormProps {
 
 export function LoginForm({ next }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(signInAction, initialState);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <form action={formAction} className="flex w-full flex-col gap-3">
@@ -29,7 +30,23 @@ export function LoginForm({ next }: LoginFormProps) {
         <label htmlFor="password" className="text-lg font-medium">
           Пароль
         </label>
-        <Input id="password" name="password" type="password" autoComplete="current-password" required className="text-lg" />
+        <Input
+          id="password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          required
+          className="text-lg"
+        />
+        <label className="mt-1 flex items-center gap-2 text-base text-(--color-fg-muted)">
+          <input
+            type="checkbox"
+            checked={showPassword}
+            onChange={(event) => setShowPassword(event.target.checked)}
+            className="h-4 w-4"
+          />
+          Показать пароль
+        </label>
       </div>
 
       {state.error && (

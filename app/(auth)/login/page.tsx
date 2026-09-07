@@ -31,6 +31,9 @@ export default async function LoginPage(props: PageProps<"/login">) {
           <Ornament className="h-3 w-24 text-(--color-border)" />
           <h1 className="font-heading text-2xl font-bold text-(--color-fg)">Вход</h1>
           <LoginForm next={next} />
+          <Link href="/forgot-password" className="text-lg text-(--color-fg-muted) hover:underline">
+            Забыли пароль?
+          </Link>
         </div>
         <Link href={registerHref} className="text-lg text-(--color-fg-muted) hover:underline">
           Нет аккаунта? Зарегистрироваться

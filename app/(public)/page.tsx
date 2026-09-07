@@ -155,11 +155,15 @@ export default function HomePage() {
             возможно, именно ваша семейная история поможет продолжить ветвь, которая сегодня заканчивается
             вопросительным знаком.
           </p>
-          <div className="mt-8 flex flex-col items-center gap-2">
-            <StubButton hideStatus>Подать заявку</StubButton>
-            <p className="font-label text-[16px] text-(--color-fg-muted)">Приём заявок скоро откроется</p>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <Link
+              href="/register"
+              className="font-label inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-(--color-accent) px-6 text-[16px] font-bold tracking-[0.065px] text-(--color-accent-fg) uppercase transition-opacity hover:opacity-90"
+            >
+              Подать заявку
+            </Link>
             <small className="font-label text-[16px] text-(--color-fg)">
-              Дополнения публикуются только после проверки родственной связи
+              Регистрация в «Семейной гостиной» — писать можно сразу, доступ к дереву откроется после проверки
             </small>
           </div>
         </div>
@@ -268,14 +272,14 @@ export default function HomePage() {
 }
 
 /**
- * A visibly inert stand-in for a feature this site doesn't have yet (public application form, reviews) — no href, so it can never look like a broken link. Deliberately kept visually muted/outlined (not the accent-filled look the extracted spec implies for a "real" button) so it never reads as an active control.
- *
- * `hideStatus` drops the inline "· скоро" — used where the caller shows
- * its own separate status line below the button instead (owner's
- * request: keep the button's own label ("Подать заявку") readable on
- * its own, not fused with its availability note into one string).
+ * A visibly inert stand-in for a feature this site doesn't have yet
+ * (contributing photos/materials) — no href, so it can never look like
+ * a broken link. Deliberately kept visually muted/outlined (not the
+ * accent-filled look the extracted spec implies for a "real" button)
+ * so it never reads as an active control. "Подать заявку" above used
+ * to be one of these too — now a real link to /register.
  */
-function StubButton({ children, dark = false, hideStatus = false }: { children: string; dark?: boolean; hideStatus?: boolean }) {
+function StubButton({ children, dark = false }: { children: string; dark?: boolean }) {
   return (
     <span
       className={
@@ -287,7 +291,7 @@ function StubButton({ children, dark = false, hideStatus = false }: { children: 
       title="Скоро"
     >
       {children}
-      {!hideStatus && <span className="text-[16px] normal-case">· скоро</span>}
+      <span className="text-[16px] normal-case">· скоро</span>
     </span>
   );
 }

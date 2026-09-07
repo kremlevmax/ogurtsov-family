@@ -7,9 +7,12 @@ import { signOutAction } from "@/server/actions/auth";
 import { requireEditor, NotAuthorizedError } from "@/server/auth/require-editor";
 import { listPeople, listDeletedPeople } from "@/server/repositories/people";
 import { getTotalStorageBytes, listDeletedMedia } from "@/server/repositories/media";
+import { listPendingTreeAccessRequests } from "@/server/repositories/lounge-tree-access";
 import { buildDisplayName } from "@/lib/names/display-name";
 import { RestorePersonButton } from "@/components/forms/restore-person-button";
 import { RestoreMediaButton } from "@/components/forms/restore-media-button";
+import { ApproveTreeAccessButton } from "@/components/forms/approve-tree-access-button";
+import { RejectTreeAccessButton } from "@/components/forms/reject-tree-access-button";
 
 const EXPECTED_TOTAL_BYTES = 5 * 1024 * 1024 * 1024; // ~5 ГБ (CLAUDE.md 3.7)
 
@@ -31,11 +34,12 @@ export default async function EditHomePage() {
     throw error;
   }
 
-  const [people, deletedPeople, deletedMedia, storageBytes] = await Promise.all([
+  const [people, deletedPeople, deletedMedia, storageBytes, pendingTreeAccessRequests] = await Promise.all([
     listPeople(editor.supabase),
     listDeletedPeople(editor.supabase),
     listDeletedMedia(editor.supabase),
     getTotalStorageBytes(editor.supabase),
+    listPendingTreeAccessRequests(editor.supabase),
   ]);
   const storagePercent = Math.min(100, Math.round((storageBytes / EXPECTED_TOTAL_BYTES) * 100));
 
@@ -65,6 +69,36 @@ export default async function EditHomePage() {
             </Button>
           </Link>
         </div>
+
+        {pendingTreeAccessRequests.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-label text-xs text-(--color-fg-muted)">
+              Заявки на доступ к дереву ({pendingTreeAccessRequests.length})
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {pendingTreeAccessRequests.map((request) => (
+                <li
+                  key={request.userId}
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-(--color-fg)">
+                      {request.firstName} {request.lastName}
+                    </p>
+                    <p className="text-sm text-(--color-fg-muted)">{request.email}</p>
+                    {request.relationNote && (
+                      <p className="mt-1 whitespace-pre-line text-sm text-(--color-fg)">{request.relationNote}</p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <ApproveTreeAccessButton userId={request.userId} />
+                    <RejectTreeAccessButton userId={request.userId} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-4">
           <h2 className="text-label text-xs text-(--color-fg-muted)">Хранилище файлов</h2>

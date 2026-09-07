@@ -4,10 +4,11 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loungeRegisterSchema } from "@/lib/validation/lounge";
 import { safeNextPath } from "@/lib/utils/safe-next-path";
+import { sendTreeAccessRequestNotification } from "@/lib/email/send-notification";
 
 export interface LoungeAuthState {
   error: string | null;
-  info?: string | null;
+  info?: { heading: string; lines: string[] } | null;
 }
 
 /**
@@ -59,24 +60,43 @@ export async function registerLoungeMemberAction(
     password: formData.get("password"),
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
-    inviteCode: formData.get("inviteCode"),
+    noInviteCode: formData.get("noInviteCode") === "on",
+    // Only one of these two fields is ever mounted in the DOM at a time
+    // (lounge-register-form.tsx renders inviteCode XOR relationNote), so
+    // FormData.get() on the other one returns null, not undefined —
+    // loungeRegisterSchema's .optional().default("") accepts undefined
+    // but not null, so this normalizes null to "" before parsing.
+    inviteCode: formData.get("inviteCode") ?? "",
+    relationNote: formData.get("relationNote") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Проверьте поля формы." };
   }
 
-  const expectedCode = process.env.LOUNGE_INVITE_CODE;
-  if (!expectedCode || parsed.data.inviteCode !== expectedCode) {
-    return { error: "Неверный код приглашения." };
+  if (!parsed.data.noInviteCode) {
+    const expectedCode = process.env.LOUNGE_INVITE_CODE;
+    if (!expectedCode || parsed.data.inviteCode !== expectedCode) {
+      return { error: "Неверный код приглашения." };
+    }
   }
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    // Read by handle_new_lounge_member() (0009_lounge_member_names.sql)
-    // to create the lounge_profiles row.
-    options: { data: { lounge_first_name: parsed.data.firstName, lounge_last_name: parsed.data.lastName } },
+    // Read by handle_new_lounge_member() (0021_lounge_tree_access.sql) to
+    // create the lounge_profiles and lounge_tree_access rows. Without an
+    // invite code, tree-editing access starts "pending" instead of the
+    // default "granted" — lounge posting is unaffected either way.
+    options: {
+      data: {
+        lounge_first_name: parsed.data.firstName,
+        lounge_last_name: parsed.data.lastName,
+        ...(parsed.data.noInviteCode
+          ? { lounge_tree_access_status: "pending", lounge_relation_note: parsed.data.relationNote }
+          : {}),
+      },
+    },
   });
 
   if (error) {
@@ -84,8 +104,46 @@ export async function registerLoungeMemberAction(
     return { error: toRegistrationErrorMessage(error.code) };
   }
 
+  // Supabase's anti-enumeration behavior: re-signing up an email that
+  // already has an account returns no error at all (to avoid revealing
+  // which emails are registered) — just a user object with an empty
+  // identities array instead of a new identity, and no session. Without
+  // this check that silently looked like a fresh, successful
+  // registration — including firing a tree-access notification email
+  // for a request nobody actually just made.
+  if (data.user && data.user.identities?.length === 0) {
+    return { error: "Этот email уже зарегистрирован. Попробуйте войти или восстановить доступ." };
+  }
+
+  if (parsed.data.noInviteCode) {
+    try {
+      await sendTreeAccessRequestNotification({
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
+        email: parsed.data.email,
+        relationNote: parsed.data.relationNote,
+      });
+    } catch (notifyError) {
+      console.error(notifyError);
+    }
+  }
+
   if (!data.session) {
-    return { error: null, info: "Проверьте почту и подтвердите email, затем войдите." };
+    return {
+      error: null,
+      info: parsed.data.noInviteCode
+        ? {
+            heading: "Подтвердите email",
+            lines: [
+              "Мы отправили письмо для подтверждения email. Перейдите по ссылке из письма и войдите — сразу сможете писать в гостиной.",
+              "Возможность добавлять людей в дерево появится после одобрения администратора.",
+            ],
+          }
+        : {
+            heading: "Подтвердите email",
+            lines: ["Проверьте почту и подтвердите email, затем войдите."],
+          },
+    };
   }
 
   redirect(safeNextPath(formData.get("next")));
