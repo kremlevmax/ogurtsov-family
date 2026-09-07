@@ -26,6 +26,8 @@ export interface PersonDetailContentProps {
   media: PersonMedia[];
   /** Editors can manage everyone; a plain member can only manage the people they added themselves (docs/DECISIONS.md). */
   viewer: { isEditor: boolean; memberId: string | null };
+  /** Everyone in the tree, for LinkedPeopleManager's "add a person" search (via MediaSection). */
+  allPeople: Person[];
   /**
    * When provided, clicking a related person calls this instead of a
    * <Link> navigation — used inside the tree drawer so switching between
@@ -48,6 +50,7 @@ export function PersonDetailContent({
   siblings,
   media,
   viewer,
+  allPeople,
   onPersonSelect,
 }: PersonDetailContentProps) {
   const isMember = viewer.memberId !== null;
@@ -138,7 +141,7 @@ export function PersonDetailContent({
         </section>
       </div>
 
-      <MediaSection media={media} />
+      <MediaSection media={media} viewerId={viewer.memberId} isEditor={viewer.isEditor} allPeople={allPeople} />
 
       {!viewer.isEditor && viewer.memberId !== null && viewer.memberId === person.createdBy && (
         <PersonMediaUpload personId={person.id} media={media} />

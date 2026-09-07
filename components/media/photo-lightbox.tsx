@@ -1,16 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import type { MediaKind } from "@/lib/supabase/types";
+import type { Person } from "@/features/people/types";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { cn } from "@/lib/utils/cn";
+import { EditMediaDetailsField } from "./edit-media-details-field";
+import { LinkedPeopleManager } from "./linked-people-manager";
 
 export interface LightboxPhoto {
   id: string;
+  kind: MediaKind;
   objectKey: string;
   title: string;
   caption: string | null;
+  createdBy: string | null;
+  linkedPersonIds: string[];
+  linkedPersonNames: string[];
 }
 
 export interface PhotoLightboxProps<T extends LightboxPhoto> {
@@ -18,8 +26,11 @@ export interface PhotoLightboxProps<T extends LightboxPhoto> {
   index: number;
   onClose: () => void;
   onIndexChange: (index: number) => void;
-  /** Extra content under the caption — e.g. links to the people a shared gallery photo belongs to. */
-  footer?: (photo: T) => ReactNode;
+  /** Current viewer's id, for the "edit details" permission check below — null for an anonymous visitor. */
+  viewerId?: string | null;
+  isEditor?: boolean;
+  /** Everyone in the tree, for LinkedPeopleManager's "add a person" search — omitted wherever the host page doesn't load it. */
+  allPeople?: Person[];
 }
 
 /** Full-screen photo viewer, click-to-zoom to actual size (CLAUDE.md 3.7 gallery). Shared by the person-card gallery and the site-wide gallery. */
@@ -28,10 +39,13 @@ export function PhotoLightbox<T extends LightboxPhoto>({
   index,
   onClose,
   onIndexChange,
-  footer,
+  viewerId = null,
+  isEditor = false,
+  allPeople = [],
 }: PhotoLightboxProps<T>) {
   const photo = photos[index];
   const url = getMediaPublicUrl(photo.objectKey);
+  const canEdit = isEditor || (viewerId !== null && viewerId === photo.createdBy);
   const [isZoomed, setIsZoomed] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<Element | null>(null);
@@ -141,8 +155,23 @@ export function PhotoLightbox<T extends LightboxPhoto>({
         )}
       </div>
 
-      {photo.caption && <p className="pt-2 text-center text-sm text-white/70">{photo.caption}</p>}
-      {footer && <div className="pt-2 text-center text-sm text-white/70">{footer(photo)}</div>}
+      <EditMediaDetailsField
+        mediaId={photo.id}
+        kind={photo.kind}
+        title={photo.title}
+        caption={photo.caption}
+        category={null}
+        canEdit={canEdit}
+        variant="dark"
+      />
+      <LinkedPeopleManager
+        mediaId={photo.id}
+        linkedPersonIds={photo.linkedPersonIds}
+        linkedPersonNames={photo.linkedPersonNames}
+        canEdit={canEdit}
+        allPeople={allPeople}
+        variant="dark"
+      />
     </div>,
     document.body,
   );

@@ -18,6 +18,7 @@ function photo(overrides: Partial<MediaPickerItem>): MediaPickerItem {
     linkedPersonIds: [],
     linkedPersonNames: [],
     unlisted: false,
+    createdBy: null,
     ...overrides,
   };
 }

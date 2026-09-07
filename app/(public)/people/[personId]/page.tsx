@@ -65,6 +65,7 @@ export default async function PersonPage(props: PageProps<"/people/[personId]">)
           siblings={siblings}
           media={media}
           viewer={{ isEditor: viewer.isEditor, memberId: viewer.userId }}
+          allPeople={people}
         />
       </main>
     </div>

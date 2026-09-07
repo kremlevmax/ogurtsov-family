@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { MediaPickerItem } from "@/features/media/types";
+import type { Person } from "@/features/people/types";
 import { PeoplePhotosTab } from "./people-photos-tab";
 import { PlacesPhotosTab } from "./places-photos-tab";
 import styles from "./heritage-tokens.module.css";
@@ -13,6 +14,8 @@ export interface PhotosShellProps {
   places: MediaPickerItem[];
   isMember: boolean;
   isEditor: boolean;
+  viewerId: string | null;
+  allPeople: Person[];
 }
 
 /**
@@ -23,7 +26,7 @@ export interface PhotosShellProps {
  * — `router.replace` (shallow, no scroll jump) rather than `push`,
  * since switching tabs isn't really "a new page" to step back through.
  */
-export function PhotosShell({ people, places, isMember, isEditor }: PhotosShellProps) {
+export function PhotosShell({ people, places, isMember, isEditor, viewerId, allPeople }: PhotosShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -75,9 +78,15 @@ export function PhotosShell({ people, places, isMember, isEditor }: PhotosShellP
           </div>
 
           {tab === "people" ? (
-            <PeoplePhotosTab photos={people} isEditor={isEditor} />
+            <PeoplePhotosTab photos={people} isEditor={isEditor} viewerId={viewerId} allPeople={allPeople} />
           ) : (
-            <PlacesPhotosTab photos={places} isMember={isMember} isEditor={isEditor} />
+            <PlacesPhotosTab
+              photos={places}
+              isMember={isMember}
+              isEditor={isEditor}
+              viewerId={viewerId}
+              allPeople={allPeople}
+            />
           )}
         </div>
       </div>

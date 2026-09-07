@@ -586,9 +586,13 @@ export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessag
           photos={[
             {
               id: openImageMessage.id,
+              kind: "photo" as const,
               objectKey: openImageMessage.attachment.objectKey,
               title: openImageMessage.attachment.filename,
               caption: null,
+              createdBy: null,
+              linkedPersonIds: [],
+              linkedPersonNames: [],
             },
           ]}
           index={0}

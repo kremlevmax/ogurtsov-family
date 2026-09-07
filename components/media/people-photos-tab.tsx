@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Search, ZoomIn } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { normalizeSearchText } from "@/features/search/normalize";
 import type { MediaPickerItem } from "@/features/media/types";
+import type { Person } from "@/features/people/types";
 import { PhotoLightbox } from "./photo-lightbox";
 import { DeleteSiteMediaButton } from "./delete-site-media-button";
 
@@ -14,6 +14,8 @@ const PAGE_SIZE = 6;
 export interface PeoplePhotosTabProps {
   photos: MediaPickerItem[];
   isEditor: boolean;
+  viewerId: string | null;
+  allPeople: Person[];
 }
 
 /**
@@ -25,7 +27,7 @@ export interface PeoplePhotosTabProps {
  * confirmed by a repo-wide search) — showing a control with no real
  * data behind it would be fake (owner's decision, docs/DECISIONS.md).
  */
-export function PeoplePhotosTab({ photos, isEditor }: PeoplePhotosTabProps) {
+export function PeoplePhotosTab({ photos, isEditor, viewerId, allPeople }: PeoplePhotosTabProps) {
   const [query, setQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -132,20 +134,9 @@ export function PeoplePhotosTab({ photos, isEditor }: PeoplePhotosTabProps) {
           index={openIndex}
           onClose={() => setOpenIndex(null)}
           onIndexChange={setOpenIndex}
-          footer={(photo) =>
-            photo.linkedPersonIds.length > 0 && (
-              <p>
-                {photo.linkedPersonIds.map((personId, i) => (
-                  <span key={personId}>
-                    {i > 0 && ", "}
-                    <Link href={`/people/${personId}`} className="underline hover:text-white">
-                      {photo.linkedPersonNames[i]}
-                    </Link>
-                  </span>
-                ))}
-              </p>
-            )
-          }
+          viewerId={viewerId}
+          isEditor={isEditor}
+          allPeople={allPeople}
         />
       )}
     </div>

@@ -17,11 +17,14 @@ import {
   ZoomOut,
 } from "lucide-react";
 import type { DocumentDetail } from "@/features/media/types";
+import type { Person } from "@/features/people/types";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { formatFileSize } from "@/lib/media/format";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
 import { cn } from "@/lib/utils/cn";
 import { PdfPageView } from "./pdf-page-view";
+import { EditMediaDetailsField } from "./edit-media-details-field";
+import { LinkedPeopleManager } from "./linked-people-manager";
 
 const GALLERY_URL_STORAGE_KEY = "archive:lastGalleryUrl";
 const MIN_SCALE = 0.5;
@@ -49,6 +52,11 @@ function isImageLikeDocument(extension: string): boolean {
 
 export interface DocumentViewerProps {
   document: DocumentDetail;
+  /** Current viewer's id, for the "edit details" permission check below — null for an anonymous visitor. */
+  viewerId: string | null;
+  isEditor: boolean;
+  /** Everyone in the tree, for LinkedPeopleManager's "add a person" search. */
+  allPeople: Person[];
 }
 
 /**
@@ -56,8 +64,9 @@ export interface DocumentViewerProps {
  * shared layout's main slot (mutual exclusion by routing, not a
  * ternary — see app/(public)/archive/layout.tsx).
  */
-export function DocumentViewer({ document: doc }: DocumentViewerProps) {
+export function DocumentViewer({ document: doc, viewerId, isEditor, allPeople }: DocumentViewerProps) {
   const url = getMediaPublicUrl(doc.objectKey);
+  const canEdit = isEditor || (viewerId !== null && viewerId === doc.createdBy);
   const isPdf = doc.mimeType === "application/pdf";
   const isImage = isImageLikeDocument(doc.extension);
   const isAudio = doc.kind === "audio";
@@ -254,7 +263,15 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
 
           <div role="tabpanel" className="flex flex-col gap-5 pt-5">
             {activeTab === "description" && (
-              <p className="text-lg text-(--h-ink)">{doc.caption ?? "Описание пока не добавлено."}</p>
+              <EditMediaDetailsField
+                mediaId={doc.id}
+                kind={doc.kind}
+                title={doc.title}
+                caption={doc.caption}
+                category={doc.category}
+                canEdit={canEdit}
+                variant="light"
+              />
             )}
             {activeTab === "transcript" && (
               <p className="whitespace-pre-line text-lg text-(--h-ink)">
@@ -267,19 +284,18 @@ export function DocumentViewer({ document: doc }: DocumentViewerProps) {
               </p>
             )}
 
-            {doc.linkedPersonIds.length > 0 && (
+            {(doc.linkedPersonIds.length > 0 || canEdit) && (
               <div>
                 <p className="font-heading text-xl text-(--h-forest-800)">Связанные родственники</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {doc.linkedPersonIds.map((personId, index) => (
-                    <Link
-                      key={personId}
-                      href={`/people/${personId}`}
-                      className="rounded-[var(--h-radius-chip)] border border-(--h-gold-200) bg-(--h-paper-light) px-3 py-1.5 text-lg text-(--h-forest-800) hover:bg-(--h-white-warm)"
-                    >
-                      {doc.linkedPersonNames[index]}
-                    </Link>
-                  ))}
+                <div className="mt-2">
+                  <LinkedPeopleManager
+                    mediaId={doc.id}
+                    linkedPersonIds={doc.linkedPersonIds}
+                    linkedPersonNames={doc.linkedPersonNames}
+                    canEdit={canEdit}
+                    allPeople={allPeople}
+                    variant="light"
+                  />
                 </div>
               </div>
             )}

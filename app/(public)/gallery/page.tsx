@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/header";
 import { PhotosShell } from "@/components/media/photos-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listAllMediaForPicker } from "@/server/repositories/media";
+import { listPeople } from "@/server/repositories/people";
 import { getLoungeViewer } from "@/server/auth/require-lounge-member";
 import { splitPhotosByLinkage } from "@/lib/media/split-photos";
 
@@ -20,7 +21,11 @@ export const metadata: Metadata = {
  */
 export default async function GalleryPage() {
   const supabase = await createSupabaseServerClient();
-  const [allMedia, viewer] = await Promise.all([listAllMediaForPicker(supabase), getLoungeViewer()]);
+  const [allMedia, viewer, allPeople] = await Promise.all([
+    listAllMediaForPicker(supabase),
+    getLoungeViewer(),
+    listPeople(supabase),
+  ]);
   const photos = allMedia.filter((item) => item.kind === "photo" && !item.unlisted);
   const { people, places } = splitPhotosByLinkage(photos);
 
@@ -28,7 +33,14 @@ export default async function GalleryPage() {
     <div className="flex flex-1 flex-col">
       <Header />
       <Suspense>
-        <PhotosShell people={people} places={places} isMember={viewer.isMember} isEditor={viewer.isEditor} />
+        <PhotosShell
+          people={people}
+          places={places}
+          isMember={viewer.isMember}
+          isEditor={viewer.isEditor}
+          viewerId={viewer.userId}
+          allPeople={allPeople}
+        />
       </Suspense>
     </div>
   );

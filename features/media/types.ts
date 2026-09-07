@@ -19,6 +19,11 @@ export interface PersonMedia {
   linkedToOtherPeople: boolean;
   /** True for a file that's linked here only so it exists in the database — hidden from this person's own public gallery/document list; public pages filter these out themselves (repositories always return the full set so the editor can still see and manage them). */
   unlisted: boolean;
+  /** Who uploaded this file (`media.created_by`) — lets its uploader, not just an editor, edit its details later. */
+  createdBy: string | null;
+  /** Every person this file is linked to, including this one — powers LinkedPeopleManager's "who else" list and its own unlink control. */
+  linkedPersonIds: string[];
+  linkedPersonNames: string[];
 }
 
 /**
@@ -45,6 +50,8 @@ export interface MediaPickerItem {
   linkedPersonIds: string[];
   linkedPersonNames: string[];
   unlisted: boolean;
+  /** Who uploaded this file (`media.created_by`) — lets its uploader, not just an editor, edit its details later. */
+  createdBy: string | null;
 }
 
 /** A soft-deleted file, for the editor's "Корзина файлов" (CLAUDE.md 13: restore safety for accidental deletes). */
@@ -78,4 +85,6 @@ export interface DocumentDetail {
   objectKey: string;
   linkedPersonIds: string[];
   linkedPersonNames: string[];
+  /** Who uploaded this document (`media.created_by`) — lets its uploader, not just an editor, edit its details later. */
+  createdBy: string | null;
 }

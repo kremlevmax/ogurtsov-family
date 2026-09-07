@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { DocumentViewer } from "@/components/media/document-viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getDocumentDetail } from "@/server/repositories/media";
+import { listPeople } from "@/server/repositories/people";
+import { getLoungeViewer } from "@/server/auth/require-lounge-member";
 
 interface ArchiveDocumentPageProps {
   params: Promise<{ documentId: string }>;
@@ -19,8 +21,14 @@ export async function generateMetadata({ params }: ArchiveDocumentPageProps): Pr
 export default async function ArchiveDocumentPage({ params }: ArchiveDocumentPageProps) {
   const { documentId } = await params;
   const supabase = await createSupabaseServerClient();
-  const document = await getDocumentDetail(supabase, documentId);
+  const [document, viewer, allPeople] = await Promise.all([
+    getDocumentDetail(supabase, documentId),
+    getLoungeViewer(),
+    listPeople(supabase),
+  ]);
   if (!document) notFound();
 
-  return <DocumentViewer document={document} />;
+  return (
+    <DocumentViewer document={document} viewerId={viewer.userId} isEditor={viewer.isEditor} allPeople={allPeople} />
+  );
 }

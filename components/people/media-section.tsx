@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Download, FileArchive, FileText, Music, Video } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import type { PersonMedia } from "@/features/media/types";
+import type { Person } from "@/features/people/types";
 import { formatFileSize } from "@/lib/media/format";
 import { PhotoLightbox } from "@/components/media/photo-lightbox";
 
@@ -17,10 +18,15 @@ const KIND_ICONS: Partial<Record<PersonMedia["kind"], typeof FileText>> = {
 
 export interface MediaSectionProps {
   media: PersonMedia[];
+  /** Current viewer's id, for the "edit details" permission check — null for an anonymous visitor. */
+  viewerId: string | null;
+  isEditor: boolean;
+  /** Everyone in the tree, for LinkedPeopleManager's "add a person" search (via PhotoLightbox). */
+  allPeople: Person[];
 }
 
 /** Photo gallery + downloadable document list — CLAUDE.md 3.7: documents always download, photos show inline. */
-export function MediaSection({ media }: MediaSectionProps) {
+export function MediaSection({ media, viewerId, isEditor, allPeople }: MediaSectionProps) {
   if (media.length === 0) return null;
 
   const photos = media.filter((item) => item.kind === "photo");
@@ -28,13 +34,25 @@ export function MediaSection({ media }: MediaSectionProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {photos.length > 0 && <PhotoGallery photos={photos} />}
+      {photos.length > 0 && (
+        <PhotoGallery photos={photos} viewerId={viewerId} isEditor={isEditor} allPeople={allPeople} />
+      )}
       {documents.length > 0 && <DocumentList documents={documents} />}
     </div>
   );
 }
 
-function PhotoGallery({ photos }: { photos: PersonMedia[] }) {
+function PhotoGallery({
+  photos,
+  viewerId,
+  isEditor,
+  allPeople,
+}: {
+  photos: PersonMedia[];
+  viewerId: string | null;
+  isEditor: boolean;
+  allPeople: Person[];
+}) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
@@ -69,6 +87,9 @@ function PhotoGallery({ photos }: { photos: PersonMedia[] }) {
           index={openIndex}
           onClose={() => setOpenIndex(null)}
           onIndexChange={setOpenIndex}
+          viewerId={viewerId}
+          isEditor={isEditor}
+          allPeople={allPeople}
         />
       )}
     </section>

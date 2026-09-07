@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, ZoomIn } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import type { MediaPickerItem } from "@/features/media/types";
+import type { Person } from "@/features/people/types";
 import { PlacesUploadForm } from "@/components/forms/places-upload-form";
 import { PhotoLightbox } from "./photo-lightbox";
 import { DeleteSiteMediaButton } from "./delete-site-media-button";
@@ -16,6 +17,8 @@ export interface PlacesPhotosTabProps {
   /** Any registered member can add place photos (same RLS as person-photo uploads) — hidden for anonymous visitors rather than showing a button that just bounces to /login. */
   isMember: boolean;
   isEditor: boolean;
+  viewerId: string | null;
+  allPeople: Person[];
 }
 
 /**
@@ -24,7 +27,7 @@ export interface PlacesPhotosTabProps {
  * gallery; closed state reserves no height at all (the form isn't
  * rendered, not just visually hidden).
  */
-export function PlacesPhotosTab({ photos, isMember, isEditor }: PlacesPhotosTabProps) {
+export function PlacesPhotosTab({ photos, isMember, isEditor, viewerId, allPeople }: PlacesPhotosTabProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -108,7 +111,15 @@ export function PlacesPhotosTab({ photos, isMember, isEditor }: PlacesPhotosTabP
       {formOpen && <PlacesUploadForm id={FORM_ID} onDone={() => setFormOpen(false)} />}
 
       {openIndex !== null && visible[openIndex] && (
-        <PhotoLightbox photos={visible} index={openIndex} onClose={() => setOpenIndex(null)} onIndexChange={setOpenIndex} />
+        <PhotoLightbox
+          photos={visible}
+          index={openIndex}
+          onClose={() => setOpenIndex(null)}
+          onIndexChange={setOpenIndex}
+          viewerId={viewerId}
+          isEditor={isEditor}
+          allPeople={allPeople}
+        />
       )}
     </div>
   );

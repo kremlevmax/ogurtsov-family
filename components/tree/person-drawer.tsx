@@ -83,6 +83,7 @@ export function PersonDrawer({ person, people, relationships, media, viewer, onC
           siblings={siblings}
           media={media}
           viewer={viewer}
+          allPeople={people}
           onPersonSelect={onPersonSelect}
         />
       </div>
