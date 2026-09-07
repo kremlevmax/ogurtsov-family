@@ -113,6 +113,10 @@ h3,
 }
 
 .react-flow__controls-button {
+  /* xyflow's own default (26px) is well under a comfortable tap/click
+     target — widened without enlarging the icon glyph itself. */
+  width: 42px;
+  height: 42px;
   background: var(--color-bg-elevated);
   border-bottom: 1px solid var(--color-border);
   fill: var(--color-fg);

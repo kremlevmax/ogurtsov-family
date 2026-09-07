@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { Monogram } from "@/components/ui/monogram";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { signOutLoungeMemberAction } from "@/server/actions/lounge-auth";
+import { cn } from "@/lib/utils/cn";
 
 export interface HeaderProps {
   /** Rendered centered in the top bar, e.g. the home page's SearchBox. */
@@ -22,6 +24,11 @@ const NAV_LINKS = [
   { href: "/story", label: "О проекте" },
 ] as const;
 
+/** "/" only matches the exact home route — every other link matches its own route plus any nested sub-route (e.g. "/tree/add" still highlights "Древо"). */
+function isNavLinkActive(pathname: string, href: string): boolean {
+  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
 // Same font/weight/tracking/color as the other nav links, exactly
 // (owner's request, three times now — the first two passes wrapped the
 // button in a <form>, plain or `display:contents`; a screenshot showed
@@ -34,9 +41,9 @@ const NAV_LINKS = [
 // item with nothing wrapping it, identical in structure to the <a>
 // siblings it needs to match.
 const authLinkClassName =
-  "text-label cursor-pointer text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:text-(--color-heading) disabled:cursor-not-allowed";
+  "text-label cursor-pointer text-[14px] font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:text-(--color-heading) disabled:cursor-not-allowed";
 const mobileAuthLinkClassName =
-  "text-label rounded-[var(--radius-sm)] px-2 py-2 text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-heading)";
+  "text-label rounded-[var(--radius-sm)] px-2 py-2 text-[14px] font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-heading)";
 
 /**
  * Reads the session client-side (this Header is imported directly from
@@ -68,6 +75,7 @@ export function Header({ search }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const isLoggedIn = useIsLoggedIn();
   const [isSigningOut, startSignOutTransition] = useTransition();
+  const pathname = usePathname();
 
   function handleSignOut() {
     startSignOutTransition(() => signOutLoungeMemberAction());
@@ -86,15 +94,32 @@ export function Header({ search }: HeaderProps) {
         {search && <div className="min-w-0 flex-1 sm:flex sm:justify-center">{search}</div>}
 
         <nav className="hidden shrink-0 items-center gap-6 lg:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-label text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:text-(--color-heading)"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const isActive = isNavLinkActive(pathname, link.href);
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                aria-current={isActive ? "page" : undefined}
+                // `text-label` is concatenated OUTSIDE cn()/twMerge, not
+                // passed in as one of its arguments: twMerge merges the
+                // whole resulting class string regardless of how many
+                // arguments it came from, and it doesn't know this is a
+                // custom class (font-family + tracking + uppercase,
+                // globals.css) — it groups any "text-*" token as a
+                // same-group conflict and silently dropped `text-label`
+                // in favor of `text-(--color-heading)`, falling back to
+                // the inherited serif heading font instead of Inter (real
+                // regression, caught live).
+                className={`text-label ${cn(
+                  "text-[14px] font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:text-(--color-heading)",
+                  isActive && "text-(--color-heading) underline decoration-2 underline-offset-[8px]",
+                )}`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           {isLoggedIn ? (
             <button type="button" disabled={isSigningOut} onClick={handleSignOut} className={authLinkClassName}>
               Выйти
@@ -123,16 +148,24 @@ export function Header({ search }: HeaderProps) {
           id="mobile-nav"
           className="flex flex-col gap-1 border-t border-(--color-border) px-6 py-3 sm:px-10 lg:hidden"
         >
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className="text-label rounded-[var(--radius-sm)] px-2 py-2 text-xs font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-heading)"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const isActive = isNavLinkActive(pathname, link.href);
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                aria-current={isActive ? "page" : undefined}
+                // `text-label` kept outside cn()/twMerge — see the same note on the desktop nav link above.
+                className={`text-label ${cn(
+                  "rounded-[var(--radius-sm)] px-2 py-2 text-[14px] font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-heading)",
+                  isActive && "text-(--color-heading) underline decoration-2 underline-offset-4",
+                )}`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           {isLoggedIn ? (
             <button
               type="button"

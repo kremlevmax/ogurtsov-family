@@ -21,7 +21,11 @@ export interface PersonDrawerProps {
 }
 
 const MOBILE_STYLE: CSSProperties = { position: "fixed", top: 0, right: 0, bottom: 0, left: 0 };
-const DESKTOP_STYLE: CSSProperties = { position: "fixed", top: 0, right: 0, bottom: 0, width: 480 };
+// Starts below the sticky site header (h-20 + 1px border = 81px) instead
+// of at the very top of the viewport, so the header's own nav stays
+// fully visible and clickable while the panel is open — it used to sit
+// on top of the header's bottom half (owner's request).
+const DESKTOP_STYLE: CSSProperties = { position: "fixed", top: 81, right: 0, bottom: 0, width: 480 };
 
 /**
  * Desktop: a ~480px panel docked to the right, tree stays visible.
@@ -39,6 +43,11 @@ const DESKTOP_STYLE: CSSProperties = { position: "fixed", top: 0, right: 0, bott
  * Also rendered through a portal straight into <body>, so `position:
  * fixed` never sits inside the tree box's `overflow: hidden` ancestor
  * — another category of cross-browser inconsistency avoided outright.
+ *
+ * The header row (back link + close) is a `shrink-0` sibling of the
+ * scrollable content, not scrolled content itself, so it stays on
+ * screen while scrolling down to documents/relatives — previously the
+ * whole panel (header row included) was one `overflow-y-auto` box.
  */
 export function PersonDrawer({ person, people, relationships, media, viewer, onClose, onPersonSelect }: PersonDrawerProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -55,9 +64,9 @@ export function PersonDrawer({ person, people, relationships, media, viewer, onC
       aria-modal="true"
       aria-label="Карточка человека"
       style={isDesktop ? DESKTOP_STYLE : MOBILE_STYLE}
-      className="z-50 flex flex-col overflow-y-auto bg-(--color-bg-elevated) md:border-l md:border-(--color-border) md:shadow-(--shadow-md)"
+      className="z-50 flex flex-col bg-(--color-bg-elevated) md:border-l md:border-(--color-border) md:shadow-(--shadow-md)"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-(--color-border) bg-(--color-bg-elevated) px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-(--color-border) bg-(--color-bg-elevated) px-4 py-3">
         <Link
           href={`/people/${person.id}`}
           className="text-label text-xs text-(--color-fg-muted) hover:text-(--color-accent)"
@@ -74,7 +83,7 @@ export function PersonDrawer({ person, people, relationships, media, viewer, onC
         </button>
       </div>
 
-      <div className="flex-1 p-4">
+      <div className="flex-1 overflow-y-auto p-6">
         <PersonDetailContent
           person={person}
           parents={parents}

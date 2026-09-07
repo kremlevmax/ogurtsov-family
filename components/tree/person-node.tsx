@@ -116,7 +116,7 @@ export function PersonNode({ data }: NodeProps<Extract<FamilyFlowNode, { type: "
         className={cn(
           "relative flex cursor-pointer flex-col items-center justify-center gap-0.5 overflow-visible border-[3px] px-3 py-1.5 text-center shadow-(--shadow-sm) transition-shadow hover:shadow-(--shadow-md)",
           !effectiveColor && "bg-(--color-bg-elevated)",
-          isSelected && "ring-2 ring-(--color-accent)",
+          isSelected && "ring-2 ring-(--color-accent) ring-offset-2 ring-offset-(--color-bg)",
         )}
       >
         <div
@@ -177,17 +177,17 @@ export function PersonNode({ data }: NodeProps<Extract<FamilyFlowNode, { type: "
         )}
         <div
           className={cn(
-            "font-heading line-clamp-2 leading-tight font-bold text-(--color-fg)",
-            isBranchRoot ? "mt-1 text-sm" : "text-xs",
+            "font-heading line-clamp-3 text-[17px] leading-[1.2] font-bold text-(--color-fg)",
+            isBranchRoot && "mt-1",
           )}
         >
           {person.displayName || "Без имени"}
         </div>
-        {/* Life span reads as an italic serif date (font-body), matching
-          the "Викторианский альбом" mockup's card — not the site's
-          uppercase-tracked `.text-label` used for real form/eyebrow
-          labels elsewhere. */}
-        {lifeSpan && <div className="font-body text-[11px] italic text-(--color-fg-muted)">{lifeSpan}</div>}
+        {/* Life span — plain (not italic) so small numerals stay crisp at
+          this size; still font-body/serif to match the name above it,
+          not the site's uppercase-tracked `.text-label` used for real
+          form/eyebrow labels elsewhere. */}
+        {lifeSpan && <div className="font-body text-[13px] text-(--color-fg-muted)">{lifeSpan}</div>}
         {person.isPlaceholder && (
           <div className="text-[10px] italic text-(--color-fg-muted)">неизвестный родственник</div>
         )}

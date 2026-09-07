@@ -74,7 +74,11 @@ export function PersonDetailContent({
               <span className="block text-[34px] text-(--color-fg)">
                 {person.lastName && <span className="font-bold">{person.lastName}</span>}
                 {person.lastName && person.maidenName && " "}
-                {person.maidenName && <span className="italic">({person.maidenName})</span>}
+                {/* Smaller and muted, not the surname's own size/weight — italic still marks it as
+                  the maiden name specifically, just without competing with the current surname next to it. */}
+                {person.maidenName && (
+                  <span className="text-[26px] text-(--color-fg-muted) italic">({person.maidenName})</span>
+                )}
               </span>
             )}
             {!givenNames && !person.lastName && !person.maidenName && (
@@ -96,7 +100,7 @@ export function PersonDetailContent({
 
       <div className="grid gap-8 @2xl:grid-cols-[240px_1fr]">
         <section className="rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-5">
-          <p className="text-label mb-4 text-[16px] text-(--color-fg-muted)">Основные данные</p>
+          <p className="font-heading mb-4 text-[20px] text-(--color-heading)">Основные данные</p>
           <dl className="flex flex-col">
             <VitalRow icon={Calendar} label="Дата рождения">
               {person.birth ? formatDateValue(person.birth) : "неизвестно"}
@@ -130,7 +134,7 @@ export function PersonDetailContent({
         </section>
 
         <section>
-          <p className="text-label mb-3 text-[16px] text-(--color-fg-muted)">Биография</p>
+          <p className="font-heading mb-3 text-[20px] text-(--color-heading)">Биография</p>
           {person.shortBio ? (
             <p className="whitespace-pre-line text-[20px] leading-relaxed text-(--color-fg)">
               {person.shortBio}
@@ -256,8 +260,8 @@ function VitalRow({
     <div className={last ? "flex gap-3 py-3" : "flex gap-3 border-b border-(--color-border) py-3"}>
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-(--color-accent)" aria-hidden="true" />
       <div>
-        <dt className="text-label text-[15px] text-(--color-fg-muted)">{label}</dt>
-        <dd className="text-[18px] text-(--color-fg)">{children}</dd>
+        <dt className="text-label text-[14px] tracking-[0.06em] text-(--color-fg-muted)">{label}</dt>
+        <dd className="text-[18px] font-medium text-(--color-fg)">{children}</dd>
       </div>
     </div>
   );
@@ -278,16 +282,20 @@ function RelationSection({
 
   return (
     <section>
-      <p className="text-label mb-2 text-[16px] text-(--color-fg-muted)">{title}</p>
-      <ul className="flex flex-wrap gap-2">
+      <p className="font-heading mb-2 text-[20px] text-(--color-heading)">{title}</p>
+      {/* Each relative is a full-width row, not a wrapped chip — a long
+        name gets its own line(s) instead of being squeezed or clipped,
+        and a same-line relation label (e.g. "Супруг(а)") never fights
+        the name for width; it drops to its own small line under the
+        name instead. */}
+      <ul className="flex flex-col divide-y divide-(--color-border) overflow-hidden rounded-[var(--radius-sm)] border border-(--color-border)">
         {people.map((relative, index) => {
           const label = labels?.[index];
-          const className =
-            "inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-1.5 text-[18px] text-(--color-fg) hover:border-(--color-accent)";
+          const className = "block w-full px-3 py-2.5 text-left text-[18px] text-(--color-fg) hover:bg-(--color-bg-inset)";
           const content = (
             <>
-              {buildDisplayName(relative)}
-              {label && <span className="text-label text-[14px] text-(--color-fg-muted)">{label}</span>}
+              <span className="block">{buildDisplayName(relative)}</span>
+              {label && <span className="text-label mt-0.5 block text-[13px] text-(--color-fg-muted)">{label}</span>}
             </>
           );
 

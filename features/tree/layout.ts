@@ -9,14 +9,15 @@ export interface PositionedNode {
   height: number;
 }
 
-// Height bumped 92 -> 104 alongside the "Викторианский альбом" frame
-// (docs/DECISIONS.md, 2026-08-20): the frame's inner hairline + corner
-// scrolls left too little room for a 2-line wrapped ФИО plus the
-// avatar, so long names started crowding into the border. Every
+// Height bumped 92 -> 104 -> 128: first alongside the "Викторианский
+// альбом" frame (docs/DECISIONS.md, 2026-08-20) to fit a 2-line ФИО;
+// then again for the readability pass that grew the name to 17px and
+// allowed a 3rd wrapped line for long names (person-node.tsx) — 104px
+// no longer had room for that without crowding the border. Every
 // connector-height formula elsewhere (ROW_GAP, GENERATION_HEIGHT, the
 // custom parentTie bend) is computed from this constant rather than a
 // hardcoded number, so this is the only place that needs to change.
-export const PERSON_NODE_SIZE = { width: 272, height: 104 } as const;
+export const PERSON_NODE_SIZE = { width: 272, height: 128 } as const;
 /**
  * Must match the FamilyUnitNode component's actual rendered size
  * (`h-2.5 w-2.5` = 10px) exactly. A mismatch here shifts the node's

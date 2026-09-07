@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { FileText, Images, MapPin, Sparkles, Mail, type LucideIcon } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { BranchLine, Ornament } from "@/components/ui/ornament";
 
@@ -8,13 +9,13 @@ export const metadata: Metadata = {
   description: "История семьи Огурцовых, возвращённая из архивов и памяти — родословное древо, документы, фотографии и родовые места.",
 };
 
-const ARCHIVE_TILES = [
-  { title: "Документы", text: "Архивные свидетельства и записи", icon: "▤", href: "/archive" },
-  { title: "Фотографии", text: "Лица и семейные воспоминания", icon: "◫", href: "/gallery" },
-  { title: "Карта мест", text: "География семейной истории", icon: "⌖", href: "#places" },
-  { title: "История", text: "Как возвращались забытые имена — текст и аудио", icon: "✧", href: "/story" },
-  { title: "Отзывы и связь", text: "Сообщения потомков семьи", icon: "✉", href: "/lounge" },
-] as const;
+const ARCHIVE_TILES: { title: string; text: string; icon: LucideIcon; href: string }[] = [
+  { title: "Документы", text: "Архивные свидетельства и записи", icon: FileText, href: "/archive" },
+  { title: "Фотографии", text: "Лица и семейные воспоминания", icon: Images, href: "/gallery" },
+  { title: "Карта мест", text: "География семейной истории", icon: MapPin, href: "#places" },
+  { title: "История", text: "Как возвращались забытые имена — текст и аудио", icon: Sparkles, href: "/story" },
+  { title: "Отзывы и связь", text: "Сообщения потомков семьи", icon: Mail, href: "/lounge" },
+];
 
 /**
  * The one-page family story that greets every visitor before the tree
@@ -63,10 +64,10 @@ export default function HomePage() {
         {/* Hero content: an asymmetric composition (owner's layout extraction) — wide title plate near the top, open map in the middle, a narrower card bottom-right, a small scroll hint near the bottom edge. Not a centered/symmetric hero. */}
         <div className="relative flex h-full flex-col px-6 pt-[19px] pb-[18px] sm:px-16">
           {/* Title plate — three independent columns (kicker / name / subtitle), each left-aligned, all vertically centered within the plate. Triple-line "passe-partout" frame with exact measured offsets/opacities. */}
-          <div className="relative mt-[6px] w-full shrink-0 rounded-none border border-(--color-border) bg-(--color-bg-elevated)/97 shadow-[0_5px_18px_0_rgba(56,64,54,0.08)]">
+          <div className="relative mt-[6px] w-full shrink-0 rounded-none border border-(--color-border) bg-(--color-bg-elevated) shadow-[0_5px_18px_0_rgba(56,64,54,0.08)]">
             <div aria-hidden="true" className="pointer-events-none absolute inset-[10px] rounded-none border border-[rgba(216,208,187,0.80)]" />
             <div aria-hidden="true" className="pointer-events-none absolute inset-[16px] rounded-none border border-[rgba(216,208,187,0.45)]" />
-            <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-11 sm:py-4">
+            <div className="relative flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-11 sm:pt-4 sm:pb-7">
               <p className="font-label shrink-0 text-[16px] leading-[17px] font-bold tracking-[1.92px] text-(--color-fg) uppercase">
                 Семейный архив •
                 <br />
@@ -77,10 +78,8 @@ export default function HomePage() {
                 <br />
                 Огурцовых
               </h1>
-              <p className="font-heading text-[18px] leading-[26px] text-(--color-fg) sm:text-[23px] sm:leading-[31px]">
-                История семьи, возвращённая из архивов и
-                <br />
-                памяти
+              <p className="font-heading max-w-[28ch] text-balance text-[18px] leading-[26px] text-(--color-fg) sm:text-[23px] sm:leading-[31px]">
+                История семьи, возвращённая из архивов и памяти
               </p>
             </div>
           </div>
@@ -88,7 +87,7 @@ export default function HomePage() {
           {/* Open map space, then the bottom-right card and the independent scroll hint. */}
           <div className="relative flex-1">
             <div className="mt-6 flex flex-col sm:absolute sm:right-0 sm:bottom-0 sm:mt-0 sm:w-[45%] sm:min-w-[420px]">
-              <div className="relative w-full rounded-none border border-(--color-border) bg-(--color-bg-elevated)/97 text-center shadow-[0_5px_18px_0_rgba(56,64,54,0.08)]">
+              <div className="relative w-full rounded-none border border-(--color-border) bg-(--color-bg-elevated) text-center shadow-[0_5px_18px_0_rgba(56,64,54,0.08)]">
                 <div aria-hidden="true" className="pointer-events-none absolute inset-[10px] rounded-none border border-[rgba(216,208,187,0.80)]" />
                 <div aria-hidden="true" className="pointer-events-none absolute inset-[16px] rounded-none border border-[rgba(216,208,187,0.45)]" />
                 <div className="relative px-6 py-8 sm:px-11 sm:pt-9 sm:pb-9">
@@ -140,7 +139,7 @@ export default function HomePage() {
           Этот сайт создан для сохранения памяти о семье Огурцовых и для тех, кто захочет пройти по ветвям нашего
           родословного дерева.
         </p>
-        <p className="font-heading mt-6 text-[17px] leading-[28px] text-(--color-fg-muted) sm:text-[19px] sm:leading-[31px]">
+        <p className="font-heading mt-6 text-[17px] leading-[28px] text-(--color-fg) sm:text-[19px] sm:leading-[31px]">
           Здесь можно познакомиться с историей семьи, посмотреть архивные документы, фотографии и родовые места,
           прочитать рассказ о том, как шаг за шагом восстанавливалась почти забытая история рода. Но главное — это не
           законченная родословная. Поиск продолжается.
@@ -148,7 +147,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-(--color-border) bg-(--color-bg-inset)" id="descendants">
-        <div className="mx-auto max-w-3xl px-4 py-20 text-center sm:py-24">
+        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:py-20">
           <p className="font-label mb-3 font-bold text-[16px] tracking-[2.16px] text-(--color-fg-muted) uppercase">Продолжение истории</p>
           <h2 className="font-heading text-[40px] leading-[44px] text-(--color-heading) sm:text-[55px] sm:leading-[58px]">Вы потомок рода Огурцовых?</h2>
           <p className="font-heading mt-6 text-[16px] leading-[26px] text-(--color-fg) sm:text-[19px] sm:leading-[31px]">
@@ -157,8 +156,9 @@ export default function HomePage() {
             вопросительным знаком.
           </p>
           <div className="mt-8 flex flex-col items-center gap-2">
-            <StubButton>Подать заявку</StubButton>
-            <small className="font-label text-[16px] text-(--color-fg-muted)">
+            <StubButton hideStatus>Подать заявку</StubButton>
+            <p className="font-label text-[16px] text-(--color-fg-muted)">Приём заявок скоро откроется</p>
+            <small className="font-label text-[16px] text-(--color-fg)">
               Дополнения публикуются только после проверки родственной связи
             </small>
           </div>
@@ -171,15 +171,17 @@ export default function HomePage() {
         </div>
         <div>
           <p className="font-label mb-3 font-bold text-[16px] tracking-[2.16px] text-(--color-fg-muted) uppercase">Страницы исследования</p>
-          <h2 className="font-heading text-[42px] leading-[46px] text-(--color-heading) sm:text-[58px] sm:leading-[62px]">История поиска и семьи</h2>
+          <h2 className="font-heading max-w-[13ch] text-balance text-[42px] leading-[46px] text-(--color-heading) sm:text-[58px] sm:leading-[62px]">
+            История поиска и семьи
+          </h2>
           <p className="font-heading mt-6 text-[19px] leading-[32px] text-(--color-fg) sm:text-[23px] sm:leading-[38px]">
             Всё началось с нескольких имён, старых фотографий и желания понять, откуда пришла наша семья.
           </p>
-          <p className="font-heading mt-6 text-[19px] leading-[32px] text-(--color-fg)">
+          <p className="font-heading mt-6 text-[19px] leading-[32px] text-(--color-fg) sm:text-[23px] sm:leading-[38px]">
             Архивные записи, метрические книги и подворовые карточки постепенно соединяли поколения — и возвращали на
             древо людей, о которых в семье уже почти не помнили.
           </p>
-          <div className="mt-6 flex flex-wrap gap-6">
+          <div className="mt-4 flex flex-wrap gap-6">
             <Link href="/story" className="font-label text-[18px] font-bold leading-[22px] text-(--color-heading) transition-opacity hover:opacity-80">
               Подробнее о проекте →
             </Link>
@@ -189,9 +191,9 @@ export default function HomePage() {
 
       <section className="bg-(--color-accent) px-4 py-24 text-center sm:py-28" id="tree">
         <BranchLine className="mx-auto mb-6 h-8 w-32 text-(--color-gold-light)" />
-        <p className="font-label mb-3 font-bold text-[16px] tracking-[2.16px] text-(--color-bg) uppercase opacity-38">Поколение за поколением</p>
+        <p className="font-label mb-3 font-bold text-[16px] tracking-[2.16px] text-[#BCC6B4] uppercase">Поколение за поколением</p>
         <h2 className="font-heading text-[42px] leading-[46px] text-(--color-bg) sm:text-[58px] sm:leading-[62px]">Родословное древо</h2>
-        <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[26px] text-[rgba(251,248,239,0.49)] sm:text-[19px] sm:leading-[31px]">
+        <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[26px] text-[#CDD4C7] sm:text-[19px] sm:leading-[31px]">
           Три основные ветви рода, берущие начало от братьев Игната, Сафрона и Степана Гавриловичей.
         </p>
         <Link
@@ -202,7 +204,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-20 text-center sm:py-28" id="archive-section">
+      <section className="mx-auto max-w-5xl px-4 py-16 text-center sm:py-24" id="archive-section">
         <p className="font-label mb-3 font-bold text-[16px] tracking-[2.16px] text-(--color-fg-muted) uppercase">Семейное собрание</p>
         <h2 className="font-heading text-[42px] leading-[46px] text-(--color-heading) sm:text-[58px] sm:leading-[62px]">Архив рода</h2>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -210,12 +212,14 @@ export default function HomePage() {
             <Link
               key={tile.title}
               href={tile.href}
-              className="group flex flex-col items-start rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-6 text-left transition-colors hover:border-(--color-gold)"
+              className="group flex h-full flex-col items-start rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) p-6 text-left transition-colors hover:border-(--color-gold)"
             >
-              <span className="text-2xl text-(--color-gold)">{tile.icon}</span>
+              <tile.icon className="h-6 w-6 text-(--color-gold)" aria-hidden="true" strokeWidth={1.75} />
               <h3 className="font-heading mt-5 text-[24px] leading-[30px] text-(--color-fg)">{tile.title}</h3>
-              <p className="font-heading mt-2 text-[16px] leading-[21px] text-(--color-fg-muted)">{tile.text}</p>
-              <span className="font-label mt-4 text-[16px] leading-[18px] font-bold text-(--color-heading)">Открыть →</span>
+              <p className="font-heading mt-2 text-[16px] leading-[21px] text-(--color-fg)">{tile.text}</p>
+              <span className="font-label mt-auto pt-4 text-[16px] leading-[18px] font-bold text-(--color-heading)">
+                Открыть →
+              </span>
             </Link>
           ))}
         </div>
@@ -244,7 +248,7 @@ export default function HomePage() {
           <br />
           Оно продолжает расти вместе с памятью семьи.
         </h2>
-        <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[24px] text-[rgba(251,248,239,0.4624)] sm:text-[18px] sm:leading-[29px]">
+        <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[24px] text-[#CDD4C7] sm:text-[18px] sm:leading-[29px]">
           Если у вас сохранились фотографии, документы или воспоминания — помогите продолжить эту историю.
         </p>
         <div className="mt-8 flex justify-center">
@@ -263,8 +267,15 @@ export default function HomePage() {
   );
 }
 
-/** A visibly inert stand-in for a feature this site doesn't have yet (public application form, reviews) — no href, so it can never look like a broken link. Deliberately kept visually muted/outlined (not the accent-filled look the extracted spec implies for a "real" button) so it never reads as an active control. */
-function StubButton({ children, dark = false }: { children: string; dark?: boolean }) {
+/**
+ * A visibly inert stand-in for a feature this site doesn't have yet (public application form, reviews) — no href, so it can never look like a broken link. Deliberately kept visually muted/outlined (not the accent-filled look the extracted spec implies for a "real" button) so it never reads as an active control.
+ *
+ * `hideStatus` drops the inline "· скоро" — used where the caller shows
+ * its own separate status line below the button instead (owner's
+ * request: keep the button's own label ("Подать заявку") readable on
+ * its own, not fused with its availability note into one string).
+ */
+function StubButton({ children, dark = false, hideStatus = false }: { children: string; dark?: boolean; hideStatus?: boolean }) {
   return (
     <span
       className={
@@ -276,7 +287,7 @@ function StubButton({ children, dark = false }: { children: string; dark?: boole
       title="Скоро"
     >
       {children}
-      <span className="text-[16px] normal-case">· скоро</span>
+      {!hideStatus && <span className="text-[16px] normal-case">· скоро</span>}
     </span>
   );
 }
