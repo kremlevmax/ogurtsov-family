@@ -240,8 +240,11 @@ export default function HomePage() {
             Коровино и Рубежня — главные точки ранней истории нашей ветви рода. Именно эта земля остаётся отправной
             точкой всей истории.
           </p>
-          <Link href="/tree" className="font-label mt-6 inline-block w-fit text-[18px] font-bold text-(--color-heading) transition-opacity hover:opacity-80">
-            Смотреть на родословном древе →
+          <Link
+            href="/archive/8b33130a-e4b5-4942-8e26-60fad5da73ba"
+            className="font-label mt-6 inline-block w-fit text-[18px] font-bold text-(--color-heading) transition-opacity hover:opacity-80"
+          >
+            Смотреть на карте →
           </Link>
         </div>
       </section>
@@ -255,8 +258,25 @@ export default function HomePage() {
         <p className="mx-auto mt-6 max-w-xl text-[16px] leading-[24px] text-[#CDD4C7] sm:text-[18px] sm:leading-[29px]">
           Если у вас сохранились фотографии, документы или воспоминания — помогите продолжить эту историю.
         </p>
-        <div className="mt-8 flex justify-center">
-          <StubButton dark>Присоединиться к истории</StubButton>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Link
+            href="/archive"
+            className="font-label inline-flex h-11 w-44 items-center justify-center rounded-[var(--radius-md)] bg-(--color-bg-elevated) px-6 text-[16px] font-bold tracking-[0.065px] text-(--color-heading) uppercase transition-opacity hover:opacity-90"
+          >
+            Архив
+          </Link>
+          <Link
+            href="/gallery"
+            className="font-label inline-flex h-11 w-44 items-center justify-center rounded-[var(--radius-md)] bg-(--color-bg-elevated) px-6 text-[16px] font-bold tracking-[0.065px] text-(--color-heading) uppercase transition-opacity hover:opacity-90"
+          >
+            Фотографии
+          </Link>
+          <Link
+            href="/lounge"
+            className="font-label inline-flex h-11 w-44 items-center justify-center rounded-[var(--radius-md)] bg-(--color-bg-elevated) px-6 text-[16px] font-bold tracking-[0.065px] text-(--color-heading) uppercase transition-opacity hover:opacity-90"
+          >
+            Гостиная
+          </Link>
         </div>
       </section>
 
@@ -268,30 +288,5 @@ export default function HomePage() {
         </a>
       </footer>
     </div>
-  );
-}
-
-/**
- * A visibly inert stand-in for a feature this site doesn't have yet
- * (contributing photos/materials) — no href, so it can never look like
- * a broken link. Deliberately kept visually muted/outlined (not the
- * accent-filled look the extracted spec implies for a "real" button)
- * so it never reads as an active control. "Подать заявку" above used
- * to be one of these too — now a real link to /register.
- */
-function StubButton({ children, dark = false }: { children: string; dark?: boolean }) {
-  return (
-    <span
-      className={
-        "font-label inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-[var(--radius-md)] border px-6 text-[16px] font-bold tracking-[0.065px] uppercase opacity-70 " +
-        (dark
-          ? "border-(--color-bg-elevated) text-(--color-bg-elevated)"
-          : "border-(--color-border) text-(--color-fg-muted)")
-      }
-      title="Скоро"
-    >
-      {children}
-      <span className="text-[16px] normal-case">· скоро</span>
-    </span>
   );
 }

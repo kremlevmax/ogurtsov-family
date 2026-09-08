@@ -280,7 +280,7 @@
 }
 
 .pinned {
-  height: 112px;
+  min-height: 112px;
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
@@ -309,7 +309,8 @@
 }
 
 .pinnedText {
-  font: 400 14px/20px var(--lounge-sans);
+  font: 700 14px/20px var(--lounge-sans);
+  white-space: pre-wrap;
 }
 
 /* ---------- Pinned banner: editor create/edit/delete (PinnedMessageEditor) ---------- */
@@ -709,11 +710,6 @@
   .composeHint {
     white-space: normal;
     width: auto;
-  }
-
-  .pinned {
-    height: auto;
-    min-height: 112px;
   }
 
   .feedHeading {
