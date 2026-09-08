@@ -86,7 +86,7 @@ export function Header({ search }: HeaderProps) {
       <div className="flex h-20 items-center justify-between gap-4 px-6 sm:px-10">
         <Link href="/" className="flex shrink-0 items-center gap-3">
           <Monogram />
-          <span className="font-heading hidden text-lg font-semibold text-(--color-fg) sm:inline">
+          <span className="font-heading hidden text-lg font-semibold tracking-[1.5px] text-(--color-heading) uppercase sm:inline">
             Род Огурцовых
           </span>
         </Link>

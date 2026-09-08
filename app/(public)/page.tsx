@@ -162,9 +162,6 @@ export default function HomePage() {
             >
               Подать заявку
             </Link>
-            <small className="font-label text-[16px] text-(--color-fg)">
-              Регистрация в «Семейной гостиной» — писать можно сразу, доступ к дереву откроется после проверки
-            </small>
           </div>
         </div>
       </section>
