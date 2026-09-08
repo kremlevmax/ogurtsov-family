@@ -282,7 +282,10 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      current_user_has_tree_access: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;

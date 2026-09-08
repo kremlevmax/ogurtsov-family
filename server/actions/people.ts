@@ -30,6 +30,9 @@ export async function createPersonAction(input: unknown): Promise<PersonActionSt
   } catch {
     return { ok: false, error: "Нужно войти, чтобы добавить человека." };
   }
+  if (!member.hasTreeAccess) {
+    return { ok: false, error: "Добавление людей в дерево появится после одобрения администратора." };
+  }
 
   const parsed = personFormSchema.safeParse(input);
   if (!parsed.success) {
@@ -116,5 +119,24 @@ export async function restorePersonAction(personId: string): Promise<DeletePerso
     return { ok: true };
   } catch (error) {
     return { ok: false, error: toUserMessage(error, "Не удалось восстановить человека. Попробуйте ещё раз.") };
+  }
+}
+
+/** Empties one entry from the trash (app/edit/page.tsx) for good — editor-only, no undo past this point. */
+export async function purgePersonAction(personId: string): Promise<DeletePersonState> {
+  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  try {
+    editor = await requireEditor();
+  } catch {
+    return { ok: false, error: "Нужно войти как редактор." };
+  }
+
+  try {
+    await peopleRepo.purgePerson(editor.supabase, personId);
+    revalidatePath("/tree");
+    revalidatePath("/edit");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toUserMessage(error, "Не удалось удалить навсегда. Попробуйте ещё раз.") };
   }
 }

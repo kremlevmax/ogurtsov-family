@@ -261,6 +261,25 @@ export async function restoreMediaAction(mediaId: string): Promise<MediaActionSt
   }
 }
 
+/** Empties one entry from the file trash (app/edit/page.tsx) for good — deletes the DB row, then the R2 object. No undo past this point. */
+export async function purgeMediaAction(mediaId: string): Promise<MediaActionState> {
+  let editor: Awaited<ReturnType<typeof requireEditor>>;
+  try {
+    editor = await requireEditor();
+  } catch {
+    return { ok: false, error: "Нужно войти как редактор." };
+  }
+
+  try {
+    const objectKey = await mediaRepo.purgeMedia(editor.supabase, mediaId);
+    await deleteR2Object(objectKey).catch(() => {});
+    revalidatePath("/edit");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toUserMessage(error, "Не удалось удалить навсегда. Попробуйте ещё раз.") };
+  }
+}
+
 export async function setProfilePhotoAction(personId: string, mediaId: string): Promise<MediaActionState> {
   let editor: Awaited<ReturnType<typeof requireEditor>>;
   try {

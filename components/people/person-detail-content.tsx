@@ -25,7 +25,7 @@ export interface PersonDetailContentProps {
   siblings: Person[];
   media: PersonMedia[];
   /** Editors can manage everyone; a plain member can only manage the people they added themselves (docs/DECISIONS.md). */
-  viewer: { isEditor: boolean; memberId: string | null };
+  viewer: { isEditor: boolean; memberId: string | null; hasTreeAccess: boolean };
   /** Everyone in the tree, for LinkedPeopleManager's "add a person" search (via MediaSection). */
   allPeople: Person[];
   /**
@@ -92,7 +92,13 @@ export function PersonDetailContent({
         </div>
 
         {isMember && (
-          <MemberQuickActions personId={person.id} parents={parents} isEditor={viewer.isEditor} canManage={canManage} />
+          <MemberQuickActions
+            personId={person.id}
+            parents={parents}
+            isEditor={viewer.isEditor}
+            hasTreeAccess={viewer.hasTreeAccess}
+            canManage={canManage}
+          />
         )}
       </div>
 
@@ -183,40 +189,47 @@ function MemberQuickActions({
   personId,
   parents,
   isEditor,
+  hasTreeAccess,
   canManage,
 }: {
   personId: string;
   parents: ParentLink[];
   isEditor: boolean;
+  hasTreeAccess: boolean;
   canManage: boolean;
 }) {
   const hasMother = parents.some((link) => link.role === "mother");
   const hasFather = parents.some((link) => link.role === "father");
   const newPersonBase = isEditor ? "/edit/people/new" : "/tree/add";
   const editHref = isEditor ? `/edit/people/${personId}` : `/tree/edit/${personId}`;
+  const canAddPeople = isEditor || hasTreeAccess;
 
-  const actions = [
-    !hasMother && {
-      label: "Добавить карточку матери",
-      href: `${newPersonBase}?relationTo=${personId}&relationKind=mother`,
-      icon: UserPlus,
-    },
-    !hasFather && {
-      label: "Добавить карточку отца",
-      href: `${newPersonBase}?relationTo=${personId}&relationKind=father`,
-      icon: UserPlus,
-    },
-    {
-      label: "Добавить карточку супруга/партнёра",
-      href: `${newPersonBase}?relationTo=${personId}&relationKind=spouse`,
-      icon: Heart,
-    },
-    {
-      label: "Добавить карточку ребёнка",
-      href: `${newPersonBase}?relationTo=${personId}&relationKind=child`,
-      icon: Baby,
-    },
-  ].filter((action): action is { label: string; href: string; icon: typeof UserPlus } => Boolean(action));
+  const actions = !canAddPeople
+    ? []
+    : [
+        !hasMother && {
+          label: "Добавить карточку матери",
+          href: `${newPersonBase}?relationTo=${personId}&relationKind=mother`,
+          icon: UserPlus,
+        },
+        !hasFather && {
+          label: "Добавить карточку отца",
+          href: `${newPersonBase}?relationTo=${personId}&relationKind=father`,
+          icon: UserPlus,
+        },
+        {
+          label: "Добавить карточку супруга/партнёра",
+          href: `${newPersonBase}?relationTo=${personId}&relationKind=spouse`,
+          icon: Heart,
+        },
+        {
+          label: "Добавить карточку ребёнка",
+          href: `${newPersonBase}?relationTo=${personId}&relationKind=child`,
+          icon: Baby,
+        },
+      ].filter((action): action is { label: string; href: string; icon: typeof UserPlus } => Boolean(action));
+
+  if (actions.length === 0 && !canManage) return null;
 
   return (
     <div className="flex flex-wrap gap-2">

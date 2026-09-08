@@ -15,7 +15,7 @@ export interface PersonDrawerProps {
   people: Person[];
   relationships: Relationship[];
   media: PersonMedia[];
-  viewer: { isEditor: boolean; memberId: string | null };
+  viewer: { isEditor: boolean; memberId: string | null; hasTreeAccess: boolean };
   onClose: () => void;
   onPersonSelect: (personId: string) => void;
 }

@@ -139,6 +139,29 @@ export async function restoreMedia(supabase: Client, mediaId: string): Promise<v
   if (error) throw error;
 }
 
+/**
+ * Permanently deletes an already-soft-deleted media row and returns its
+ * object key so the caller can also remove the R2 object — this
+ * repository layer never touches R2 itself (server/actions/media.ts
+ * does, same split as everywhere else). Refuses to touch a row that
+ * isn't already soft-deleted; only reachable from the trash list
+ * (app/edit/page.tsx). person_media rows referencing this media
+ * cascade-delete via their own FK (0001_init.sql: `on delete cascade`).
+ */
+export async function purgeMedia(supabase: Client, mediaId: string): Promise<string> {
+  const { data, error: fetchError } = await supabase
+    .from("media")
+    .select("object_key, deleted_at")
+    .eq("id", mediaId)
+    .single();
+  if (fetchError) throw fetchError;
+  if (!data.deleted_at) throw new Error("Нельзя удалить навсегда файл, который не в корзине.");
+
+  const { error } = await supabase.from("media").delete().eq("id", mediaId);
+  if (error) throw error;
+  return data.object_key;
+}
+
 /** Who created this (possibly already soft-deleted) media row — used to gate a member's own-file details edit (server/actions/media-edit.ts). */
 export async function getMediaCreatedBy(supabase: Client, mediaId: string): Promise<string | null> {
   const { data, error } = await supabase.from("media").select("created_by").eq("id", mediaId).maybeSingle();

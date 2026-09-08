@@ -28,7 +28,7 @@ export interface FamilyTreeExplorerProps {
   relationships: Relationship[];
   mediaByPersonId: Record<string, PersonMedia[]>;
   searchablePeople: (SearchablePerson & { lifeSpan: string | null })[];
-  viewer: { isEditor: boolean; memberId: string | null; displayName: string | null };
+  viewer: { isEditor: boolean; memberId: string | null; hasTreeAccess: boolean; displayName: string | null };
 }
 
 /**
@@ -106,12 +106,16 @@ export function FamilyTreeExplorer({
           {viewer.memberId && (
             <div className="flex items-center justify-between rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-4 py-2">
               <p className="text-sm text-(--h-muted)">Вы вошли как {viewer.displayName}</p>
-              <Link
-                href={viewer.isEditor ? "/edit" : "/tree/add"}
-                className="text-label text-xs text-(--h-forest-800) hover:underline"
-              >
-                {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
-              </Link>
+              {viewer.isEditor || viewer.hasTreeAccess ? (
+                <Link
+                  href={viewer.isEditor ? "/edit" : "/tree/add"}
+                  className="text-label text-xs text-(--h-forest-800) hover:underline"
+                >
+                  {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
+                </Link>
+              ) : (
+                <span className="text-label text-xs text-(--h-muted)">Заявка на рассмотрении у администратора</span>
+              )}
             </div>
           )}
 
@@ -128,7 +132,7 @@ export function FamilyTreeExplorer({
                 people={people}
                 relationships={relationships}
                 media={mediaByPersonId[selectedPerson.id] ?? []}
-                viewer={{ isEditor: viewer.isEditor, memberId: viewer.memberId }}
+                viewer={{ isEditor: viewer.isEditor, memberId: viewer.memberId, hasTreeAccess: viewer.hasTreeAccess }}
                 onClose={() => selectPerson(null)}
                 onPersonSelect={selectPerson}
               />
@@ -179,12 +183,16 @@ export function FamilyTreeExplorer({
             <p className="text-sm text-(--h-muted)">
               В дереве пока никого нет.{" "}
               {viewer.memberId ? (
-                <Link
-                  href={viewer.isEditor ? "/edit/people/new" : "/tree/add"}
-                  className="text-(--h-forest-800) hover:underline"
-                >
-                  Добавить первого человека
-                </Link>
+                viewer.isEditor || viewer.hasTreeAccess ? (
+                  <Link
+                    href={viewer.isEditor ? "/edit/people/new" : "/tree/add"}
+                    className="text-(--h-forest-800) hover:underline"
+                  >
+                    Добавить первого человека
+                  </Link>
+                ) : (
+                  <span>Добавление людей появится после одобрения администратора.</span>
+                )
               ) : (
                 <Link href="/register" className="text-(--h-forest-800) hover:underline">
                   Зарегистрируйтесь, чтобы начать заполнять дерево.

@@ -1,15 +1,16 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { BookMarked, BookOpen, FolderOpen, Landmark, Mail, Files, User } from "lucide-react";
+import { BookMarked, BookOpen, FolderOpen, Landmark, Mail, Files, Map, User } from "lucide-react";
 import { DOCUMENT_CATEGORIES, type DocumentCategory } from "@/lib/validation/document-category";
 
 const CATEGORY_ICONS: Record<DocumentCategory, typeof BookOpen> = {
-  "Старинные документы": BookOpen,
+  "Метрические записи": BookOpen,
   "Личные документы": User,
   Письма: Mail,
-  "Семейные истории": BookMarked,
+  "Ревизские сказки": BookMarked,
   "Ответы архивов и справки": Landmark,
+  Карты: Map,
   "Другие документы": Files,
 };
 

@@ -11,6 +11,8 @@ import { listPendingTreeAccessRequests } from "@/server/repositories/lounge-tree
 import { buildDisplayName } from "@/lib/names/display-name";
 import { RestorePersonButton } from "@/components/forms/restore-person-button";
 import { RestoreMediaButton } from "@/components/forms/restore-media-button";
+import { PurgePersonButton } from "@/components/forms/purge-person-button";
+import { PurgeMediaButton } from "@/components/forms/purge-media-button";
 import { ApproveTreeAccessButton } from "@/components/forms/approve-tree-access-button";
 import { RejectTreeAccessButton } from "@/components/forms/reject-tree-access-button";
 
@@ -147,7 +149,10 @@ export default async function EditHomePage() {
                   <span className="text-sm text-(--color-fg-muted)">
                     {buildDisplayName(person) || "Без имени"}
                   </span>
-                  <RestorePersonButton personId={person.id} />
+                  <div className="flex shrink-0 items-center gap-3">
+                    <RestorePersonButton personId={person.id} />
+                    <PurgePersonButton personId={person.id} displayName={buildDisplayName(person) || "Без имени"} />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -171,7 +176,10 @@ export default async function EditHomePage() {
                       <> · было привязано: {item.linkedPersonNames.join(", ")}</>
                     )}
                   </span>
-                  <RestoreMediaButton mediaId={item.id} />
+                  <div className="flex shrink-0 items-center gap-3">
+                    <RestoreMediaButton mediaId={item.id} />
+                    <PurgeMediaButton mediaId={item.id} title={item.title} />
+                  </div>
                 </li>
               ))}
             </ul>

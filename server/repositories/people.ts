@@ -234,3 +234,24 @@ async function restorePersonRow(supabase: Client, id: string): Promise<void> {
   const { error } = await supabase.from("people").update({ deleted_at: null }).eq("id", id);
   if (error) throw error;
 }
+
+/**
+ * Permanently deletes an already-soft-deleted person — only reachable
+ * from the trash list (app/edit/page.tsx), refuses to touch a live
+ * person. Relationships and person_media rows referencing this person
+ * cascade-delete via their own FK (0001_init.sql: `on delete cascade`);
+ * `site_settings.root_person_id` is set null the same way if it pointed
+ * here. Unlike softDeletePerson, there is no undo.
+ */
+export async function purgePerson(supabase: Client, id: string): Promise<void> {
+  const { data, error: fetchError } = await supabase
+    .from("people")
+    .select("deleted_at")
+    .eq("id", id)
+    .single();
+  if (fetchError) throw fetchError;
+  if (!data.deleted_at) throw new Error("Нельзя удалить навсегда человека, который не в корзине.");
+
+  const { error } = await supabase.from("people").delete().eq("id", id);
+  if (error) throw error;
+}

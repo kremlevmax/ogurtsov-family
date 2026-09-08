@@ -7,11 +7,12 @@
  * in the UI without ever writing that string to the row itself.
  */
 export const DOCUMENT_CATEGORIES = [
-  "Старинные документы",
+  "Метрические записи",
   "Личные документы",
   "Письма",
-  "Семейные истории",
+  "Ревизские сказки",
   "Ответы архивов и справки",
+  "Карты",
   "Другие документы",
 ] as const;
 

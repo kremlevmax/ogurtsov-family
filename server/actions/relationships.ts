@@ -19,6 +19,9 @@ export async function createRelationshipAction(input: unknown): Promise<Relation
   } catch {
     return { ok: false, error: "Нужно войти, чтобы добавить связь." };
   }
+  if (!member.hasTreeAccess) {
+    return { ok: false, error: "Добавление людей в дерево появится после одобрения администратора." };
+  }
 
   const parsed = relationshipInputSchema.safeParse(input);
   if (!parsed.success) {

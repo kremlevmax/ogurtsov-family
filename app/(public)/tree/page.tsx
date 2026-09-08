@@ -48,7 +48,12 @@ export default async function TreePage() {
         relationships={relationships}
         mediaByPersonId={mediaByPersonId}
         searchablePeople={searchablePeople}
-        viewer={{ isEditor: viewer.isEditor, memberId: viewer.userId, displayName: viewer.displayName }}
+        viewer={{
+          isEditor: viewer.isEditor,
+          memberId: viewer.userId,
+          hasTreeAccess: viewer.hasTreeAccess,
+          displayName: viewer.displayName,
+        }}
       />
     </Suspense>
   );

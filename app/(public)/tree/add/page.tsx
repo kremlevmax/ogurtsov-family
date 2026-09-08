@@ -44,6 +44,24 @@ export default async function AddPersonPage(props: PageProps<"/tree/add">) {
     throw error;
   }
 
+  if (!member.hasTreeAccess) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <Header />
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-4 py-8">
+          <Link href="/tree" className="text-label w-fit text-xs text-(--color-fg-muted) hover:text-(--color-accent)">
+            ← К дереву
+          </Link>
+          <h1 className="font-heading text-2xl font-bold">Добавление людей пока недоступно</h1>
+          <p className="text-sm text-(--color-fg-muted)">
+            Вы можете писать в «Семейной гостиной» уже сейчас. Возможность добавлять людей в дерево появится
+            после того, как администратор рассмотрит вашу заявку.
+          </p>
+        </main>
+      </div>
+    );
+  }
+
   let quickRelation: QuickRelation | null = null;
   if (relationToId && relationKind) {
     const relationToPerson = await getPersonById(member.supabase, relationToId);
