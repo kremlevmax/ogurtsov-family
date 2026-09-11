@@ -101,17 +101,6 @@ export function LoungeRegisterForm({ next }: LoungeRegisterFormProps) {
           </label>
         </div>
 
-        <label className="flex items-center gap-2 text-base text-(--color-fg-muted)">
-          <input
-            type="checkbox"
-            name="noInviteCode"
-            checked={noInviteCode}
-            onChange={(event) => setNoInviteCode(event.target.checked)}
-            className="h-4 w-4"
-          />
-          У меня нет кода приглашения
-        </label>
-
         {noInviteCode ? (
           <div className="flex flex-col gap-1">
             <label htmlFor="relationNote" className="text-lg font-medium">
@@ -139,6 +128,17 @@ export function LoungeRegisterForm({ next }: LoungeRegisterFormProps) {
             <Input id="inviteCode" name="inviteCode" type="text" autoComplete="off" required className="text-lg" />
           </div>
         )}
+
+        <label className="flex items-center gap-2 text-base text-(--color-fg-muted)">
+          <input
+            type="checkbox"
+            name="noInviteCode"
+            checked={noInviteCode}
+            onChange={(event) => setNoInviteCode(event.target.checked)}
+            className="h-4 w-4"
+          />
+          У меня нет кода приглашения
+        </label>
 
         {state.error && (
           <p role="alert" className="text-lg text-(--color-danger)">
