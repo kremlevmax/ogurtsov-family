@@ -181,6 +181,8 @@ export interface MediaDetailsPatch {
   caption?: string;
   /** Documents only — server/actions/media-edit.ts rejects this for any other kind before calling here. */
   category?: string | null;
+  /** Documents only, same restriction as category. */
+  transcript?: string | null;
 }
 
 /** Updates only title/caption/category of an already-uploaded photo/document (server/actions/media-edit.ts) — the uploader or an editor, never anything else about the row. */

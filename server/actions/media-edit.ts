@@ -100,6 +100,32 @@ export async function updateMediaDetailsAction(input: UpdateMediaDetailsInput): 
   }
 }
 
+export interface UpdateTranscriptInput {
+  mediaId: string;
+  transcript: string;
+}
+
+/** The "Расшифровка" tab's free text (components/media/document-viewer.tsx) — documents only, same ownership rule as updateMediaDetailsAction. */
+export async function updateTranscriptAction(input: UpdateTranscriptInput): Promise<MediaEditActionState> {
+  const supabase = await createSupabaseServerClient();
+
+  const actor = await loadActor(supabase, input.mediaId);
+  if (!actor.ok) return actor;
+
+  const { data: mediaRow } = await supabase.from("media").select("kind").eq("id", input.mediaId).maybeSingle();
+  if (mediaRow?.kind !== "document") {
+    return { ok: false, error: "Расшифровка предусмотрена только для документов." };
+  }
+
+  try {
+    await mediaRepo.updateMediaDetails(supabase, input.mediaId, { transcript: input.transcript.trim() || null }, actor.userId);
+    await revalidateMedia(supabase, input.mediaId);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: toUserMessage(error, "Не удалось сохранить расшифровку. Попробуйте ещё раз.") };
+  }
+}
+
 /** Links an already-uploaded photo/document to one more person. */
 export async function linkMediaToPersonAction(mediaId: string, personId: string): Promise<MediaEditActionState> {
   const supabase = await createSupabaseServerClient();

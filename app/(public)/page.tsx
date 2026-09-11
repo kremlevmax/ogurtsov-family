@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { FileText, Images, MapPin, Sparkles, Mail, type LucideIcon } from "lucide-react";
+import { FileText, Images, MapPin, Sparkles, Mail, MessageCircle, type LucideIcon } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { BranchLine, Ornament } from "@/components/ui/ornament";
 
@@ -12,9 +12,15 @@ export const metadata: Metadata = {
 const ARCHIVE_TILES: { title: string; text: string; icon: LucideIcon; href: string }[] = [
   { title: "Документы", text: "Архивные свидетельства и записи", icon: FileText, href: "/archive" },
   { title: "Фотографии", text: "Лица и семейные воспоминания", icon: Images, href: "/gallery" },
-  { title: "Карта мест", text: "География семейной истории", icon: MapPin, href: "#places" },
+  { title: "Карта мест", text: "География семейной истории", icon: MapPin, href: "/archive/8b33130a-e4b5-4942-8e26-60fad5da73ba" },
   { title: "История", text: "Как возвращались забытые имена — текст и аудио", icon: Sparkles, href: "/story" },
-  { title: "Отзывы и связь", text: "Сообщения потомков семьи", icon: Mail, href: "/lounge" },
+  { title: "Отзывы и связь", text: "Сообщения потомков семьи", icon: MessageCircle, href: "/lounge" },
+  {
+    title: "Написать администратору",
+    text: "Вопросы и предложения по сайту",
+    icon: Mail,
+    href: "mailto:nms_inform@mail.ru,kremlevmax.personal@gmail.com",
+  },
 ];
 
 /**

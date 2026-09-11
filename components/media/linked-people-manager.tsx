@@ -146,7 +146,7 @@ export function LinkedPeopleManager({
             />
           </div>
           <ul className="mt-2 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
-            {results.slice(0, 20).map((person) => (
+            {results.map((person) => (
               <li key={person.id}>
                 <button
                   type="button"

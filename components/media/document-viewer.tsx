@@ -25,6 +25,7 @@ import { isImageLikeDocument } from "@/lib/media/document-kind";
 import { cn } from "@/lib/utils/cn";
 import { PdfPageView } from "./pdf-page-view";
 import { EditMediaDetailsField } from "./edit-media-details-field";
+import { EditTranscriptField } from "./edit-transcript-field";
 import { LinkedPeopleManager } from "./linked-people-manager";
 
 const GALLERY_URL_STORAGE_KEY = "archive:lastGalleryUrl";
@@ -281,9 +282,7 @@ export function DocumentViewer({ document: doc, viewerId, isEditor, allPeople }:
               />
             )}
             {activeTab === "transcript" && (
-              <p className="whitespace-pre-line text-lg text-(--h-ink)">
-                {doc.transcript ?? "Расшифровка пока не добавлена."}
-              </p>
+              <EditTranscriptField mediaId={doc.id} transcript={doc.transcript} canEdit={canEdit} />
             )}
             {activeTab === "source" && (
               <p className="text-lg text-(--h-ink)">
