@@ -183,6 +183,8 @@ export interface MediaDetailsPatch {
   category?: string | null;
   /** Documents only, same restriction as category. */
   transcript?: string | null;
+  /** Free-text approximate year/date — photos and documents both. */
+  dateText?: string | null;
 }
 
 /** Updates only title/caption/category of an already-uploaded photo/document (server/actions/media-edit.ts) — the uploader or an editor, never anything else about the row. */
@@ -192,9 +194,10 @@ export async function updateMediaDetails(
   patch: MediaDetailsPatch,
   actorId: string,
 ): Promise<void> {
+  const { title, caption, category, transcript, dateText } = patch;
   const { error } = await supabase
     .from("media")
-    .update({ ...patch, updated_by: actorId })
+    .update({ title, caption, category, transcript, date_text: dateText, updated_by: actorId })
     .eq("id", mediaId);
   if (error) throw error;
 }
@@ -262,6 +265,7 @@ function rowToPersonMedia(
     title: row.title,
     caption: row.caption,
     sourceOrOwner: row.source_or_owner,
+    dateText: row.date_text,
     originalFilename: row.original_filename,
     mimeType: row.mime_type,
     extension: row.extension,

@@ -7,6 +7,8 @@ export interface PersonMedia {
   title: string;
   caption: string | null;
   sourceOrOwner: string | null;
+  /** Free-text approximate date ("около 1980", "2024 год") — `media.date_text`. */
+  dateText: string | null;
   originalFilename: string;
   mimeType: string;
   extension: string;
@@ -39,7 +41,7 @@ export interface MediaPickerItem {
   kind: MediaKind;
   title: string;
   caption: string | null;
-  /** Free-text approximate date ("около 1980", "2024 год") — `media.date_text`. Used by the Places photo tab; null for most people photos, which don't set it. */
+  /** Free-text approximate date ("около 1980", "2024 год") — `media.date_text`. Settable on upload/edit for both photos and documents; null if never set. */
   dateText: string | null;
   /** One of lib/validation/document-category.ts's DOCUMENT_CATEGORIES, or null (groups under "Другие документы" in the UI) — documents only. */
   category: string | null;

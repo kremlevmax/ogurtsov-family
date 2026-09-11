@@ -65,6 +65,7 @@ async function runUpload(
   category: string | null = null,
   transcript: string | null = null,
   treatImageAsDocument = false,
+  dateText: string | null = null,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!caption.trim()) {
     return { ok: false, error: "Укажите подпись или пояснение." };
@@ -95,6 +96,7 @@ async function runUpload(
     caption: caption.trim() || null,
     category,
     transcript: transcript?.trim() || null,
+    dateText: dateText?.trim() || null,
     thumbnail,
     treatImageAsDocument,
     width: dimensions?.width ?? null,
@@ -112,6 +114,7 @@ function PhotoBlock({ personId, photos }: { personId: string; photos: PersonMedi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [dateText, setDateText] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -121,6 +124,7 @@ function PhotoBlock({ personId, photos }: { personId: string; photos: PersonMedi
   function resetForm() {
     setFile(null);
     setCaption("");
+    setDateText("");
     setStatus("idle");
     setProgress(0);
     setUploadError(null);
@@ -137,7 +141,17 @@ function PhotoBlock({ personId, photos }: { personId: string; photos: PersonMedi
     setStatus("uploading");
     setProgress(0);
 
-    const result = await runUpload(personId, file, caption, setProgress, () => setStatus("finalizing"));
+    const result = await runUpload(
+      personId,
+      file,
+      caption,
+      setProgress,
+      () => setStatus("finalizing"),
+      null,
+      null,
+      false,
+      dateText,
+    );
     setStatus(result.ok ? "idle" : "error");
     if (!result.ok) {
       setUploadError(result.error ?? null);
@@ -239,14 +253,25 @@ function PhotoBlock({ personId, photos }: { personId: string; photos: PersonMedi
         </label>
 
         {file && (
-          <Field label="Подпись">
-            <Input
-              value={caption}
-              onChange={(event) => setCaption(event.target.value)}
-              disabled={isBusy}
-              required
-            />
-          </Field>
+          <>
+            <Field label="Подпись">
+              <Input
+                value={caption}
+                onChange={(event) => setCaption(event.target.value)}
+                disabled={isBusy}
+                required
+              />
+            </Field>
+            <Field label="Примерный год (необязательно)">
+              <Input
+                value={dateText}
+                onChange={(event) => setDateText(event.target.value)}
+                disabled={isBusy}
+                placeholder="например, около 1980"
+                maxLength={40}
+              />
+            </Field>
+          </>
         )}
 
         {status === "uploading" && (
@@ -285,6 +310,7 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
   const [caption, setCaption] = useState("");
   const [category, setCategory] = useState("");
   const [transcript, setTranscript] = useState("");
+  const [dateText, setDateText] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -296,6 +322,7 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
     setCaption("");
     setCategory("");
     setTranscript("");
+    setDateText("");
     setStatus("idle");
     setProgress(0);
     setUploadError(null);
@@ -321,6 +348,7 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
       category || null,
       transcript,
       true,
+      dateText,
     );
     setStatus(result.ok ? "idle" : "error");
     if (!result.ok) {
@@ -418,6 +446,15 @@ function DocumentBlock({ personId, documents }: { personId: string; documents: P
                 onChange={(event) => setCaption(event.target.value)}
                 disabled={isBusy}
                 required
+              />
+            </Field>
+            <Field label="Примерный год (необязательно)">
+              <Input
+                value={dateText}
+                onChange={(event) => setDateText(event.target.value)}
+                disabled={isBusy}
+                placeholder="например, около 1900"
+                maxLength={40}
               />
             </Field>
             <Field label="Категория (необязательно)">

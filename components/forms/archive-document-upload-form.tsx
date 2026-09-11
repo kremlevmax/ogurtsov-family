@@ -29,6 +29,7 @@ export function ArchiveDocumentUploadForm({ id, onDone }: ArchiveDocumentUploadF
   const [sourceOrOwner, setSourceOrOwner] = useState("");
   const [category, setCategory] = useState("");
   const [transcript, setTranscript] = useState("");
+  const [dateText, setDateText] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export function ArchiveDocumentUploadForm({ id, onDone }: ArchiveDocumentUploadF
     setSourceOrOwner("");
     setCategory("");
     setTranscript("");
+    setDateText("");
     setStatus("idle");
     setProgress(0);
     setError(null);
@@ -99,6 +101,7 @@ export function ArchiveDocumentUploadForm({ id, onDone }: ArchiveDocumentUploadF
       sourceOrOwner: sourceOrOwner.trim() || null,
       category: category || null,
       transcript: transcript.trim() || null,
+      dateText: dateText.trim() || null,
       thumbnail,
       width: dimensions?.width ?? null,
       height: dimensions?.height ?? null,
@@ -171,6 +174,19 @@ export function ArchiveDocumentUploadForm({ id, onDone }: ArchiveDocumentUploadF
               value={sourceOrOwner}
               onChange={(event) => setSourceOrOwner(event.target.value)}
               disabled={isBusy}
+              className="h-[50px] rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-3 text-lg text-(--h-ink) focus-visible:outline-none"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-lg text-(--h-ink)">Примерный год (необязательно)</span>
+            <input
+              type="text"
+              value={dateText}
+              onChange={(event) => setDateText(event.target.value)}
+              disabled={isBusy}
+              placeholder="например, около 1900"
+              maxLength={40}
               className="h-[50px] rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-3 text-lg text-(--h-ink) focus-visible:outline-none"
             />
           </label>

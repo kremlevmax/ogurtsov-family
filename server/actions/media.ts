@@ -84,6 +84,8 @@ export interface FinalizeUploadInput {
   sourceOrOwner: string | null;
   category: string | null;
   transcript: string | null;
+  /** Free-text approximate year/date — photos and documents both. */
+  dateText: string | null;
   /** Client-rendered first-page PNG (lib/utils/upload.ts's generatePdfThumbnail) — null for non-PDFs or if rendering failed. */
   thumbnail: Blob | null;
   /** "This image is a scanned document, not a photo of a person" — see lib/validation/media.ts's ValidateFileMetadataOptions. */
@@ -156,6 +158,7 @@ export async function finalizeUploadAction(input: FinalizeUploadInput): Promise<
         sourceOrOwner: input.sourceOrOwner,
         category: input.category,
         transcript: input.transcript,
+        dateText: input.dateText,
         thumbnailObjectKey,
         objectKey: pending.objectKey,
         originalFilename: input.originalFilename,

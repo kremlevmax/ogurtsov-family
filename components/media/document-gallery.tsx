@@ -6,12 +6,20 @@ import { Plus, Search } from "lucide-react";
 import type { MediaPickerItem } from "@/features/media/types";
 import { normalizeSearchText } from "@/features/search/normalize";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
+import { extractYearForSort } from "@/lib/media/extract-year";
 import { ArchiveDocumentUploadForm } from "@/components/forms/archive-document-upload-form";
 import { DocumentCard } from "./document-card";
 
 const PAGE_SIZE = 6;
 const GALLERY_URL_STORAGE_KEY = "archive:lastGalleryUrl";
 const FORM_ID = "archive-document-upload-form";
+
+const SORT_OPTIONS = {
+  new: "Сначала новые",
+  "year-asc": "По году (сначала старые)",
+  "year-desc": "По году (сначала новые)",
+} as const;
+type SortMode = keyof typeof SORT_OPTIONS;
 
 export interface DocumentGalleryProps {
   documents: MediaPickerItem[];
@@ -33,6 +41,8 @@ export function DocumentGallery({ documents, isEditor }: DocumentGalleryProps) {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") ?? "";
   const category = searchParams.get("category");
+  const sortParam = searchParams.get("sort");
+  const sort: SortMode = sortParam !== null && sortParam in SORT_OPTIONS ? (sortParam as SortMode) : "new";
   const visibleCount = Number(searchParams.get("show")) || PAGE_SIZE;
   const [formOpen, setFormOpen] = useState(false);
 
@@ -69,8 +79,19 @@ export function DocumentGallery({ documents, isEditor }: DocumentGalleryProps) {
           doc.linkedPersonNames.some((name) => normalizeSearchText(name).includes(normalized)),
       );
     }
+    if (sort === "year-asc" || sort === "year-desc") {
+      const direction = sort === "year-asc" ? 1 : -1;
+      list = [...list].sort((a, b) => {
+        const yearA = extractYearForSort(a);
+        const yearB = extractYearForSort(b);
+        if (yearA === null && yearB === null) return 0;
+        if (yearA === null) return 1;
+        if (yearB === null) return -1;
+        return (yearA - yearB) * direction;
+      });
+    }
     return list;
-  }, [documents, category, query]);
+  }, [documents, category, query, sort]);
 
   const visible = filtered.slice(0, visibleCount);
 
@@ -91,6 +112,18 @@ export function DocumentGallery({ documents, isEditor }: DocumentGalleryProps) {
             className="h-[45px] w-full rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) pl-9 pr-3 text-lg text-(--h-ink) placeholder:text-(--h-muted) focus-visible:outline-none"
           />
         </label>
+        <select
+          value={sort}
+          onChange={(event) => updateParams({ sort: event.target.value === "new" ? null : event.target.value })}
+          aria-label="Сортировка документов"
+          className="h-[45px] shrink-0 rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-3 text-lg text-(--h-ink) focus-visible:outline-none"
+        >
+          {Object.entries(SORT_OPTIONS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         {isEditor && (
           <button
             type="button"

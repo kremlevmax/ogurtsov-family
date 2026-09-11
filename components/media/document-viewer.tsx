@@ -19,7 +19,7 @@ import {
 import type { DocumentDetail } from "@/features/media/types";
 import type { Person } from "@/features/people/types";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
-import { formatFileSize } from "@/lib/media/format";
+import { formatFileSize, formatMediaDate } from "@/lib/media/format";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
 import { isImageLikeDocument } from "@/lib/media/document-kind";
 import { cn } from "@/lib/utils/cn";
@@ -109,7 +109,7 @@ export function DocumentViewer({ document: doc, viewerId, isEditor, allPeople }:
 
   const Icon = KIND_ICONS[doc.kind] ?? FileText;
   const category = resolveDocumentCategory(doc.category);
-  const meta = [doc.dateText, category].filter(Boolean).join(" · ");
+  const meta = [formatMediaDate(doc.dateText), category].filter(Boolean).join(" · ");
   // Above 100%, content can be bigger than the frame — a centered flex
   // container only ever exposes the overflow on the end (bottom/right)
   // side, never the start (top/left) one, so the corner stays
@@ -277,6 +277,7 @@ export function DocumentViewer({ document: doc, viewerId, isEditor, allPeople }:
                 title={doc.title}
                 caption={doc.caption}
                 category={doc.category}
+                dateText={doc.dateText}
                 canEdit={canEdit}
                 variant="light"
               />

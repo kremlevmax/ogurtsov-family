@@ -6,6 +6,7 @@ import { Pencil } from "lucide-react";
 import type { MediaKind } from "@/lib/supabase/types";
 import { updateMediaDetailsAction } from "@/server/actions/media-edit";
 import { DOCUMENT_CATEGORIES } from "@/lib/validation/document-category";
+import { formatMediaDate } from "@/lib/media/format";
 import { cn } from "@/lib/utils/cn";
 
 export interface EditMediaDetailsFieldProps {
@@ -15,6 +16,8 @@ export interface EditMediaDetailsFieldProps {
   caption: string | null;
   /** Documents only — the field stays hidden for any other kind. */
   category: string | null;
+  /** Free-text approximate year/date — photos and documents both. */
+  dateText: string | null;
   /** The uploader of this exact file, or either editor (owner's request) — computed by the caller from `media.created_by` and the viewer. */
   canEdit: boolean;
   /** "dark" — over a photo in the full-screen lightbox. "light" — inside the archive document viewer's own panel. */
@@ -59,7 +62,7 @@ const VARIANT = {
  * grows to a small form when editing, refreshing the whole page on
  * save so the host's own title/category display updates too.
  */
-export function EditMediaDetailsField({ mediaId, kind, title, caption, category, canEdit, variant }: EditMediaDetailsFieldProps) {
+export function EditMediaDetailsField({ mediaId, kind, title, caption, category, dateText, canEdit, variant }: EditMediaDetailsFieldProps) {
   const router = useRouter();
   const styleSet = VARIANT[variant];
   const showCategory = kind === "document";
@@ -67,6 +70,7 @@ export function EditMediaDetailsField({ mediaId, kind, title, caption, category,
   const [draftTitle, setDraftTitle] = useState(title);
   const [draftCaption, setDraftCaption] = useState(caption ?? "");
   const [draftCategory, setDraftCategory] = useState(category ?? "");
+  const [draftDateText, setDraftDateText] = useState(dateText ?? "");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -86,6 +90,7 @@ export function EditMediaDetailsField({ mediaId, kind, title, caption, category,
         title: draftTitle,
         caption: draftCaption,
         category: showCategory ? draftCategory || null : null,
+        dateText: draftDateText,
       });
       if (result.ok) {
         setIsEditing(false);
@@ -103,6 +108,7 @@ export function EditMediaDetailsField({ mediaId, kind, title, caption, category,
     setDraftTitle(title);
     setDraftCaption(caption ?? "");
     setDraftCategory(category ?? "");
+    setDraftDateText(dateText ?? "");
     setError(null);
     setIsEditing(false);
   }
@@ -127,6 +133,17 @@ export function EditMediaDetailsField({ mediaId, kind, title, caption, category,
             onKeyDown={(event) => event.stopPropagation()}
             autoFocus
             rows={2}
+            className={cn("w-full rounded-[var(--h-radius-control,6px)] border px-3 py-2 text-sm focus-visible:outline-none", styleSet.input)}
+          />
+        </label>
+        <label className="flex w-full flex-col gap-1">
+          <span className={styleSet.label}>Примерный год</span>
+          <input
+            value={draftDateText}
+            onChange={(event) => setDraftDateText(event.target.value)}
+            onKeyDown={(event) => event.stopPropagation()}
+            placeholder="например, около 1980"
+            maxLength={40}
             className={cn("w-full rounded-[var(--h-radius-control,6px)] border px-3 py-2 text-sm focus-visible:outline-none", styleSet.input)}
           />
         </label>
@@ -170,15 +187,16 @@ export function EditMediaDetailsField({ mediaId, kind, title, caption, category,
     );
   }
 
-  // A plain visitor looking at a photo with no caption sees nothing at
-  // all (the lightbox's original behaviour) — only the document
+  // A plain visitor looking at a photo with no caption/year sees nothing
+  // at all (the lightbox's original behaviour) — only the document
   // viewer's "Описание" tab always shows a line, caption or fallback.
-  if (!caption && !canEdit) {
+  if (!caption && !dateText && !canEdit) {
     return variant === "light" ? <p className={styleSet.text}>Описание пока не добавлено.</p> : null;
   }
 
   return (
     <div className={styleSet.wrapper}>
+      {dateText && <p className={styleSet.label}>{formatMediaDate(dateText)}</p>}
       {caption && <p className={styleSet.text}>{caption}</p>}
       {canEdit && (
         <button

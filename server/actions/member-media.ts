@@ -95,6 +95,8 @@ export interface FinalizePersonMediaInput {
   caption: string | null;
   category: string | null;
   transcript: string | null;
+  /** Free-text approximate year/date — photos and documents both. */
+  dateText: string | null;
   /** Client-rendered first-page PNG (lib/utils/upload.ts's generatePdfThumbnail) — null for non-PDFs or if rendering failed. */
   thumbnail: Blob | null;
   /** "This image is a scanned document, not a photo of a person" — see lib/validation/media.ts's ValidateFileMetadataOptions. Always true from the DocumentBlock form (components/forms/person-media-upload.tsx): that block IS the document uploader, so any image picked there is a scan by definition. */
@@ -167,6 +169,7 @@ export async function finalizePersonMediaAction(input: FinalizePersonMediaInput)
         sourceOrOwner: null,
         category: input.category,
         transcript: input.transcript,
+        dateText: input.dateText,
         thumbnailObjectKey,
         objectKey: pending.objectKey,
         originalFilename: input.originalFilename,

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Plus, ZoomIn } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
+import { extractYearForSort } from "@/lib/media/extract-year";
+import { formatMediaDate } from "@/lib/media/format";
 import type { MediaPickerItem } from "@/features/media/types";
 import type { Person } from "@/features/people/types";
 import { PlacesUploadForm } from "@/components/forms/places-upload-form";
@@ -11,6 +13,13 @@ import { DeleteSiteMediaButton } from "./delete-site-media-button";
 
 const PAGE_SIZE = 6;
 const FORM_ID = "places-upload-form";
+
+const SORT_OPTIONS = {
+  new: "Сначала новые",
+  "year-asc": "По году (сначала старые)",
+  "year-desc": "По году (сначала новые)",
+} as const;
+type SortMode = keyof typeof SORT_OPTIONS;
 
 export interface PlacesPhotosTabProps {
   photos: MediaPickerItem[];
@@ -29,14 +38,39 @@ export interface PlacesPhotosTabProps {
  */
 export function PlacesPhotosTab({ photos, isMember, isEditor, viewerId, allPeople }: PlacesPhotosTabProps) {
   const [formOpen, setFormOpen] = useState(false);
+  const [sort, setSort] = useState<SortMode>("new");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const visible = photos.slice(0, visibleCount);
+  const sorted =
+    sort === "year-asc" || sort === "year-desc"
+      ? [...photos].sort((a, b) => {
+          const direction = sort === "year-asc" ? 1 : -1;
+          const yearA = extractYearForSort(a);
+          const yearB = extractYearForSort(b);
+          if (yearA === null && yearB === null) return 0;
+          if (yearA === null) return 1;
+          if (yearB === null) return -1;
+          return (yearA - yearB) * direction;
+        })
+      : photos;
+  const visible = sorted.slice(0, visibleCount);
 
   return (
     <div>
-      <div className="flex justify-end px-[38px] py-6">
+      <div className="flex items-center justify-between gap-3 px-[38px] py-6">
+        <select
+          value={sort}
+          onChange={(event) => setSort(event.target.value as SortMode)}
+          aria-label="Сортировка фотографий"
+          className="h-[43px] shrink-0 rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-3 text-lg text-(--h-ink) focus-visible:outline-none"
+        >
+          {Object.entries(SORT_OPTIONS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         {isMember && (
           <button
             type="button"
@@ -82,7 +116,7 @@ export function PlacesPhotosTab({ photos, isMember, isEditor, viewerId, allPeopl
                 </div>
                 <div className="min-h-[52px]">
                   <p className="font-heading text-lg text-(--h-forest-800)">{photo.title}</p>
-                  {photo.dateText && <p className="text-lg text-(--h-muted)">{photo.dateText}</p>}
+                  {photo.dateText && <p className="text-lg text-(--h-muted)">{formatMediaDate(photo.dateText)}</p>}
                 </div>
               </li>
             );

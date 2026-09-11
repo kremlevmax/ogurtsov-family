@@ -4,6 +4,7 @@ import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import type { MediaPickerItem } from "@/features/media/types";
 import { resolveDocumentCategory } from "@/lib/validation/document-category";
 import { isImageLikeDocument } from "@/lib/media/document-kind";
+import { formatMediaDate } from "@/lib/media/format";
 import { DeleteSiteMediaButton } from "./delete-site-media-button";
 
 const KIND_ICONS: Partial<Record<MediaPickerItem["kind"], typeof FileText>> = {
@@ -52,7 +53,7 @@ export function DocumentCard({ document, isEditor }: DocumentCardProps) {
         <div className="mt-2 min-h-[52px]">
           <p className="font-heading text-lg text-(--h-forest-800)">{document.title}</p>
           <p className="text-lg text-(--h-muted)">
-            {document.dateText ? `${document.dateText} · ` : ""}
+            {document.dateText ? `${formatMediaDate(document.dateText)} · ` : ""}
             {category}
           </p>
         </div>

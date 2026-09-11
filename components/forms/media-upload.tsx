@@ -26,6 +26,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
   const [sourceOrOwner, setSourceOrOwner] = useState("");
   const [category, setCategory] = useState("");
   const [transcript, setTranscript] = useState("");
+  const [dateText, setDateText] = useState("");
   const [documentScan, setDocumentScan] = useState(false);
   const [unlisted, setUnlisted] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
@@ -39,6 +40,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
     setSourceOrOwner("");
     setCategory("");
     setTranscript("");
+    setDateText("");
     setDocumentScan(false);
     setUnlisted(false);
     setStatus("idle");
@@ -102,6 +104,7 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
       sourceOrOwner: sourceOrOwner.trim() || null,
       category: effectiveIsDocumentLike ? category || null : null,
       transcript: effectiveIsDocumentLike ? transcript.trim() || null : null,
+      dateText: dateText.trim() || null,
       thumbnail,
       treatImageAsDocument: documentScan,
       personId,
@@ -171,6 +174,15 @@ export function MediaUploadForm({ personId }: MediaUploadFormProps) {
               value={sourceOrOwner}
               onChange={(event) => setSourceOrOwner(event.target.value)}
               disabled={isBusy}
+            />
+          </Field>
+          <Field label="Примерный год (необязательно)">
+            <Input
+              value={dateText}
+              onChange={(event) => setDateText(event.target.value)}
+              disabled={isBusy}
+              placeholder="например, около 1980"
+              maxLength={40}
             />
           </Field>
           {isPlainImage && (

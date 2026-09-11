@@ -74,6 +74,7 @@ export interface FinalizeArchiveDocumentInput {
   sourceOrOwner: string | null;
   category: string | null;
   transcript: string | null;
+  dateText: string | null;
   thumbnail: Blob | null;
   width: number | null;
   height: number | null;
@@ -137,6 +138,7 @@ export async function finalizeArchiveDocumentAction(
         sourceOrOwner: input.sourceOrOwner,
         category: input.category,
         transcript: input.transcript,
+        dateText: input.dateText,
         thumbnailObjectKey,
         objectKey: pending.objectKey,
         originalFilename: input.originalFilename,

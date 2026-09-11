@@ -4,12 +4,21 @@ import { useMemo, useState } from "react";
 import { Search, ZoomIn } from "lucide-react";
 import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { normalizeSearchText } from "@/features/search/normalize";
+import { extractYearForSort } from "@/lib/media/extract-year";
+import { formatMediaDate } from "@/lib/media/format";
 import type { MediaPickerItem } from "@/features/media/types";
 import type { Person } from "@/features/people/types";
 import { PhotoLightbox } from "./photo-lightbox";
 import { DeleteSiteMediaButton } from "./delete-site-media-button";
 
 const PAGE_SIZE = 6;
+
+const SORT_OPTIONS = {
+  new: "Сначала новые",
+  "year-asc": "По году (сначала старые)",
+  "year-desc": "По году (сначала новые)",
+} as const;
+type SortMode = keyof typeof SORT_OPTIONS;
 
 export interface PeoplePhotosTabProps {
   photos: MediaPickerItem[];
@@ -29,18 +38,32 @@ export interface PeoplePhotosTabProps {
  */
 export function PeoplePhotosTab({ photos, isEditor, viewerId, allPeople }: PeoplePhotosTabProps) {
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortMode>("new");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const filtered = useMemo(() => {
     const normalized = normalizeSearchText(query);
-    if (!normalized) return photos;
-    return photos.filter(
-      (photo) =>
-        normalizeSearchText(photo.title).includes(normalized) ||
-        photo.linkedPersonNames.some((name) => normalizeSearchText(name).includes(normalized)),
-    );
-  }, [photos, query]);
+    let list = normalized
+      ? photos.filter(
+          (photo) =>
+            normalizeSearchText(photo.title).includes(normalized) ||
+            photo.linkedPersonNames.some((name) => normalizeSearchText(name).includes(normalized)),
+        )
+      : photos;
+    if (sort === "year-asc" || sort === "year-desc") {
+      const direction = sort === "year-asc" ? 1 : -1;
+      list = [...list].sort((a, b) => {
+        const yearA = extractYearForSort(a);
+        const yearB = extractYearForSort(b);
+        if (yearA === null && yearB === null) return 0;
+        if (yearA === null) return 1;
+        if (yearB === null) return -1;
+        return (yearA - yearB) * direction;
+      });
+    }
+    return list;
+  }, [photos, query, sort]);
 
   const visible = filtered.slice(0, visibleCount);
 
@@ -64,6 +87,18 @@ export function PeoplePhotosTab({ photos, isEditor, viewerId, allPeople }: Peopl
             className="h-[42px] w-full rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) pl-9 pr-3 text-lg text-(--h-ink) placeholder:text-(--h-muted) focus-visible:outline-none"
           />
         </label>
+        <select
+          value={sort}
+          onChange={(event) => setSort(event.target.value as SortMode)}
+          aria-label="Сортировка фотографий"
+          className="h-[42px] shrink-0 rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-3 text-lg text-(--h-ink) focus-visible:outline-none"
+        >
+          {Object.entries(SORT_OPTIONS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {visible.length === 0 ? (
@@ -103,7 +138,10 @@ export function PeoplePhotosTab({ photos, isEditor, viewerId, allPeople }: Peopl
                   )}
                 </div>
                 <div className="min-h-[52px]">
-                  <p className="font-heading text-lg text-(--h-forest-800)">{photo.title}</p>
+                  <p className="font-heading text-lg text-(--h-forest-800)">
+                    {photo.dateText ? `${formatMediaDate(photo.dateText)} · ` : ""}
+                    {photo.title}
+                  </p>
                   {photo.linkedPersonNames.length > 0 && (
                     <p className="text-lg text-(--h-muted)">{photo.linkedPersonNames.join(", ")}</p>
                   )}

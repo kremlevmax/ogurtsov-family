@@ -590,6 +590,7 @@ export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessag
               objectKey: openImageMessage.attachment.objectKey,
               title: openImageMessage.attachment.filename,
               caption: null,
+              dateText: null,
               createdBy: null,
               linkedPersonIds: [],
               linkedPersonNames: [],

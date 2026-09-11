@@ -67,9 +67,11 @@ export interface UpdateMediaDetailsInput {
   caption: string;
   /** Documents only — rejected below for any other kind. */
   category?: string | null;
+  /** Free-text approximate year/date — photos and documents both. */
+  dateText?: string | null;
 }
 
-/** Title/caption/category of an already-uploaded photo or document. */
+/** Title/caption/category/year of an already-uploaded photo or document. */
 export async function updateMediaDetailsAction(input: UpdateMediaDetailsInput): Promise<MediaEditActionState> {
   const supabase = await createSupabaseServerClient();
 
@@ -90,7 +92,12 @@ export async function updateMediaDetailsAction(input: UpdateMediaDetailsInput): 
     await mediaRepo.updateMediaDetails(
       supabase,
       input.mediaId,
-      { title: input.title.trim(), caption: input.caption.trim(), category: input.category ?? null },
+      {
+        title: input.title.trim(),
+        caption: input.caption.trim(),
+        category: input.category ?? null,
+        dateText: input.dateText?.trim() || null,
+      },
       actor.userId,
     );
     await revalidateMedia(supabase, input.mediaId);

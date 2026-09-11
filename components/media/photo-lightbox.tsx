@@ -16,6 +16,7 @@ export interface LightboxPhoto {
   objectKey: string;
   title: string;
   caption: string | null;
+  dateText: string | null;
   createdBy: string | null;
   linkedPersonIds: string[];
   linkedPersonNames: string[];
@@ -161,6 +162,7 @@ export function PhotoLightbox<T extends LightboxPhoto>({
         title={photo.title}
         caption={photo.caption}
         category={null}
+        dateText={photo.dateText}
         canEdit={canEdit}
         variant="dark"
       />
