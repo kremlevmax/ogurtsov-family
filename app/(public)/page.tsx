@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { FileText, Images, MapPin, Sparkles, Mail, MessageCircle, type LucideIcon } from "lucide-react";
+import { FileText, Images, MapPin, Sparkles, ScrollText, MessageCircle, type LucideIcon } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { BranchLine, Ornament } from "@/components/ui/ornament";
+import { JoinProjectButton } from "@/components/lounge/join-project-button";
 
 export const metadata: Metadata = {
   description: "История семьи Огурцовых, возвращённая из архивов и памяти — родословное древо, документы, фотографии и родовые места.",
@@ -16,10 +17,10 @@ const ARCHIVE_TILES: { title: string; text: string; icon: LucideIcon; href: stri
   { title: "История", text: "Как возвращались забытые имена — текст и аудио", icon: Sparkles, href: "/story" },
   { title: "Отзывы и связь", text: "Сообщения потомков семьи", icon: MessageCircle, href: "/lounge" },
   {
-    title: "Написать администратору",
-    text: "Вопросы и предложения по сайту",
-    icon: Mail,
-    href: "mailto:nms_inform@mail.ru,kremlevmax.personal@gmail.com",
+    title: "Паспорт дерева",
+    text: "Главный ствол рода и документы поколений",
+    icon: ScrollText,
+    href: "/passport",
   },
 ];
 
@@ -162,12 +163,7 @@ export default function HomePage() {
             вопросительным знаком.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3">
-            <Link
-              href="/register"
-              className="font-label inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-(--color-accent) px-6 text-[16px] font-bold tracking-[0.065px] text-(--color-accent-fg) uppercase transition-opacity hover:opacity-90"
-            >
-              Подать заявку
-            </Link>
+            <JoinProjectButton />
           </div>
         </div>
       </section>

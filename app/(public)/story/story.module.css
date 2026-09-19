@@ -1,0 +1,396 @@
+/*
+ * Locally-scoped, translated close to 1:1 from the owner's mother's
+ * approved final design handoff (HistoryProject_FINAL_2026-09-14,
+ * "утверждена пользователем 14 сентября 2026 года" — "Дизайн
+ * окончательный. Дальнейшие визуальные изменения — только после
+ * дополнительного согласования с автором"). Every selector below is
+ * scoped under .root (CSS Modules only auto-scopes class selectors,
+ * not bare element selectors like header/main/p/h2/audio/footer — the
+ * handoff's own integration notes call out exactly this: this page's
+ * styles must not leak into the rest of the site, and the site's
+ * global styles must not leak into this page).
+ *
+ * The whole "torn paper / watercolor" look is built from four crops of
+ * one long approved illustration (public/story/*.webp, each
+ * 1199×1312), positioned with exact pixel offsets, plus SVG color
+ * filters (defined inline in page.tsx) that retint every crop to the
+ * same paper tone. Pixel offsets/dimensions/filter values are kept
+ * exactly as delivered — this design's fidelity is the whole point of
+ * the handoff, not something to approximate.
+ */
+
+.root {
+  background: #fbf8ef;
+  color: #37382e;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.root,
+.root * {
+  box-sizing: border-box;
+}
+
+.page {
+  position: relative;
+  isolation: isolate;
+  max-width: 1199px;
+  margin: 0 auto;
+  background: #fbf8ef;
+  overflow: hidden;
+  min-height: 1312px;
+}
+
+.artwork {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: 1312px;
+  background: url("/story/artwork-final.webp") center top / 1199px 1312px no-repeat;
+  mask-image: linear-gradient(#000 96%, transparent);
+  filter: url(#uniform-artwork);
+}
+.artwork::after {
+  content: "";
+  position: absolute;
+  top: 226px;
+  left: calc(50% - 300px);
+  width: 600px;
+  height: 54px;
+  background: url("/story/artwork-final.webp") -300px -526px / 1199px 1312px no-repeat;
+  mask-image: linear-gradient(transparent, #000 15%, #000 85%, transparent);
+}
+
+.continuation {
+  position: absolute;
+  z-index: -2;
+  top: 1200px;
+  left: 0;
+  right: 0;
+  height: 2359px;
+  background: url("/story/artwork-extended.webp") center -1200px / 1199px auto no-repeat;
+  mask-image: linear-gradient(#000 70%, transparent);
+  filter: url(#uniform-extension);
+}
+
+.paper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -3;
+  opacity: 0.12;
+  filter: url(#uniform-paper) blur(18px);
+}
+
+.root :global(header) {
+  height: 289px;
+  position: relative;
+}
+/* Exact approved heading artwork; the real text stays in the DOM, visually hidden, for accessibility/SEO. */
+.root :global(header)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 1199 / 289;
+  background: url("/story/approved-original.webp") center top / 100% auto no-repeat;
+  filter: url(#uniform-original);
+  mask-image: linear-gradient(#000 calc(100% - 16px), transparent);
+}
+.eyebrow,
+.root :global(header) :global(h1),
+.subtitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mobileHeading,
+.mobileAudioArt,
+.audioSprig {
+  display: none;
+}
+.mobileHeading :global(svg) {
+  filter: url(#uniform-original);
+}
+
+.audio {
+  position: relative;
+  width: 724px;
+  height: 217px;
+  margin: 0 auto;
+  padding: 28px 30px;
+  background: transparent;
+}
+.audioLabel {
+  height: 60px;
+  margin-bottom: 15px;
+}
+.audioLabel::before {
+  content: "";
+  position: absolute;
+  left: 32.5px;
+  top: 27px;
+  width: 660px;
+  height: 63px;
+  background: url("/story/approved-original.webp") -270px -316px / 1199px 1312px no-repeat;
+  filter: url(#uniform-original);
+  pointer-events: none;
+}
+.audioLabel > div {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.audioIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #91662d;
+  background: #dfc79f;
+  font-size: 30px;
+}
+.audioLabel strong {
+  display: block;
+  font: 600 14px/20px Arial, sans-serif;
+  letter-spacing: 1.5px;
+  color: #514d35;
+}
+.audioLabel span {
+  display: block;
+  font-size: 21px;
+  line-height: 30px;
+}
+.audioSprig {
+  filter: url(#uniform-artwork);
+}
+.root :global(audio) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 58px;
+  display: block;
+}
+.download {
+  display: inline-block;
+  margin-top: 13px;
+  color: #625238;
+  text-decoration: none;
+  font: 13px/18px Arial, sans-serif;
+  letter-spacing: 1px;
+}
+.download:focus-visible,
+.root :global(audio):focus-visible {
+  outline: 2px solid #91662d;
+  outline-offset: 5px;
+}
+
+.root :global(main) {
+  width: 668px;
+  margin: 34px auto 0;
+  font-size: 19px;
+  line-height: 1.42;
+  padding-bottom: 0;
+}
+.category {
+  font-size: 15px;
+  color: #766a51;
+  letter-spacing: 1px;
+  margin: 0 0 12px;
+}
+.root :global(h2) {
+  font-size: 31px;
+  line-height: 1.2;
+  font-weight: 400;
+  color: #244431;
+  margin: 44px 0 20px;
+}
+.root :global(h2):first-of-type {
+  margin-top: 0;
+}
+.root :global(p) {
+  margin: 0 0 19px;
+}
+.emphasis {
+  font-weight: bold;
+  text-align: center;
+  margin: 23px 0;
+}
+
+.endRule {
+  position: relative;
+  overflow: hidden;
+  width: 590px;
+  height: 64px;
+  margin: 28px auto 0;
+  mask-image:
+    linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(transparent, #000 35%, #000 65%, transparent);
+  mask-composite: intersect;
+}
+.endRule img {
+  position: absolute;
+  left: -300px;
+  top: -1180px;
+  width: 1199px;
+  height: 1312px;
+  max-width: none;
+  filter: url(#uniform-original);
+}
+
+.root :global(footer) {
+  height: 112px;
+}
+
+@media print {
+  .page {
+    max-width: none;
+  }
+  .root :global(audio) {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .root :global(main) {
+    width: min(668px, calc(100% - 48px));
+  }
+  .audio {
+    width: min(724px, calc(100% - 48px));
+    border: 1px solid #b08b53;
+    border-radius: 6px;
+    background: #fbf8ef;
+    padding: 27px 29px;
+  }
+  .artwork::before {
+    content: "";
+    position: absolute;
+    top: 284px;
+    left: calc(50% - 370px);
+    width: 740px;
+    height: 235px;
+    background: url("/story/artwork-final.webp") -230px -527px / 1199px 1312px no-repeat;
+    mask-image: linear-gradient(transparent, #000 1%, #000 99%, transparent);
+  }
+  .audioLabel {
+    position: relative;
+    z-index: 1;
+  }
+  .audioLabel::before {
+    display: none;
+  }
+  .mobileAudioArt {
+    display: block;
+    width: min(330px, 100%);
+    height: auto;
+  }
+  .audioSprig {
+    display: block;
+    position: absolute;
+    right: -52px;
+    top: 20px;
+    width: 110px;
+    height: 197px;
+    pointer-events: none;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  }
+  .audio :global(audio),
+  .download {
+    position: relative;
+    z-index: 1;
+  }
+  .endRule {
+    max-width: calc(100% - 48px);
+  }
+}
+
+@media (max-width: 640px) {
+  .root :global(header) {
+    height: auto;
+    padding: 28px 16px 24px;
+  }
+  .root :global(header)::before {
+    display: none;
+  }
+  .mobileHeading {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .mobileHeading :global(svg) {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    overflow: hidden;
+  }
+  .mobileEyebrow {
+    width: 210px;
+  }
+  .mobileTitle {
+    width: 700px;
+  }
+  .mobileSubtitle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .subtitleFirst {
+    width: 254px;
+  }
+  .subtitleSecond {
+    width: 370px;
+  }
+  .mobileRule {
+    width: 85%;
+    max-width: 570px;
+  }
+  .audio {
+    width: calc(100% - 32px);
+    padding: 22px 16px;
+    height: auto;
+    min-height: 205px;
+  }
+  .audioLabel {
+    height: auto;
+    min-height: 48px;
+    margin-bottom: 15px;
+  }
+  .audioSprig {
+    right: -52px;
+    width: 110px;
+    opacity: 0.8;
+  }
+  .root :global(audio) {
+    height: 58px;
+  }
+  .download {
+    margin-top: 13px;
+    min-height: 24px;
+  }
+  .root :global(main) {
+    width: calc(100% - 40px);
+    margin-top: 34px;
+  }
+  .root :global(h2) {
+    overflow-wrap: break-word;
+  }
+}
