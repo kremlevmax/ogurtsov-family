@@ -6,11 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Ornament } from "@/components/ui/ornament";
 import { requestPasswordResetAction, type RequestPasswordResetState } from "@/server/actions/auth";
+import { useAuthModal } from "@/components/auth/auth-modal-context";
 
 const initialState: RequestPasswordResetState = { info: null, error: null };
 
-export function ForgotPasswordForm() {
+export interface ForgotPasswordFormProps {
+  /** "page" (default) or "modal" — see login-form.tsx's doc comment for the pattern. */
+  mode?: "page" | "modal";
+}
+
+export function ForgotPasswordForm({ mode = "page" }: ForgotPasswordFormProps) {
   const [state, formAction, isPending] = useActionState(requestPasswordResetAction, initialState);
+  const isModal = mode === "modal";
+  const { openLogin } = useAuthModal();
 
   if (state.info) {
     return (
@@ -30,7 +38,8 @@ export function ForgotPasswordForm() {
         <Ornament className="h-3 w-24 text-(--color-border)" />
         <h1 className="font-heading text-2xl font-bold text-(--color-fg)">Восстановление пароля</h1>
         <p className="text-center text-lg text-(--color-fg-muted)">
-          Укажите email, указанный при регистрации — пришлём ссылку для сброса пароля.
+          Введите адрес электронной почты, указанный при регистрации. На этот адрес будут отправлены инструкции по
+          восстановлению доступа.
         </p>
         <form action={formAction} className="flex w-full flex-col gap-3">
           <div className="flex flex-col gap-1">
@@ -47,13 +56,19 @@ export function ForgotPasswordForm() {
           )}
 
           <Button type="submit" disabled={isPending} className="text-base">
-            {isPending ? "Отправляем…" : "Отправить ссылку для восстановления"}
+            {isPending ? "Отправляем…" : "Отправить"}
           </Button>
         </form>
       </div>
-      <Link href="/login" className="text-lg text-(--color-fg-muted) hover:underline">
-        Вспомнили пароль? Войти
-      </Link>
+      {isModal ? (
+        <button type="button" onClick={openLogin} className="text-center text-lg text-(--color-fg-muted) hover:underline">
+          Вспомнили пароль? Войти
+        </button>
+      ) : (
+        <Link href="/login" className="text-center text-lg text-(--color-fg-muted) hover:underline">
+          Вспомнили пароль? Войти
+        </Link>
+      )}
     </>
   );
 }

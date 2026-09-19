@@ -12,6 +12,8 @@ const credentialsSchema = z.object({
 
 export interface SignInState {
   error: string | null;
+  /** Only meaningful in modal mode (formData "modal" field) — page mode never returns normally on success, it redirects instead. */
+  success?: boolean;
 }
 
 /**
@@ -44,6 +46,15 @@ export async function signInAction(_prevState: SignInState, formData: FormData):
 
   if (error) {
     return { error: "Неверный email или пароль" };
+  }
+
+  // Modal mode (components/auth/auth-modal-context.tsx): "после
+  // успешного входа модальное окно автоматически закрывается,
+  // пользователь остаётся на текущей странице" (RegistrationProject
+  // v1.0, Documents/03) — no redirect at all, the client closes the
+  // modal and refreshes server data itself.
+  if (formData.get("modal") === "1") {
+    return { error: null, success: true };
   }
 
   const next = formData.get("next");
@@ -83,7 +94,8 @@ export async function requestPasswordResetAction(
   formData: FormData,
 ): Promise<RequestPasswordResetState> {
   const parsed = emailOnlySchema.safeParse({ email: formData.get("email") });
-  const info = "Если такой email зарегистрирован, на него отправлено письмо со ссылкой для восстановления пароля.";
+  const info =
+    "Если указанный адрес электронной почты зарегистрирован на сайте, инструкции по восстановлению пароля уже отправлены. Пожалуйста, проверьте вашу электронную почту.";
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Введите email", info: null };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { OfflineBanner } from "@/components/layout/offline-banner";
+import { AuthModalProvider } from "@/components/auth/auth-modal-context";
 import "./globals.css";
 
 // Site-wide redesign to the owner's Figma handoff (docs/DECISIONS.md,
@@ -48,8 +49,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${cormorantGaramond.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-(--color-bg) text-(--color-fg)">
-        <OfflineBanner />
-        {children}
+        <AuthModalProvider>
+          <OfflineBanner />
+          {children}
+        </AuthModalProvider>
       </body>
     </html>
   );

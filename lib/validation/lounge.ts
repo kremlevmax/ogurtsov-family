@@ -15,35 +15,42 @@ export const LOUNGE_TOPIC_LABELS: Record<LoungeTopic, string> = {
  * runs client-side (RHF-free plain form here, but the shape still backs
  * the Server Action) and server-side — CLAUDE.md 13.
  *
- * Two registration paths (owner's request): with a real invite code
- * (`inviteCode` required, tree-editing rights immediate — unchanged),
- * or without one (`noInviteCode` checked, `relationNote` required
- * instead — lounge posting is immediate either way, but adding people
- * to the tree waits for an editor's approval, server/actions/lounge-auth.ts).
+ * Registration itself no longer asks how the member is related to the
+ * family (owner decision, 2026-09-18, docs/DECISIONS.md — invite-code
+ * registration removed) — every member starts as a plain "Гость" with
+ * lounge-posting rights only. Asking to add people to the tree is a
+ * separate, later step: treeAccessRequestSchema below, submitted via
+ * server/actions/tree-access-request.ts.
  */
 export const loungeRegisterSchema = z
   .object({
     email: z.email("Введите корректный email"),
     password: z.string().min(8, "Минимум 8 символов"),
+    confirmPassword: z.string(),
     firstName: z.string().trim().min(1, "Укажите имя").max(80),
     lastName: z.string().trim().min(1, "Укажите фамилию").max(80),
-    noInviteCode: z.boolean(),
-    inviteCode: z.string().trim().max(200).optional().default(""),
-    relationNote: z.string().trim().max(2000).optional().default(""),
+    agreedToRules: z.literal(true, {
+      error: "Нужно принять Правила сайта и Политику конфиденциальности",
+    }),
   })
-  .superRefine((data, ctx) => {
-    if (data.noInviteCode) {
-      if (data.relationNote.length < 20) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["relationNote"],
-          message: "Расскажите чуть подробнее, как вы связаны с родом Огурцовых",
-        });
-      }
-    } else if (!data.inviteCode) {
-      ctx.addIssue({ code: "custom", path: ["inviteCode"], message: "Введите код приглашения" });
-    }
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Пароли не совпадают",
+    path: ["confirmPassword"],
   });
+
+/**
+ * "Подтверждение родства" (docs/design handoff, 2026-09-18): a signed-in
+ * member asks an editor for the right to add people to the tree.
+ * `ancestorRef` and `aboutSelf` are optional free text the member fills
+ * in separately in the form, but both fold into the single
+ * `lounge_tree_access.relation_note` column server-side (no reason to
+ * add two more nullable text columns for something only ever read by a
+ * human editor) — see server/actions/tree-access-request.ts.
+ */
+export const treeAccessRequestSchema = z.object({
+  ancestorRef: z.string().trim().max(300).optional().default(""),
+  aboutSelf: z.string().trim().max(2000).optional().default(""),
+});
 
 /**
  * Covers both a top-level post (topic required, no parentMessageId)

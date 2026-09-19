@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { LoungeRegisterForm } from "@/components/lounge/lounge-register-form";
 
@@ -18,16 +17,12 @@ export const metadata: Metadata = {
 export default async function RegisterPage(props: PageProps<"/register">) {
   const searchParams = await props.searchParams;
   const next = typeof searchParams.next === "string" ? searchParams.next : undefined;
-  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
 
   return (
     <div className="flex flex-1 flex-col">
       <Header />
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-4 p-4">
         <LoungeRegisterForm next={next} />
-        <Link href={loginHref} className="text-lg text-(--color-fg-muted) hover:underline">
-          Уже есть аккаунт? Войти
-        </Link>
       </main>
     </div>
   );

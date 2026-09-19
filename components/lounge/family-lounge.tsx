@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -15,6 +14,7 @@ import { createLoungeMessageAction, type LoungeMessageActionState } from "@/serv
 import { presignLoungeAttachmentAction, finalizeLoungeAttachmentAction } from "@/server/actions/lounge-attachments";
 import type { LoungeMessageRow } from "@/server/repositories/lounge";
 import type { LoungeViewer } from "@/server/auth/require-lounge-member";
+import { useAuthModal } from "@/components/auth/auth-modal-context";
 import { DeleteLoungeMessageButton } from "./delete-lounge-message-button";
 import { LikeButton } from "./like-button";
 import { PinnedMessageEditor } from "./pinned-message-editor";
@@ -95,6 +95,7 @@ export interface FamilyLoungeProps {
  */
 export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessage = null }: FamilyLoungeProps) {
   const router = useRouter();
+  const { openLogin, openRegister } = useAuthModal();
   const [activeFilterId, setActiveFilterId] = useState<FilterId>("all");
   const [openImageMessageId, setOpenImageMessageId] = useState<string | null>(null);
   const [openReplyMessageId, setOpenReplyMessageId] = useState<string | null>(null);
@@ -372,9 +373,13 @@ export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessag
                           {LOUNGE_REPLY_LABEL}
                         </button>
                       ) : (
-                        <Link href="/login" className={clsx(styles.actionButton, styles.actionReply)}>
+                        <button
+                          type="button"
+                          onClick={openLogin}
+                          className={clsx(styles.actionButton, styles.actionReply)}
+                        >
                           {LOUNGE_REPLY_LABEL}
-                        </Link>
+                        </button>
                       )}
                       <LikeButton
                         messageId={post.id}
@@ -554,16 +559,14 @@ export function FamilyLounge({ viewer, messages, loadError = false, pinnedMessag
             ) : (
               <div className={clsx(styles.surface, styles.compose)} data-testid="lounge-compose">
                 <h2 className={styles.composeTitle}>{LOUNGE_COMPOSE_TITLE}</h2>
-                <p className={styles.composeAuthGate}>
-                  Чтобы опубликовать сообщение, войдите в аккаунт гостиной или зарегистрируйтесь по коду приглашения.
-                </p>
+                <p className={styles.composeAuthGate}>Чтобы опубликовать сообщение, войдите в аккаунт гостиной или зарегистрируйтесь.</p>
                 <div className={styles.composeAuthActions}>
-                  <Link href="/login" className={styles.control}>
+                  <button type="button" onClick={openLogin} className={styles.control}>
                     Войти
-                  </Link>
-                  <Link href="/register" className={clsx(styles.control, styles.controlPrimary)}>
+                  </button>
+                  <button type="button" onClick={openRegister} className={clsx(styles.control, styles.controlPrimary)}>
                     Зарегистрироваться
-                  </Link>
+                  </button>
                 </div>
               </div>
             )}

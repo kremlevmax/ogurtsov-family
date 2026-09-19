@@ -277,6 +277,12 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["lounge_tree_access"]["Row"]>;
         Relationships: [];
       };
+      lounge_tree_access_attachments: {
+        Row: { id: string; user_id: string; media_id: string; created_at: string };
+        Insert: { id?: string; user_id: string; media_id: string; created_at?: string };
+        Update: Partial<Database["public"]["Tables"]["lounge_tree_access_attachments"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

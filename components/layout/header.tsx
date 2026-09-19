@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { Monogram } from "@/components/ui/monogram";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { signOutLoungeMemberAction } from "@/server/actions/lounge-auth";
+import { useAuthModal } from "@/components/auth/auth-modal-context";
+import { useIsLoggedIn } from "@/lib/hooks/use-is-logged-in";
 import { cn } from "@/lib/utils/cn";
 
 export interface HeaderProps {
@@ -45,37 +46,12 @@ const authLinkClassName =
 const mobileAuthLinkClassName =
   "text-label rounded-[var(--radius-sm)] px-2 py-2 text-[14px] font-bold tracking-[0.84px] text-(--color-fg) transition-colors hover:bg-(--color-bg-inset) hover:text-(--color-heading)";
 
-/**
- * Reads the session client-side (this Header is imported directly from
- * two "use client" call sites — components/tree/family-tree-explorer.tsx,
- * components/lounge/family-lounge.tsx — which can't import a Server
- * Component, so it can't just be handed a `viewer` prop from every one
- * of its ~15 callers). `getSession()` reads local/cookie state without
- * a network round-trip, so there's no flash of "Вход" before it
- * resolves; `onAuthStateChange` keeps it in sync after login/logout in
- * this same tab. This is a UI convenience only, never an authorization
- * check — every actual write is still gated server-side (CLAUDE.md 13).
- */
-function useIsLoggedIn(): boolean {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    supabase.auth.getSession().then(({ data }) => setIsLoggedIn(data.session !== null));
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => setIsLoggedIn(session !== null));
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return isLoggedIn;
-}
-
 export function Header({ search }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const isLoggedIn = useIsLoggedIn();
   const [isSigningOut, startSignOutTransition] = useTransition();
   const pathname = usePathname();
+  const { openLogin } = useAuthModal();
 
   function handleSignOut() {
     startSignOutTransition(() => signOutLoungeMemberAction());
@@ -125,9 +101,9 @@ export function Header({ search }: HeaderProps) {
               Выйти
             </button>
           ) : (
-            <Link href="/login" className={authLinkClassName}>
+            <button type="button" onClick={openLogin} className={authLinkClassName}>
               Вход
-            </Link>
+            </button>
           )}
         </nav>
 
@@ -179,9 +155,16 @@ export function Header({ search }: HeaderProps) {
               Выйти
             </button>
           ) : (
-            <Link href="/login" onClick={() => setMenuOpen(false)} className={mobileAuthLinkClassName}>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                openLogin();
+              }}
+              className={mobileAuthLinkClassName}
+            >
               Вход
-            </Link>
+            </button>
           )}
         </nav>
       )}

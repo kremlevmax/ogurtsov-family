@@ -8,6 +8,7 @@ import { requireEditor, NotAuthorizedError } from "@/server/auth/require-editor"
 import { listPeople, listDeletedPeople } from "@/server/repositories/people";
 import { getTotalStorageBytes, listDeletedMedia } from "@/server/repositories/media";
 import { listPendingTreeAccessRequests } from "@/server/repositories/lounge-tree-access";
+import { getMediaPublicUrl } from "@/lib/r2/public-url";
 import { buildDisplayName } from "@/lib/names/display-name";
 import { RestorePersonButton } from "@/components/forms/restore-person-button";
 import { RestoreMediaButton } from "@/components/forms/restore-media-button";
@@ -90,6 +91,24 @@ export default async function EditHomePage() {
                     <p className="text-sm text-(--color-fg-muted)">{request.email}</p>
                     {request.relationNote && (
                       <p className="mt-1 whitespace-pre-line text-sm text-(--color-fg)">{request.relationNote}</p>
+                    )}
+                    {request.attachments.length > 0 && (
+                      <ul className="mt-2 flex flex-col gap-1">
+                        {request.attachments.map((attachment) => {
+                          const href = getMediaPublicUrl(attachment.objectKey);
+                          return (
+                            <li key={attachment.mediaId} className="text-sm">
+                              {href ? (
+                                <a href={href} target="_blank" rel="noreferrer" className="text-(--color-accent) underline">
+                                  {attachment.originalFilename}
+                                </a>
+                              ) : (
+                                attachment.originalFilename
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
                   </div>
                   <div className="flex shrink-0 gap-2">

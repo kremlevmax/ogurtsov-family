@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loungeRegisterSchema } from "@/lib/validation/lounge";
 import { safeNextPath } from "@/lib/utils/safe-next-path";
-import { sendTreeAccessRequestNotification } from "@/lib/email/send-notification";
 
 export interface LoungeAuthState {
   error: string | null;
@@ -47,9 +46,11 @@ function toRegistrationErrorMessage(code: string | undefined): string {
 /**
  * Registration for "Семейная гостиная" — a deliberate, owner-approved
  * departure from CLAUDE.md's "no public registration" MVP default
- * (docs/DECISIONS.md). Gated by a shared invite code that lives only in
- * a server-only env var (LOUNGE_INVITE_CODE, .env.example) — never sent
- * to the client, never stored in the database.
+ * (docs/DECISIONS.md). Open to anyone, no invite code (removed
+ * 2026-09-18 per owner decision, docs/DECISIONS.md) — a new member
+ * starts as a plain "Гость": can post in the lounge right away, but has
+ * no tree-editing rights until they separately request and an editor
+ * grants "подтверждение родства" (server/actions/tree-access-request.ts).
  */
 export async function registerLoungeMemberAction(
   _prevState: LoungeAuthState,
@@ -58,43 +59,26 @@ export async function registerLoungeMemberAction(
   const parsed = loungeRegisterSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
-    noInviteCode: formData.get("noInviteCode") === "on",
-    // Only one of these two fields is ever mounted in the DOM at a time
-    // (lounge-register-form.tsx renders inviteCode XOR relationNote), so
-    // FormData.get() on the other one returns null, not undefined —
-    // loungeRegisterSchema's .optional().default("") accepts undefined
-    // but not null, so this normalizes null to "" before parsing.
-    inviteCode: formData.get("inviteCode") ?? "",
-    relationNote: formData.get("relationNote") ?? "",
+    agreedToRules: formData.get("agreedToRules") === "on",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Проверьте поля формы." };
-  }
-
-  if (!parsed.data.noInviteCode) {
-    const expectedCode = process.env.LOUNGE_INVITE_CODE;
-    if (!expectedCode || parsed.data.inviteCode !== expectedCode) {
-      return { error: "Неверный код приглашения." };
-    }
   }
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    // Read by handle_new_lounge_member() (0021_lounge_tree_access.sql) to
-    // create the lounge_profiles and lounge_tree_access rows. Without an
-    // invite code, tree-editing access starts "pending" instead of the
-    // default "granted" — lounge posting is unaffected either way.
+    // Read by handle_new_lounge_member() (0023_tree_access_self_service.sql)
+    // to create the lounge_profiles row. Tree access is granted later,
+    // never at signup.
     options: {
       data: {
         lounge_first_name: parsed.data.firstName,
         lounge_last_name: parsed.data.lastName,
-        ...(parsed.data.noInviteCode
-          ? { lounge_tree_access_status: "pending", lounge_relation_note: parsed.data.relationNote }
-          : {}),
       },
     },
   });
@@ -107,43 +91,27 @@ export async function registerLoungeMemberAction(
   // Supabase's anti-enumeration behavior: re-signing up an email that
   // already has an account returns no error at all (to avoid revealing
   // which emails are registered) — just a user object with an empty
-  // identities array instead of a new identity, and no session. Without
-  // this check that silently looked like a fresh, successful
-  // registration — including firing a tree-access notification email
-  // for a request nobody actually just made.
+  // identities array instead of a new identity, and no session.
   if (data.user && data.user.identities?.length === 0) {
     return { error: "Этот email уже зарегистрирован. Попробуйте войти или восстановить доступ." };
-  }
-
-  if (parsed.data.noInviteCode) {
-    try {
-      await sendTreeAccessRequestNotification({
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
-        email: parsed.data.email,
-        relationNote: parsed.data.relationNote,
-      });
-    } catch (notifyError) {
-      console.error(notifyError);
-    }
   }
 
   if (!data.session) {
     return {
       error: null,
-      info: parsed.data.noInviteCode
-        ? {
-            heading: "Подтвердите email",
-            lines: [
-              "Мы отправили письмо для подтверждения email. Перейдите по ссылке из письма и войдите — сразу сможете писать в гостиной.",
-              "Возможность добавлять людей в дерево появится после одобрения администратора.",
-            ],
-          }
-        : {
-            heading: "Подтвердите email",
-            lines: ["Проверьте почту и подтвердите email, затем войдите."],
-          },
+      info: {
+        heading: "Подтвердите email",
+        lines: ["Проверьте почту и подтвердите email, затем войдите."],
+      },
     };
+  }
+
+  // Modal mode (components/auth/auth-modal-context.tsx): stay put
+  // instead of redirecting — same reasoning as signInAction. Reachable
+  // only if Supabase's email confirmation requirement is off; normally
+  // the branch above already returned.
+  if (formData.get("modal") === "1") {
+    return { error: null, info: { heading: "Добро пожаловать!", lines: ["Вы зарегистрированы и вошли."] } };
   }
 
   redirect(safeNextPath(formData.get("next")));
