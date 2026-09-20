@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { toggleLoungeMessageLikeAction } from "@/server/actions/lounge-messages";
+import { useAuthModal } from "@/components/auth/auth-modal-context";
 
 export interface LikeButtonProps {
   messageId: string;
@@ -20,6 +20,7 @@ export interface LikeButtonProps {
 /** "♡ Поддержать" renamed to "Нравится" and made real (owner's request) — a like per member per message. */
 export function LikeButton({ messageId, liked, count, canLike, className, activeClassName, errorClassName }: LikeButtonProps) {
   const router = useRouter();
+  const { openLogin } = useAuthModal();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -40,9 +41,9 @@ export function LikeButton({ messageId, liked, count, canLike, className, active
 
   if (!canLike) {
     return (
-      <Link href="/login" className={className}>
+      <button type="button" onClick={openLogin} className={className}>
         {label}
-      </Link>
+      </button>
     );
   }
 
