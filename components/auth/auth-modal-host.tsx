@@ -9,69 +9,95 @@ import { TreeAccessRequestForm } from "@/components/lounge/tree-access-request-f
 import { RulesContent } from "@/components/legal/rules-content";
 import { PrivacyContent } from "@/components/legal/privacy-content";
 import { Ornament } from "@/components/ui/ornament";
-import { useAuthModal, type AuthModalView } from "@/components/auth/auth-modal-context";
+import { useAuthModal, type AuthModalBaseView, type AuthModalOverlayView } from "@/components/auth/auth-modal-context";
 import { getTreeAccessSummaryAction, type TreeAccessSummary } from "@/server/actions/tree-access-request";
 
 export interface AuthModalHostProps {
-  view: AuthModalView | null;
-  onDismiss: () => void;
+  base: AuthModalBaseView | null;
+  overlay: AuthModalOverlayView | null;
+  onDismissBase: () => void;
+  onDismissOverlay: () => void;
   onLoginSuccess: () => void;
 }
 
-/** The actual modal markup for AuthModalProvider — a separate file/component only to break a circular import (see auth-modal-context.tsx's doc comment). */
-export function AuthModalHost({ view, onDismiss, onLoginSuccess }: AuthModalHostProps) {
-  if (!view) return null;
+/**
+ * The actual modal markup for AuthModalProvider — a separate file/
+ * component only to break a circular import (see auth-modal-context.tsx's
+ * doc comment). Renders the base modal first and the overlay (Rules/
+ * Privacy) after, so the overlay paints on top without ever unmounting
+ * the base — see auth-modal-context.tsx for why that matters.
+ */
+export function AuthModalHost({ base, overlay, onDismissBase, onDismissOverlay, onLoginSuccess }: AuthModalHostProps) {
+  return (
+    <>
+      {base && <BaseModal view={base} active={overlay === null} onDismiss={onDismissBase} onLoginSuccess={onLoginSuccess} />}
+      {overlay && <OverlayModal view={overlay} onDismiss={onDismissOverlay} />}
+    </>
+  );
+}
 
+function BaseModal({
+  view,
+  active,
+  onDismiss,
+  onLoginSuccess,
+}: {
+  view: AuthModalBaseView;
+  active: boolean;
+  onDismiss: () => void;
+  onLoginSuccess: () => void;
+}) {
   switch (view) {
     case "login":
       return (
-        <Modal onClose={onDismiss}>
+        <Modal onClose={onDismiss} active={active}>
           <LoginForm mode="modal" onSuccess={onLoginSuccess} />
         </Modal>
       );
     case "register":
       return (
-        <Modal onClose={onDismiss}>
+        <Modal onClose={onDismiss} active={active}>
           <LoungeRegisterForm mode="modal" />
         </Modal>
       );
     case "forgot-password":
       return (
-        <Modal onClose={onDismiss}>
+        <Modal onClose={onDismiss} active={active}>
           <ForgotPasswordForm mode="modal" />
         </Modal>
       );
     case "join":
       return (
-        <Modal onClose={onDismiss}>
+        <Modal onClose={onDismiss} active={active}>
           <JoinModalCard />
-        </Modal>
-      );
-    case "rules":
-      return (
-        <Modal onClose={onDismiss} className="max-w-xl">
-          <div className="flex max-h-[80vh] flex-col overflow-y-auto rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated) p-8 shadow-(--shadow-md)">
-            <Ornament className="mx-auto mb-4 h-3 w-24 text-(--color-border)" />
-            <h1 className="font-heading text-center text-2xl font-bold text-(--color-heading)">Правила сайта</h1>
-            <RulesContent showHeading={false} />
-          </div>
-        </Modal>
-      );
-    case "privacy":
-      return (
-        <Modal onClose={onDismiss} className="max-w-xl">
-          <div className="flex max-h-[80vh] flex-col overflow-y-auto rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated) p-8 shadow-(--shadow-md)">
-            <Ornament className="mx-auto mb-4 h-3 w-24 text-(--color-border)" />
-            <h1 className="font-heading text-center text-2xl font-bold text-(--color-heading)">
-              Политика конфиденциальности
-            </h1>
-            <PrivacyContent showHeading={false} />
-          </div>
         </Modal>
       );
     default:
       return null;
   }
+}
+
+function OverlayModal({ view, onDismiss }: { view: AuthModalOverlayView; onDismiss: () => void }) {
+  if (view === "rules") {
+    return (
+      <Modal onClose={onDismiss} className="max-w-xl" zIndex={80}>
+        <div className="flex max-h-[80vh] flex-col overflow-y-auto rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated) p-8 shadow-(--shadow-md)">
+          <Ornament className="mx-auto mb-4 h-3 w-24 text-(--color-border)" />
+          <h1 className="font-heading text-center text-2xl font-bold text-(--color-heading)">Правила сайта</h1>
+          <RulesContent showHeading={false} />
+        </div>
+      </Modal>
+    );
+  }
+  return (
+    <Modal onClose={onDismiss} className="max-w-xl" zIndex={80}>
+      <div className="flex max-h-[80vh] flex-col overflow-y-auto rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated) p-8 shadow-(--shadow-md)">
+        <Ornament className="mx-auto mb-4 h-3 w-24 text-(--color-border)" />
+        <h1 className="font-heading text-center text-2xl font-bold text-(--color-heading)">Политика конфиденциальности</h1>
+        <PrivacyContent showHeading={false} />
+      </div>
+    </Modal>
+  );
 }
 
 /**

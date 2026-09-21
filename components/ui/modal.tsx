@@ -9,6 +9,18 @@ export interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   className?: string;
+  /**
+   * False when another Modal is stacked on top of this one (e.g. Rules
+   * opened from inside Register — auth-modal-context.tsx keeps the
+   * base modal mounted, not unmounted, so its form state survives).
+   * An inactive modal stays visible underneath but stops responding to
+   * Escape/Tab itself — the overlay on top, being another `fixed
+   * inset-0` layer later in the DOM, already physically covers its
+   * backdrop, so clicks can't reach it either.
+   */
+  active?: boolean;
+  /** Higher for a modal stacked on top of another (e.g. Rules over Register) — guards the stacking order even if portal DOM-append order ever changed, not just relying on later-in-body winning ties. */
+  zIndex?: 70 | 80;
 }
 
 /**
@@ -20,7 +32,7 @@ export interface ModalProps {
  * clicking the backdrop (the lightbox doesn't allow that, since a
  * misclick there is more costly mid-gallery).
  */
-export function Modal({ onClose, children, className }: ModalProps) {
+export function Modal({ onClose, children, className, active = true, zIndex = 70 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<Element | null>(null);
 
@@ -33,6 +45,7 @@ export function Modal({ onClose, children, className }: ModalProps) {
   }, []);
 
   useEffect(() => {
+    if (!active) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
       if (event.key === "Tab") {
@@ -53,14 +66,15 @@ export function Modal({ onClose, children, className }: ModalProps) {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [onClose, active]);
 
   if (typeof document === "undefined") return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto bg-black/50 p-4"
-      onClick={onClose}
+      className={cn("fixed inset-0 flex items-start justify-center overflow-y-auto bg-black/50 p-4", zIndex === 80 ? "z-[80]" : "z-[70]")}
+      onClick={active ? onClose : undefined}
+      inert={!active}
     >
       <div
         ref={dialogRef}
@@ -74,7 +88,7 @@ export function Modal({ onClose, children, className }: ModalProps) {
           type="button"
           onClick={onClose}
           aria-label="Закрыть"
-          className="absolute -top-3 -right-3 z-10 cursor-pointer rounded-full border border-(--color-border) bg-(--color-bg-elevated) p-1.5 shadow-(--shadow-md) hover:bg-(--color-bg)"
+          className="absolute top-3 right-3 z-10 cursor-pointer rounded-full border border-(--color-border) bg-(--color-bg-elevated) p-1.5 shadow-(--shadow-md) hover:bg-(--color-bg)"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

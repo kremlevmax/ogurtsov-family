@@ -4,7 +4,8 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import { useRouter } from "next/navigation";
 import { AuthModalHost } from "@/components/auth/auth-modal-host";
 
-export type AuthModalView = "login" | "register" | "forgot-password" | "join" | "rules" | "privacy";
+export type AuthModalBaseView = "login" | "register" | "forgot-password" | "join";
+export type AuthModalOverlayView = "rules" | "privacy";
 
 interface AuthModalContextValue {
   openLogin: () => void;
@@ -37,44 +38,37 @@ const AuthModalContext = createContext<AuthModalContextValue | null>(null);
  * useAuthModal from *this* file.
  *
  * `rules`/`privacy` opened from inside the register modal's checkbox
- * links "stack" one level deep (`returnTo`) — closing them returns to
- * the register modal instead of closing everything, matching "не
- * закрывая форму регистрации" (RegistrationProject v1.0, Documents/02).
+ * links are a genuinely separate `overlay` slot, not a swap of the
+ * same `base` state — swapping the view used to unmount the register
+ * form while Rules was open and remount a blank one on return, wiping
+ * whatever the visitor had already typed. Keeping `base` untouched and
+ * stacking `overlay` on top (AuthModalHost renders it after, so it
+ * paints over the base modal — Modal's own `active` prop suspends the
+ * base modal's Escape/Tab handling while something sits on top of it)
+ * means the base form never unmounts.
  */
 export function AuthModalProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [view, setView] = useState<AuthModalView | null>(null);
-  const [, setReturnTo] = useState<AuthModalView | null>(null);
+  const [base, setBase] = useState<AuthModalBaseView | null>(null);
+  const [overlay, setOverlay] = useState<AuthModalOverlayView | null>(null);
 
-  const open = useCallback((next: AuthModalView) => {
-    setReturnTo(null);
-    setView(next);
+  const open = useCallback((next: AuthModalBaseView) => {
+    setBase(next);
+    setOverlay(null);
   }, []);
-  const openNested = useCallback(
-    (next: AuthModalView) => {
-      setReturnTo((current) => current ?? view);
-      setView(next);
-    },
-    [view],
-  );
   const close = useCallback(() => {
-    setView(null);
-    setReturnTo(null);
+    setBase(null);
+    setOverlay(null);
   }, []);
-  const dismiss = useCallback(() => {
-    setReturnTo((currentReturnTo) => {
-      setView(currentReturnTo ?? null);
-      return null;
-    });
-  }, []);
+  const dismissOverlay = useCallback(() => setOverlay(null), []);
 
   const value: AuthModalContextValue = {
     openLogin: () => open("login"),
     openRegister: () => open("register"),
     openForgotPassword: () => open("forgot-password"),
     openJoin: () => open("join"),
-    openRules: () => openNested("rules"),
-    openPrivacy: () => openNested("privacy"),
+    openRules: () => setOverlay("rules"),
+    openPrivacy: () => setOverlay("privacy"),
     close,
   };
 
@@ -86,7 +80,13 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
   return (
     <AuthModalContext.Provider value={value}>
       {children}
-      <AuthModalHost view={view} onDismiss={dismiss} onLoginSuccess={handleLoginSuccess} />
+      <AuthModalHost
+        base={base}
+        overlay={overlay}
+        onDismissBase={close}
+        onDismissOverlay={dismissOverlay}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </AuthModalContext.Provider>
   );
 }
