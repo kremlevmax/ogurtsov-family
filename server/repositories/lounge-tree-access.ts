@@ -18,6 +18,8 @@ export interface PendingTreeAccessRequest {
   lastName: string;
   email: string;
   relationNote: string | null;
+  adminNote: string | null;
+  status: "pending" | "needs_info";
   createdAt: string;
   attachments: TreeAccessAttachment[];
 }
@@ -27,13 +29,17 @@ export interface PendingTreeAccessRequest {
  * (private, editor-only RLS) with lounge_profiles (public, but the only
  * source of first/last name) and lounge_tree_access_attachments (any
  * files the member attached, RegistrationProject v1.0 Documents/05) to
- * show a reviewable request.
+ * show a reviewable request. Includes 'needs_info' rows too (not just
+ * 'pending') so an editor can still see — read-only, no
+ * Подтвердить/Отклонить/Запросить-уточнение buttons for those in
+ * app/edit/page.tsx — which requests are waiting on the member's reply,
+ * instead of the request disappearing from the list entirely.
  */
 export async function listPendingTreeAccessRequests(supabase: Client): Promise<PendingTreeAccessRequest[]> {
   const { data: rows, error } = await supabase
     .from("lounge_tree_access")
-    .select("user_id, email, relation_note, created_at")
-    .eq("status", "pending")
+    .select("user_id, email, relation_note, admin_note, status, created_at")
+    .in("status", ["pending", "needs_info"])
     .order("created_at", { ascending: true });
   if (error) throw error;
   if (!rows || rows.length === 0) return [];
@@ -55,6 +61,8 @@ export async function listPendingTreeAccessRequests(supabase: Client): Promise<P
       lastName: profile?.last_name ?? "",
       email: row.email,
       relationNote: row.relation_note,
+      adminNote: row.admin_note,
+      status: row.status as "pending" | "needs_info",
       createdAt: row.created_at,
       attachments: attachmentsByUser.get(row.user_id) ?? [],
     };
@@ -106,19 +114,28 @@ export async function attachMediaToTreeAccessRequest(supabase: Client, userId: s
   if (error) throw error;
 }
 
-export type OwnTreeAccessStatus = "granted" | "pending" | "rejected" | "none";
+export type OwnTreeAccessStatus = "granted" | "pending" | "rejected" | "needs_info" | "none";
 
 /**
  * Backs the "подтверждение родства" form (server/actions/tree-access-request.ts):
  * tells a member whether they can submit a fresh request, should wait
- * for a pending one, or may resubmit after a rejection.
+ * for a pending one, may resubmit after a rejection, or needs to answer
+ * an editor's question (adminNote — the message from "Запросить
+ * дополнительные сведения", server/actions/tree-access.ts).
  * lounge_tree_access_own_select (0023_tree_access_self_service.sql)
  * lets a member read their own row here.
  */
-export async function getOwnTreeAccessStatus(supabase: Client, userId: string): Promise<OwnTreeAccessStatus> {
-  const { data, error } = await supabase.from("lounge_tree_access").select("status").eq("user_id", userId).maybeSingle();
+export async function getOwnTreeAccessState(
+  supabase: Client,
+  userId: string,
+): Promise<{ status: OwnTreeAccessStatus; adminNote: string | null }> {
+  const { data, error } = await supabase
+    .from("lounge_tree_access")
+    .select("status, admin_note")
+    .eq("user_id", userId)
+    .maybeSingle();
   if (error) throw error;
-  return data?.status ?? "none";
+  return { status: data?.status ?? "none", adminNote: data?.admin_note ?? null };
 }
 
 /**
@@ -126,7 +143,7 @@ export async function getOwnTreeAccessStatus(supabase: Client, userId: string): 
  * or resubmits after a rejection (lounge_tree_access_own_resubmit) — RLS
  * enforces both status is 'pending' at the end and, for a resubmit, that
  * the row was 'rejected' beforehand. Requires status already checked as
- * 'none' or 'rejected' by the caller (getOwnTreeAccessStatus) so a
+ * 'none' or 'rejected' by the caller (getOwnTreeAccessState) so a
  * 'granted'/'pending' row surfaces a friendly message instead of a raw
  * RLS permission error.
  */
@@ -160,6 +177,49 @@ export async function rejectTreeAccess(supabase: Client, userId: string, reviewe
   const { error } = await supabase
     .from("lounge_tree_access")
     .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+/** Editor's "Запросить дополнительные сведения" (server/actions/tree-access.ts) — parks the request in 'needs_info' with the editor's question attached, instead of Подтвердить/Отклонить. */
+export async function requestTreeAccessMoreInfo(
+  supabase: Client,
+  userId: string,
+  reviewerId: string,
+  message: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("lounge_tree_access")
+    .update({ status: "needs_info", admin_note: message, reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+/**
+ * Member's reply to an editor's question (server/actions/tree-access-request.ts)
+ * — moves 'needs_info' back to 'pending' (lounge_tree_access_own_provide_info,
+ * 0026_tree_access_needs_info_flow.sql). The reply is appended under the
+ * original relation_note rather than replacing it, so an editor
+ * re-reviewing the request sees the whole exchange, not just the latest
+ * message — reading the current text first because Postgres has no
+ * "append to column" update short of a raw SQL expression, and this
+ * table only sees the occasional single-row write, never concurrent ones.
+ */
+export async function submitTreeAccessAdditionalInfo(supabase: Client, userId: string, reply: string): Promise<void> {
+  const { data: existing, error: readError } = await supabase
+    .from("lounge_tree_access")
+    .select("relation_note")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (readError) throw readError;
+
+  const relationNote = [existing?.relation_note, `Дополнительные сведения от участника:\n${reply}`]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const { error } = await supabase
+    .from("lounge_tree_access")
+    .update({ status: "pending", relation_note: relationNote })
     .eq("user_id", userId);
   if (error) throw error;
 }

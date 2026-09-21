@@ -23,7 +23,7 @@ export type PendingUploadStatus = "pending" | "completed" | "expired" | "failed"
 
 export type LoungeTopic = "news" | "memories" | "search" | "thanks";
 
-export type LoungeTreeAccessStatus = "granted" | "pending" | "rejected";
+export type LoungeTreeAccessStatus = "granted" | "pending" | "rejected" | "needs_info";
 
 export interface Database {
   public: {
@@ -260,6 +260,7 @@ export interface Database {
           user_id: string;
           email: string;
           relation_note: string | null;
+          admin_note: string | null;
           status: LoungeTreeAccessStatus;
           created_at: string;
           reviewed_at: string | null;
@@ -269,6 +270,7 @@ export interface Database {
           user_id: string;
           email: string;
           relation_note?: string | null;
+          admin_note?: string | null;
           status?: LoungeTreeAccessStatus;
           created_at?: string;
           reviewed_at?: string | null;

@@ -131,7 +131,19 @@ export async function sendTreeAccessRequestNotification(request: TreeAccessReque
   });
 }
 
-export async function sendTreeAccessGrantedEmail(email: string, firstName: string): Promise<void> {
+/**
+ * Text below is verbatim from the owner's approved package
+ * (Документация_сайта.zip, "Автоматические сообщения.pdf" section 2) —
+ * per that document's own rule 7 ("Изменение утверждённых сообщений
+ * допускается только после утверждения владельцем проекта"), don't
+ * reword this without the owner signing off again. The "Открыть
+ * памятку" button links to /guide (app/(public)/guide/page.tsx) — the
+ * same approved package's "Первые шаги в родословном дереве.pdf",
+ * built as a live page rather than a PDF attachment per that
+ * document's own instruction ("памятка хранится на сайте... PDF к
+ * письму не прикрепляется").
+ */
+export async function sendTreeAccessGrantedEmail(email: string): Promise<void> {
   const smtp = createTransport();
   if (!smtp) {
     console.error("sendTreeAccessGrantedEmail: SMTP_EMAIL_USER/SMTP_EMAIL_PASSWORD не заданы — письмо не отправлено.");
@@ -139,28 +151,227 @@ export async function sendTreeAccessGrantedEmail(email: string, firstName: strin
   }
 
   const html = emailShell(
-    "Доступ к дереву открыт",
-    `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
-      ${escapeHtml(firstName)}, здравствуйте! Вам открыт доступ к добавлению людей в семейное дерево Огурцовых.
+    "Добро пожаловать в родословное дерево семьи Огурцовых!",
+    `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">Здравствуйте!</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      Мы рады сообщить, что Ваше родство подтверждено.
     </p>
-    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;text-align:left;">
-      Войдите в «Семейную гостиную» на сайте — теперь там доступны действия по добавлению родственников.
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      Теперь Вы стали <b>подтверждённым участником</b> проекта «Родословное дерево семьи Огурцовых» и можете
+      принимать участие в его дальнейшем развитии.
     </p>
-    ${emailButton(absoluteUrl("/login"), "Войти в гостиную")}`,
+    <p style="margin:0 0 8px;font-size:15px;line-height:1.6;text-align:left;">Теперь Вам доступны:</p>
+    <ul style="margin:0 0 16px;padding-left:20px;font-size:15px;line-height:1.6;text-align:left;">
+      <li>создание новых карточек в своей ветви родословного дерева;</li>
+      <li>редактирование карточек, созданных лично Вами;</li>
+      <li>добавление фотографий и документов;</li>
+      <li>установление родственных связей между членами семьи.</li>
+    </ul>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;text-align:left;">
+      Чтобы Вам было проще начать работу, мы подготовили небольшую памятку.
+    </p>
+    ${emailButton(absoluteUrl("/guide"), "Открыть памятку")}
+    <p style="margin:24px 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      Если во время работы возникнут вопросы, Вы всегда можете обратиться к администратору сайта.
+    </p>
+    <p style="margin:0;font-size:15px;line-height:1.6;text-align:left;">
+      Желаем Вам интересных открытий и благодарим за желание сохранить историю нашей семьи для будущих поколений.
+    </p>`,
   );
 
   const text = [
-    `${firstName}, здравствуйте!`,
+    "Здравствуйте!",
     "",
-    "Вам открыт доступ к добавлению людей в семейное дерево Огурцовых.",
-    "Войдите в «Семейную гостиную» на сайте — теперь там доступны действия по добавлению родственников:",
-    absoluteUrl("/login"),
+    "Мы рады сообщить, что Ваше родство подтверждено.",
+    "",
+    "Теперь Вы стали подтверждённым участником проекта «Родословное дерево семьи Огурцовых» и можете принимать участие в его дальнейшем развитии.",
+    "",
+    "Теперь Вам доступны:",
+    "- создание новых карточек в своей ветви родословного дерева;",
+    "- редактирование карточек, созданных лично Вами;",
+    "- добавление фотографий и документов;",
+    "- установление родственных связей между членами семьи.",
+    "",
+    "Чтобы Вам было проще начать работу, мы подготовили небольшую памятку «Первые шаги в родословном дереве»:",
+    absoluteUrl("/guide"),
+    "",
+    "Если во время работы возникнут вопросы, Вы всегда можете обратиться к администратору сайта.",
+    "",
+    "Желаем Вам интересных открытий и благодарим за желание сохранить историю нашей семьи для будущих поколений.",
   ].join("\n");
 
   await smtp.transporter.sendMail({
     from: smtp.user,
     to: email,
-    subject: "Доступ к дереву открыт",
+    subject: "Добро пожаловать в родословное дерево семьи Огурцовых!",
+    text,
+    html,
+  });
+}
+
+export interface TreeAccessMoreInfoNotification {
+  email: string;
+  message: string;
+}
+
+/**
+ * "Запросить дополнительные сведения" (owner decision, 2026-09-20) —
+ * not part of the approved SiteMessages v1.0 package, so this text is
+ * drafted in-house following that package's house style (Автоматические
+ * сообщения.pdf: приветствие, подпись, доброжелательный тон). The
+ * button sends the member to answer in their own panel
+ * (components/lounge/tree-access-request-form.tsx), not by replying to
+ * the email directly.
+ */
+export async function sendTreeAccessMoreInfoRequestedEmail(request: TreeAccessMoreInfoNotification): Promise<void> {
+  const smtp = createTransport();
+  if (!smtp) {
+    console.error("sendTreeAccessMoreInfoRequestedEmail: SMTP_EMAIL_USER/SMTP_EMAIL_PASSWORD не заданы — письмо не отправлено.");
+    return;
+  }
+
+  const html = emailShell(
+    "Нужны уточнения по заявке",
+    `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">Здравствуйте!</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      Мы рассматриваем Вашу заявку на подтверждение родства в проекте «Родословное дерево семьи Огурцовых» — и
+      хотели бы уточнить несколько деталей.
+    </p>
+    <div style="margin:0 0 20px;padding:14px 16px;background:#f4f0e2;border-left:3px solid #d8d0bb;text-align:left;font-size:15px;line-height:1.6;">
+      ${escapeHtml(request.message).replace(/\n/g, "<br>")}
+    </div>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;text-align:left;">
+      Пожалуйста, ответьте в своём личном кабинете на сайте — там же можно приложить фотографии или документы,
+      если они у Вас есть.
+    </p>
+    ${emailButton(absoluteUrl("/join"), "Ответить на сайте")}`,
+  );
+
+  const text = [
+    "Здравствуйте!",
+    "",
+    "Мы рассматриваем Вашу заявку на подтверждение родства в проекте «Родословное дерево семьи Огурцовых» — и хотели бы уточнить несколько деталей.",
+    "",
+    request.message,
+    "",
+    "Пожалуйста, ответьте в своём личном кабинете на сайте — там же можно приложить фотографии или документы:",
+    absoluteUrl("/join"),
+  ].join("\n");
+
+  await smtp.transporter.sendMail({
+    from: smtp.user,
+    to: request.email,
+    subject: "Нужны уточнения по вашей заявке на подтверждение родства",
+    text,
+    html,
+  });
+}
+
+export interface TreeAccessInfoProvidedNotification {
+  firstName: string;
+  lastName: string;
+  reply: string;
+}
+
+/** Tells the editors a member answered a "Запросить дополнительные сведения" request — mirrors sendTreeAccessRequestNotification's shape, just for the follow-up round instead of the first submission. */
+export async function sendTreeAccessInfoProvidedNotification(notification: TreeAccessInfoProvidedNotification): Promise<void> {
+  const recipients = process.env.NOTIFY_EDITOR_EMAILS?.split(",")
+    .map((address) => address.trim())
+    .filter(Boolean);
+
+  const smtp = createTransport();
+  if (!smtp || !recipients || recipients.length === 0) {
+    console.error(
+      "sendTreeAccessInfoProvidedNotification: SMTP_EMAIL_USER/SMTP_EMAIL_PASSWORD/NOTIFY_EDITOR_EMAILS не заданы — письмо не отправлено.",
+    );
+    return;
+  }
+
+  const fullName = `${notification.firstName} ${notification.lastName}`;
+
+  const html = emailShell(
+    "Дополнительные сведения по заявке",
+    `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      <b>${escapeHtml(fullName)}</b> предоставил(а) дополнительные сведения по заявке на подтверждение родства.
+    </p>
+    <div style="margin:0 0 24px;padding:14px 16px;background:#f4f0e2;border-left:3px solid #d8d0bb;text-align:left;font-size:14px;line-height:1.6;">
+      ${escapeHtml(notification.reply).replace(/\n/g, "<br>")}
+    </div>
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;text-align:left;color:#7a7d72;">
+      Заявка снова ожидает рассмотрения — откройте страницу редактора, чтобы принять решение.
+    </p>
+    ${emailButton(absoluteUrl("/edit"), "Открыть страницу редактора")}`,
+  );
+
+  const text = [
+    `${fullName} предоставил(а) дополнительные сведения по заявке на подтверждение родства:`,
+    "",
+    notification.reply,
+    "",
+    "Заявка снова ожидает рассмотрения — откройте страницу редактора:",
+    absoluteUrl("/edit"),
+  ].join("\n");
+
+  await smtp.transporter.sendMail({
+    from: smtp.user,
+    to: recipients,
+    subject: `Дополнительные сведения по заявке — ${fullName}`,
+    text,
+    html,
+  });
+}
+
+/**
+ * "Родство не подтверждено" (owner decision, 2026-09-20) — same
+ * house-style caveat as sendTreeAccessMoreInfoRequestedEmail above:
+ * the approved package (Работа администратора.pdf, section 3) leaves
+ * this text unwritten on purpose ("текст такого сообщения в
+ * окончательный состав SiteMessages v1.0 не включён"), so this is
+ * drafted in-house rather than transcribed.
+ */
+export async function sendTreeAccessRejectedEmail(email: string): Promise<void> {
+  const smtp = createTransport();
+  if (!smtp) {
+    console.error("sendTreeAccessRejectedEmail: SMTP_EMAIL_USER/SMTP_EMAIL_PASSWORD не заданы — письмо не отправлено.");
+    return;
+  }
+
+  const html = emailShell(
+    "О заявке на подтверждение родства",
+    `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">Здравствуйте!</p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      Благодарим Вас за заявку на подтверждение родства в проекте «Родословное дерево семьи Огурцовых».
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      К сожалению, на основании имеющихся сведений подтвердить родственную связь пока не удалось.
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.6;text-align:left;">
+      Вы по-прежнему можете пользоваться сайтом в статусе «Гость»: писать сообщения в Семейной гостиной и
+      знакомиться с родословным деревом.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.6;text-align:left;">
+      Если у Вас появятся новые сведения или документы, Вы можете подать заявку ещё раз в любое время.
+    </p>
+    ${emailButton(absoluteUrl("/join"), "Подать заявку заново")}`,
+  );
+
+  const text = [
+    "Здравствуйте!",
+    "",
+    "Благодарим Вас за заявку на подтверждение родства в проекте «Родословное дерево семьи Огурцовых».",
+    "",
+    "К сожалению, на основании имеющихся сведений подтвердить родственную связь пока не удалось.",
+    "",
+    "Вы по-прежнему можете пользоваться сайтом в статусе «Гость»: писать сообщения в Семейной гостиной и знакомиться с родословным деревом.",
+    "",
+    "Если у Вас появятся новые сведения или документы, Вы можете подать заявку ещё раз в любое время:",
+    absoluteUrl("/join"),
+  ].join("\n");
+
+  await smtp.transporter.sendMail({
+    from: smtp.user,
+    to: email,
+    subject: "О заявке на подтверждение родства",
     text,
     html,
   });

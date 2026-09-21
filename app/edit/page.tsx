@@ -16,6 +16,7 @@ import { PurgePersonButton } from "@/components/forms/purge-person-button";
 import { PurgeMediaButton } from "@/components/forms/purge-media-button";
 import { ApproveTreeAccessButton } from "@/components/forms/approve-tree-access-button";
 import { RejectTreeAccessButton } from "@/components/forms/reject-tree-access-button";
+import { RequestMoreInfoButton } from "@/components/forms/request-more-info-button";
 
 const EXPECTED_TOTAL_BYTES = 5 * 1024 * 1024 * 1024; // ~5 ГБ (CLAUDE.md 3.7)
 
@@ -110,11 +111,21 @@ export default async function EditHomePage() {
                         })}
                       </ul>
                     )}
+                    {request.status === "needs_info" && (
+                      <p className="mt-2 rounded-[var(--radius-sm)] bg-(--color-bg) px-2 py-1 text-sm text-(--color-fg-muted)">
+                        Ждём ответа от участника. Ваш вопрос: «{request.adminNote}»
+                      </p>
+                    )}
                   </div>
-                  <div className="flex shrink-0 gap-2">
-                    <ApproveTreeAccessButton userId={request.userId} />
-                    <RejectTreeAccessButton userId={request.userId} />
-                  </div>
+                  {request.status === "pending" ? (
+                    <div className="flex shrink-0 gap-2">
+                      <ApproveTreeAccessButton userId={request.userId} />
+                      <RequestMoreInfoButton userId={request.userId} />
+                      <RejectTreeAccessButton userId={request.userId} />
+                    </div>
+                  ) : (
+                    <span className="text-label shrink-0 text-xs text-(--color-fg-muted)">Уточнение запрошено</span>
+                  )}
                 </li>
               ))}
             </ul>

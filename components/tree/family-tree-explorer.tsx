@@ -107,12 +107,17 @@ export function FamilyTreeExplorer({
             <div className="flex items-center justify-between rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-4 py-2">
               <p className="text-sm text-(--h-muted)">Вы вошли как {viewer.displayName}</p>
               {viewer.isEditor || viewer.hasTreeAccess ? (
-                <Link
-                  href={viewer.isEditor ? "/edit" : "/tree/add"}
-                  className="text-label text-xs text-(--h-forest-800) hover:underline"
-                >
-                  {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
-                </Link>
+                <div className="flex items-center gap-4">
+                  <Link href="/guide" className="text-label text-xs text-(--h-forest-800) hover:underline">
+                    Первые шаги
+                  </Link>
+                  <Link
+                    href={viewer.isEditor ? "/edit" : "/tree/add"}
+                    className="text-label text-xs text-(--h-forest-800) hover:underline"
+                  >
+                    {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
+                  </Link>
+                </div>
               ) : (
                 <span className="text-label text-xs text-(--h-muted)">Заявка на рассмотрении у администратора</span>
               )}

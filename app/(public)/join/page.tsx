@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { getLoungeViewer } from "@/server/auth/require-lounge-member";
-import { getOwnTreeAccessStatus } from "@/server/repositories/lounge-tree-access";
+import { getOwnTreeAccessState } from "@/server/repositories/lounge-tree-access";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { TreeAccessRequestForm } from "@/components/lounge/tree-access-request-form";
 
@@ -37,13 +37,13 @@ export default async function JoinPage() {
   }
 
   const supabase = await createSupabaseServerClient();
-  const status = await getOwnTreeAccessStatus(supabase, viewer.userId);
+  const { status, adminNote } = await getOwnTreeAccessState(supabase, viewer.userId);
 
   return (
     <div className="flex flex-1 flex-col">
       <Header />
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-4 p-4">
-        <TreeAccessRequestForm initialStatus={status} />
+        <TreeAccessRequestForm initialStatus={status} adminNote={adminNote} />
       </main>
     </div>
   );

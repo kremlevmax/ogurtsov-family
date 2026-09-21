@@ -1,28 +1,23 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Ornament } from "@/components/ui/ornament";
-import { requestTreeAccessAction, type TreeAccessRequestState } from "@/server/actions/tree-access-request";
+import {
+  requestTreeAccessAction,
+  submitAdditionalInfoAction,
+  type TreeAccessRequestState,
+} from "@/server/actions/tree-access-request";
 import type { OwnTreeAccessStatus } from "@/server/repositories/lounge-tree-access";
-import { presignLoungeAttachmentAction, finalizeLoungeAttachmentAction } from "@/server/actions/lounge-attachments";
-import { readImageDimensions, uploadWithProgress, UPLOAD_ACCEPT } from "@/lib/utils/upload";
+import { AttachmentPicker } from "@/components/lounge/attachment-picker";
+import { useRequestAttachments } from "@/components/lounge/use-request-attachments";
 
 const initialState: TreeAccessRequestState = { error: null, success: false };
 
 export interface TreeAccessRequestFormProps {
   initialStatus: OwnTreeAccessStatus;
-}
-
-type AttachmentStatus = "uploading" | "done" | "error";
-
-interface AttachmentItem {
-  key: string;
-  fileName: string;
-  status: AttachmentStatus;
-  progress: number;
-  error: string | null;
-  mediaId: string | null;
+  /** The editor's question from "Запросить дополнительные сведения" — only meaningful when initialStatus is "needs_info". */
+  adminNote: string | null;
 }
 
 /**
@@ -31,68 +26,16 @@ interface AttachmentItem {
  * text is shown before the form — the form itself (and what happens on
  * submit) is the same either way.
  */
-export function TreeAccessRequestForm({ initialStatus }: TreeAccessRequestFormProps) {
+export function TreeAccessRequestForm({ initialStatus, adminNote }: TreeAccessRequestFormProps) {
   const [state, formAction, isPending] = useActionState(requestTreeAccessAction, initialState);
   const [branch, setBranch] = useState<"unanswered" | "found" | "not-found">(
-    initialStatus === "pending" || initialStatus === "rejected" ? "found" : "unanswered",
+    initialStatus === "pending" || initialStatus === "rejected" || initialStatus === "needs_info" ? "found" : "unanswered",
   );
-  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentUpload = useRequestAttachments();
 
-  async function handleFilesSelected(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    for (const file of Array.from(files)) {
-      const key = `${file.name}-${file.size}-${crypto.randomUUID()}`;
-      setAttachments((prev) => [...prev, { key, fileName: file.name, status: "uploading", progress: 0, error: null, mediaId: null }]);
-
-      const presignResult = await presignLoungeAttachmentAction({
-        originalFilename: file.name,
-        mimeType: file.type || "application/octet-stream",
-        sizeBytes: file.size,
-      });
-      if (!presignResult.ok || !presignResult.uploadUrl || !presignResult.pendingUploadId) {
-        setAttachments((prev) =>
-          prev.map((item) => (item.key === key ? { ...item, status: "error", error: presignResult.error ?? "Не удалось подготовить загрузку." } : item)),
-        );
-        continue;
-      }
-
-      try {
-        await uploadWithProgress(presignResult.uploadUrl, file, file.type || "application/octet-stream", (percent) =>
-          setAttachments((prev) => prev.map((item) => (item.key === key ? { ...item, progress: percent } : item))),
-        );
-      } catch (uploadError) {
-        setAttachments((prev) =>
-          prev.map((item) =>
-            item.key === key ? { ...item, status: "error", error: uploadError instanceof Error ? uploadError.message : "Загрузка не удалась." } : item,
-          ),
-        );
-        continue;
-      }
-
-      const dimensions = await readImageDimensions(file);
-      const finalizeResult = await finalizeLoungeAttachmentAction({
-        pendingUploadId: presignResult.pendingUploadId,
-        originalFilename: file.name,
-        width: dimensions?.width ?? null,
-        height: dimensions?.height ?? null,
-      });
-      if (!finalizeResult.ok || !finalizeResult.mediaId) {
-        setAttachments((prev) =>
-          prev.map((item) => (item.key === key ? { ...item, status: "error", error: finalizeResult.error ?? "Не удалось сохранить файл." } : item)),
-        );
-        continue;
-      }
-
-      setAttachments((prev) => (prev.map((item) => (item.key === key ? { ...item, status: "done", mediaId: finalizeResult.mediaId ?? null } : item))));
-    }
+  if (initialStatus === "needs_info") {
+    return <ProvideAdditionalInfoCard adminNote={adminNote} />;
   }
-
-  function handleRemoveAttachment(key: string) {
-    setAttachments((prev) => prev.filter((item) => item.key !== key));
-  }
-
-  const isAttachmentBusy = attachments.some((item) => item.status === "uploading");
 
   if (initialStatus === "pending") {
     return (
@@ -176,48 +119,12 @@ export function TreeAccessRequestForm({ initialStatus }: TreeAccessRequestFormPr
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-lg font-medium">Прикрепить материалы (необязательно)</label>
-          <p className="text-base text-(--color-fg-muted)">
-            Если у вас имеются материалы, связанные с историей семьи, вы можете приложить их к заявке. Можно
-            прикрепить фотографии, документы, письма, воспоминания.
-          </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={UPLOAD_ACCEPT}
-            className="hidden"
-            onChange={(event) => {
-              void handleFilesSelected(event.target.files);
-              event.target.value = "";
-            }}
-          />
-          <Button type="button" variant="secondary" className="w-fit text-base" onClick={() => fileInputRef.current?.click()}>
-            Прикрепить файлы
-          </Button>
-          {attachments.length > 0 && (
-            <ul className="mt-2 flex flex-col gap-1">
-              {attachments.map((item) => (
-                <li key={item.key} className="flex items-center justify-between gap-2 text-base text-(--color-fg-muted)">
-                  <span className="truncate">
-                    {item.fileName}
-                    {item.status === "uploading" && ` — загрузка ${item.progress}%`}
-                    {item.status === "error" && ` — ${item.error}`}
-                  </span>
-                  <button type="button" onClick={() => handleRemoveAttachment(item.key)} className="shrink-0 underline">
-                    Убрать
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {attachments
-            .filter((item) => item.status === "done" && item.mediaId)
-            .map((item) => (
-              <input key={item.key} type="hidden" name="mediaIds" value={item.mediaId ?? ""} />
-            ))}
-        </div>
+        <AttachmentPicker
+          attachments={attachmentUpload.attachments}
+          fileInputRef={attachmentUpload.fileInputRef}
+          onFilesSelected={attachmentUpload.handleFilesSelected}
+          onRemove={attachmentUpload.handleRemoveAttachment}
+        />
 
         {state.error && (
           <p role="alert" className="text-lg text-(--color-danger)">
@@ -225,8 +132,79 @@ export function TreeAccessRequestForm({ initialStatus }: TreeAccessRequestFormPr
           </p>
         )}
 
-        <Button type="submit" disabled={isPending || isAttachmentBusy} className="text-base">
+        <Button type="submit" disabled={isPending || attachmentUpload.isBusy} className="text-base">
           {isPending ? "Отправляем…" : "Отправить заявку"}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+const additionalInfoInitialState: TreeAccessRequestState = { error: null, success: false };
+
+/**
+ * Owner decision (2026-09-20): once an editor asks "Запросить
+ * дополнительные сведения" (server/actions/tree-access.ts), the member
+ * answers right here in their own panel — not by replying to the
+ * notification email — optionally attaching files, same as the
+ * original request. Submitting moves the request back to 'pending'.
+ */
+function ProvideAdditionalInfoCard({ adminNote }: { adminNote: string | null }) {
+  const [state, formAction, isPending] = useActionState(submitAdditionalInfoAction, additionalInfoInitialState);
+  const attachmentUpload = useRequestAttachments();
+
+  if (state.success) {
+    return (
+      <div className="flex w-full max-w-sm flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated) p-8 text-center text-lg text-(--color-fg) shadow-(--shadow-md)">
+        <Ornament className="h-3 w-24 text-(--color-border)" />
+        <p className="font-heading text-2xl font-bold">Спасибо!</p>
+        <p>Ваш ответ отправлен. Мы снова рассмотрим заявку.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-(--color-border) bg-(--color-bg-elevated) p-8 shadow-(--shadow-md)">
+      <Ornament className="h-3 w-24 text-(--color-border)" />
+      <p className="font-heading text-2xl font-bold text-(--color-fg)">Нужны уточнения</p>
+      <p className="text-lg text-(--color-fg)">Администратор запросил дополнительные сведения по вашей заявке:</p>
+      {adminNote && (
+        <p className="w-full rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg) px-3 py-2 text-lg whitespace-pre-line text-(--color-fg)">
+          {adminNote}
+        </p>
+      )}
+      <form action={formAction} className="flex w-full flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="reply" className="text-lg font-medium">
+            Ваш ответ
+          </label>
+          <textarea
+            id="reply"
+            name="reply"
+            maxLength={2000}
+            rows={5}
+            required
+            className="w-full rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-lg text-(--color-fg) focus-visible:outline-none"
+          />
+        </div>
+
+        <AttachmentPicker
+          attachments={attachmentUpload.attachments}
+          fileInputRef={attachmentUpload.fileInputRef}
+          onFilesSelected={attachmentUpload.handleFilesSelected}
+          onRemove={attachmentUpload.handleRemoveAttachment}
+          label="Приложить фотографии или документы (необязательно)"
+          hint="Если это поможет подтвердить родство, приложите нужные материалы."
+        />
+
+        {state.error && (
+          <p role="alert" className="text-lg text-(--color-danger)">
+            {state.error}
+          </p>
+        )}
+
+        <Button type="submit" disabled={isPending || attachmentUpload.isBusy} className="text-base">
+          {isPending ? "Отправляем…" : "Отправить"}
         </Button>
       </form>
     </div>

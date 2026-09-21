@@ -1,13 +1,14 @@
 "use server";
 
 import { NotLoungeMemberError, requireLoungeMember } from "@/server/auth/require-lounge-member";
-import { treeAccessRequestSchema } from "@/lib/validation/lounge";
+import { treeAccessRequestSchema, treeAccessAdditionalInfoSchema } from "@/lib/validation/lounge";
 import {
   attachMediaToTreeAccessRequest,
-  getOwnTreeAccessStatus,
+  getOwnTreeAccessState,
   submitTreeAccessRequest,
+  submitTreeAccessAdditionalInfo,
 } from "@/server/repositories/lounge-tree-access";
-import { sendTreeAccessRequestNotification } from "@/lib/email/send-notification";
+import { sendTreeAccessRequestNotification, sendTreeAccessInfoProvidedNotification } from "@/lib/email/send-notification";
 
 export interface TreeAccessRequestState {
   error: string | null;
@@ -17,7 +18,8 @@ export interface TreeAccessRequestState {
 export interface TreeAccessSummary {
   signedIn: boolean;
   hasTreeAccess: boolean;
-  status: "granted" | "pending" | "rejected" | "none";
+  status: "granted" | "pending" | "rejected" | "needs_info" | "none";
+  adminNote: string | null;
 }
 
 /** Lets the "Подтверждение родства" modal (components/auth/auth-modal-context.tsx) render the right view without a page load — the standalone /join page does the same check server-side; this is its client-callable equivalent. */
@@ -26,10 +28,10 @@ export async function getTreeAccessSummaryAction(): Promise<TreeAccessSummary> {
   try {
     member = await requireLoungeMember();
   } catch {
-    return { signedIn: false, hasTreeAccess: false, status: "none" };
+    return { signedIn: false, hasTreeAccess: false, status: "none", adminNote: null };
   }
-  const status = await getOwnTreeAccessStatus(member.supabase, member.userId);
-  return { signedIn: true, hasTreeAccess: member.hasTreeAccess, status };
+  const { status, adminNote } = await getOwnTreeAccessState(member.supabase, member.userId);
+  return { signedIn: true, hasTreeAccess: member.hasTreeAccess, status, adminNote };
 }
 
 /**
@@ -59,11 +61,11 @@ export async function requestTreeAccessAction(
     return { error: parsed.error.issues[0]?.message ?? "Проверьте поля формы.", success: false };
   }
 
-  const status = await getOwnTreeAccessStatus(member.supabase, member.userId);
+  const { status } = await getOwnTreeAccessState(member.supabase, member.userId);
   if (status === "granted") {
     return { error: "У вас уже есть доступ к добавлению людей в дерево.", success: false };
   }
-  if (status === "pending") {
+  if (status === "pending" || status === "needs_info") {
     return { error: "Ваша заявка уже отправлена и ожидает рассмотрения.", success: false };
   }
 
@@ -106,6 +108,61 @@ export async function requestTreeAccessAction(
       lastName: lastNameParts.join(" "),
       email: user.email,
       relationNote: relationNote || "(участник не оставил дополнительных сведений)",
+    });
+  } catch (notifyError) {
+    console.error(notifyError);
+  }
+
+  return { error: null, success: true };
+}
+
+/**
+ * Member's reply to an editor's "Запросить дополнительные сведения"
+ * (server/actions/tree-access.ts) — the flow the owner asked for,
+ * 2026-09-20: the member answers from their own "Подтверждение
+ * родства" panel (not by replying to the email directly), optionally
+ * attaching files the same way as the original request, and the
+ * request goes back to 'pending' for the editor to re-review.
+ */
+export async function submitAdditionalInfoAction(
+  _prevState: TreeAccessRequestState,
+  formData: FormData,
+): Promise<TreeAccessRequestState> {
+  let member;
+  try {
+    member = await requireLoungeMember();
+  } catch (err) {
+    if (err instanceof NotLoungeMemberError) return { error: "Нужно войти в гостиную.", success: false };
+    throw err;
+  }
+
+  const parsed = treeAccessAdditionalInfoSchema.safeParse({ reply: formData.get("reply") ?? "" });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Проверьте поле ответа.", success: false };
+  }
+
+  const { status } = await getOwnTreeAccessState(member.supabase, member.userId);
+  if (status !== "needs_info") {
+    return { error: "Сейчас нет открытого запроса на уточнение.", success: false };
+  }
+
+  await submitTreeAccessAdditionalInfo(member.supabase, member.userId, parsed.data.reply);
+
+  const mediaIds = formData.getAll("mediaIds").filter((value): value is string => typeof value === "string" && value.length > 0);
+  for (const mediaId of mediaIds) {
+    try {
+      await attachMediaToTreeAccessRequest(member.supabase, member.userId, mediaId);
+    } catch (attachError) {
+      console.error(attachError);
+    }
+  }
+
+  const [firstName, ...lastNameParts] = member.displayName.split(" ");
+  try {
+    await sendTreeAccessInfoProvidedNotification({
+      firstName: firstName ?? "",
+      lastName: lastNameParts.join(" "),
+      reply: parsed.data.reply,
     });
   } catch (notifyError) {
     console.error(notifyError);

@@ -52,6 +52,16 @@ export const treeAccessRequestSchema = z.object({
   aboutSelf: z.string().trim().max(2000).optional().default(""),
 });
 
+/** Editor's "Запросить дополнительные сведения" note (server/actions/tree-access.ts) — shown to the member and emailed to them, so it can't be empty. */
+export const treeAccessMoreInfoRequestSchema = z.object({
+  message: z.string().trim().min(1, "Напишите, что нужно уточнить").max(1000),
+});
+
+/** Member's reply once an editor asked for more (server/actions/tree-access-request.ts). */
+export const treeAccessAdditionalInfoSchema = z.object({
+  reply: z.string().trim().min(1, "Напишите ответ").max(2000),
+});
+
 /**
  * Covers both a top-level post (topic required, no parentMessageId)
  * and a reply (parentMessageId required, topic omitted — the reply

@@ -157,5 +157,5 @@ function JoinModalCard() {
     );
   }
 
-  return <TreeAccessRequestForm initialStatus={summary.status} />;
+  return <TreeAccessRequestForm initialStatus={summary.status} adminNote={summary.adminNote} />;
 }
