@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { SearchBox } from "@/components/people/search-box";
+import { useAuthModal } from "@/components/auth/auth-modal-context";
+import type { OwnTreeAccessStatus } from "@/server/repositories/lounge-tree-access";
 import { TreeCanvas } from "@/components/tree/tree-canvas";
 import { PersonDrawer } from "@/components/tree/person-drawer";
 import type { TreePerson } from "@/features/tree/build-graph";
@@ -28,7 +30,14 @@ export interface FamilyTreeExplorerProps {
   relationships: Relationship[];
   mediaByPersonId: Record<string, PersonMedia[]>;
   searchablePeople: (SearchablePerson & { lifeSpan: string | null })[];
-  viewer: { isEditor: boolean; memberId: string | null; hasTreeAccess: boolean; displayName: string | null };
+  viewer: {
+    isEditor: boolean;
+    memberId: string | null;
+    hasTreeAccess: boolean;
+    displayName: string | null;
+    /** Only set for a signed-in guest without tree access — see app/(public)/tree/page.tsx. */
+    treeAccessStatus: OwnTreeAccessStatus | null;
+  };
 }
 
 /**
@@ -46,6 +55,7 @@ export function FamilyTreeExplorer({
   searchablePeople,
   viewer,
 }: FamilyTreeExplorerProps) {
+  const { openJoin } = useAuthModal();
   const searchParams = useSearchParams();
   const [selectedPersonId, setSelectedPersonIdState] = useState<string | null>(() =>
     searchParams.get("person"),
@@ -118,8 +128,12 @@ export function FamilyTreeExplorer({
                     {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
                   </Link>
                 </div>
-              ) : (
+              ) : viewer.treeAccessStatus === "pending" || viewer.treeAccessStatus === "needs_info" ? (
                 <span className="text-label text-xs text-(--h-muted)">Заявка на рассмотрении у администратора</span>
+              ) : (
+                <button type="button" onClick={openJoin} className="text-label text-xs text-(--h-forest-800) hover:underline">
+                  Присоединиться к проекту
+                </button>
               )}
             </div>
           )}

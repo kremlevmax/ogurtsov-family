@@ -9,6 +9,7 @@ import { listPeople } from "@/server/repositories/people";
 import { listRelationships } from "@/server/repositories/relationships";
 import { listAllMediaGroupedByPerson } from "@/server/repositories/media";
 import { getLoungeViewer } from "@/server/auth/require-lounge-member";
+import { getOwnTreeAccessState } from "@/server/repositories/lounge-tree-access";
 
 export const metadata: Metadata = {
   title: "Родословное древо",
@@ -28,6 +29,15 @@ export default async function TreePage() {
   const mediaByPersonId = Object.fromEntries(
     Object.entries(allMediaByPersonId).map(([personId, items]) => [personId, items.filter((item) => !item.unlisted)]),
   );
+
+  // Editors/granted members never need this (hasTreeAccess already covers
+  // them) — only fetched for a signed-in guest, to tell "never applied /
+  // was rejected" (show "Присоединиться к проекту") apart from "already
+  // waiting on a decision" (show the static status line instead).
+  const treeAccessStatus =
+    viewer.userId && !viewer.isEditor && !viewer.hasTreeAccess
+      ? (await getOwnTreeAccessState(supabase, viewer.userId)).status
+      : null;
 
   const treePeople = people.map(toTreePerson);
   const searchablePeople = people.map((person) => ({
@@ -53,6 +63,7 @@ export default async function TreePage() {
           memberId: viewer.userId,
           hasTreeAccess: viewer.hasTreeAccess,
           displayName: viewer.displayName,
+          treeAccessStatus,
         }}
       />
     </Suspense>

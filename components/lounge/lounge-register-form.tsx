@@ -21,7 +21,7 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
   const [state, formAction, isPending] = useActionState(registerLoungeMemberAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const isModal = mode === "modal";
-  const { openLogin, openRules, openPrivacy, openJoin } = useAuthModal();
+  const { openLogin, openRules, openPrivacy } = useAuthModal();
 
   if (state.info) {
     return (
@@ -33,11 +33,6 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
         {state.info.lines.map((line) => (
           <p key={line}>{line}</p>
         ))}
-        {isModal && (
-          <Button type="button" onClick={openJoin} className="mt-2 text-base">
-            Присоединиться к проекту
-          </Button>
-        )}
       </div>
     );
   }
