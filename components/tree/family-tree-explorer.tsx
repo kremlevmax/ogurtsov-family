@@ -24,6 +24,10 @@ const SORT_MODE_LABELS: Record<PeopleListSortMode, string> = {
   birthYear: "По дате рождения",
 };
 
+/** The "Вы вошли как…" bar's action links (owner's request, 2026-09-24: too easy to miss as plain underlined text) — solid fill, since only one of these ever shows at a time, so there's no hierarchy to preserve between them. */
+const TOP_BAR_BUTTON_CLASS =
+  "text-label inline-flex h-9 items-center justify-center rounded-[var(--h-radius-control)] bg-(--h-forest-800) px-4 text-xs text-(--h-white-warm) transition-colors hover:bg-(--h-forest-hover)";
+
 export interface FamilyTreeExplorerProps {
   people: Person[];
   treePeople: TreePerson[];
@@ -114,24 +118,21 @@ export function FamilyTreeExplorer({
       <div className={heritageStyles.scope}>
         <main className="mx-auto flex w-full max-w-[1450px] flex-1 flex-col gap-4 p-4 pt-10 pb-16">
           {viewer.memberId && (
-            <div className="flex items-center justify-between rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-4 py-2">
-              <p className="text-sm text-(--h-muted)">Вы вошли как {viewer.displayName}</p>
+            <div className="flex items-center justify-between rounded-[var(--h-radius-control)] border border-(--h-gold-200) bg-(--h-paper-light) px-4 py-3">
+              <p className="font-heading text-lg font-bold text-(--h-forest-800)">Вы вошли как {viewer.displayName}</p>
               {viewer.isEditor || viewer.hasTreeAccess ? (
-                <div className="flex items-center gap-4">
-                  <Link href="/guide" className="text-label text-xs text-(--h-forest-800) hover:underline">
+                <div className="flex items-center gap-3">
+                  <Link href="/guide" className={TOP_BAR_BUTTON_CLASS}>
                     Первые шаги
                   </Link>
-                  <Link
-                    href={viewer.isEditor ? "/edit" : "/tree/add"}
-                    className="text-label text-xs text-(--h-forest-800) hover:underline"
-                  >
+                  <Link href={viewer.isEditor ? "/edit" : "/tree/add"} className={TOP_BAR_BUTTON_CLASS}>
                     {viewer.isEditor ? "Панель редактора" : "Добавить человека"}
                   </Link>
                 </div>
               ) : viewer.treeAccessStatus === "pending" || viewer.treeAccessStatus === "needs_info" ? (
-                <span className="text-label text-xs text-(--h-muted)">Заявка на рассмотрении у администратора</span>
+                <span className="text-lg text-(--h-muted)">Заявка на рассмотрении у администратора</span>
               ) : (
-                <button type="button" onClick={openJoin} className="text-label text-xs text-(--h-forest-800) hover:underline">
+                <button type="button" onClick={openJoin} className={TOP_BAR_BUTTON_CLASS}>
                   Присоединиться к проекту
                 </button>
               )}
