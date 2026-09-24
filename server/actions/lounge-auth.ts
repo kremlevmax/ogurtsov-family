@@ -7,7 +7,8 @@ import { safeNextPath } from "@/lib/utils/safe-next-path";
 
 export interface LoungeAuthState {
   error: string | null;
-  info?: { heading: string; lines: string[] } | null;
+  /** `checkSpam` — only the "confirm your email" branch needs the spam-folder reminder (LoungeRegisterForm renders "спам" in bold there); the instant-login branch below never sets it. */
+  info?: { heading: string; lines: string[]; checkSpam?: boolean } | null;
 }
 
 /**
@@ -102,6 +103,7 @@ export async function registerLoungeMemberAction(
       info: {
         heading: "Подтвердите email",
         lines: ["Проверьте почту и подтвердите email, затем войдите."],
+        checkSpam: true,
       },
     };
   }

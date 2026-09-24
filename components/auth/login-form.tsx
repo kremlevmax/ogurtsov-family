@@ -29,6 +29,11 @@ export interface LoginFormProps {
 export function LoginForm({ next, mode = "page", onSuccess }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(signInAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
+  // Controlled so a failed login (wrong password) doesn't also wipe the
+  // email the visitor already typed — React resets every uncontrolled
+  // field in a <form action={...}> once the action settles, error or
+  // not (docs/DECISIONS.md, lounge-register-form.tsx fix).
+  const [email, setEmail] = useState("");
   const isModal = mode === "modal";
   const { openForgotPassword, openRegister } = useAuthModal();
 
@@ -47,7 +52,16 @@ export function LoginForm({ next, mode = "page", onSuccess }: LoginFormProps) {
           <label htmlFor="email" className="text-lg font-medium">
             Электронная почта
           </label>
-          <Input id="email" name="email" type="email" autoComplete="email" required className="text-lg" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="text-lg"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
         </div>
 
         <div className="flex flex-col gap-1">

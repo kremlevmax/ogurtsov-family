@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,9 @@ export interface ForgotPasswordFormProps {
 
 export function ForgotPasswordForm({ mode = "page" }: ForgotPasswordFormProps) {
   const [state, formAction, isPending] = useActionState(requestPasswordResetAction, initialState);
+  // Controlled so an error doesn't wipe the email field too — see
+  // lounge-register-form.tsx's fix / docs/DECISIONS.md.
+  const [email, setEmail] = useState("");
   const isModal = mode === "modal";
   const { openLogin } = useAuthModal();
 
@@ -46,7 +49,16 @@ export function ForgotPasswordForm({ mode = "page" }: ForgotPasswordFormProps) {
             <label htmlFor="email" className="text-lg font-medium">
               Email
             </label>
-            <Input id="email" name="email" type="email" autoComplete="email" required className="text-lg" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              className="text-lg"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
           </div>
 
           {state.error && (

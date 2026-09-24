@@ -72,27 +72,34 @@ export function Modal({ onClose, children, className, active = true, zIndex = 70
 
   return createPortal(
     <div
-      className={cn("fixed inset-0 flex items-start justify-center overflow-y-auto bg-black/50 p-4", zIndex === 80 ? "z-[80]" : "z-[70]")}
+      className={cn("fixed inset-0 overflow-y-auto bg-black/50", zIndex === 80 ? "z-[80]" : "z-[70]")}
       onClick={active ? onClose : undefined}
       inert={!active}
     >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-        className={cn("relative my-8 w-full max-w-sm focus:outline-none", className)}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Закрыть"
-          className="absolute top-3 right-3 z-10 cursor-pointer rounded-full border border-(--color-border) bg-(--color-bg-elevated) p-1.5 shadow-(--shadow-md) hover:bg-(--color-bg)"
+      {/* min-h-full + items-center centers short content vertically, same as before — but
+          unlike a fixed items-center on the outer div, this wrapper's height grows past
+          min-h-full for content taller than the viewport, so centering has no extra space
+          left to push the top (and the close button) off-screen; it just sits flush against
+          this padding, scrollable via the outer div. */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+          onClick={(event) => event.stopPropagation()}
+          className={cn("relative w-full max-w-sm focus:outline-none", className)}
         >
-          <X className="h-4 w-4" aria-hidden="true" />
-        </button>
-        {children}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Закрыть"
+            className="absolute top-3 right-3 z-10 cursor-pointer rounded-full border border-(--color-border) bg-(--color-bg-elevated) p-1.5 shadow-(--shadow-md) hover:bg-(--color-bg)"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

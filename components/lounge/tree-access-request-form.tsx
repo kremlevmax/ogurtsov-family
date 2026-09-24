@@ -31,6 +31,10 @@ export function TreeAccessRequestForm({ initialStatus, adminNote }: TreeAccessRe
   const [branch, setBranch] = useState<"unanswered" | "found" | "not-found">(
     initialStatus === "pending" || initialStatus === "rejected" || initialStatus === "needs_info" ? "found" : "unanswered",
   );
+  // Controlled so a submit error doesn't wipe what the member already
+  // typed — see lounge-register-form.tsx's fix / docs/DECISIONS.md.
+  const [ancestorRef, setAncestorRef] = useState("");
+  const [aboutSelf, setAboutSelf] = useState("");
   const attachmentUpload = useRequestAttachments();
 
   if (initialStatus === "needs_info") {
@@ -100,6 +104,8 @@ export function TreeAccessRequestForm({ initialStatus, adminNote }: TreeAccessRe
             type="text"
             maxLength={300}
             className="w-full rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-lg text-(--color-fg) focus-visible:outline-none"
+            value={ancestorRef}
+            onChange={(event) => setAncestorRef(event.target.value)}
           />
         </div>
 
@@ -116,6 +122,8 @@ export function TreeAccessRequestForm({ initialStatus, adminNote }: TreeAccessRe
             maxLength={2000}
             rows={5}
             className="w-full rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-lg text-(--color-fg) focus-visible:outline-none"
+            value={aboutSelf}
+            onChange={(event) => setAboutSelf(event.target.value)}
           />
         </div>
 
@@ -151,6 +159,7 @@ const additionalInfoInitialState: TreeAccessRequestState = { error: null, succes
  */
 function ProvideAdditionalInfoCard({ adminNote }: { adminNote: string | null }) {
   const [state, formAction, isPending] = useActionState(submitAdditionalInfoAction, additionalInfoInitialState);
+  const [reply, setReply] = useState("");
   const attachmentUpload = useRequestAttachments();
 
   if (state.success) {
@@ -185,6 +194,8 @@ function ProvideAdditionalInfoCard({ adminNote }: { adminNote: string | null }) 
             rows={5}
             required
             className="w-full rounded-[var(--radius-md)] border border-(--color-border) bg-(--color-bg-elevated) px-3 py-2 text-lg text-(--color-fg) focus-visible:outline-none"
+            value={reply}
+            onChange={(event) => setReply(event.target.value)}
           />
         </div>
 

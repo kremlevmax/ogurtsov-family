@@ -23,6 +23,17 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
   const isModal = mode === "modal";
   const { openLogin, openRules, openPrivacy } = useAuthModal();
 
+  // React resets every *uncontrolled* field in a <form action={...}> once
+  // the action settles — including on a validation error like "Пароли не
+  // совпадают" (owner's report: the whole form went blank, not just the
+  // mismatched passwords). Controlled so they survive that reset; only
+  // the password fields stay uncontrolled, since clearing those back out
+  // after a failed attempt is exactly what should happen.
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [agreedToRules, setAgreedToRules] = useState(false);
+
   if (state.info) {
     return (
       <div
@@ -33,6 +44,12 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
         {state.info.lines.map((line) => (
           <p key={line}>{line}</p>
         ))}
+        {state.info.checkSpam && (
+          <p>
+            Если письмо не появилось в течение нескольких минут, обязательно проверьте папку{" "}
+            <b>«Спам»</b> — иногда письма попадают туда.
+          </p>
+        )}
       </div>
     );
   }
@@ -55,6 +72,8 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
             required
             maxLength={80}
             className="text-lg"
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
           />
         </div>
 
@@ -70,6 +89,8 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
             required
             maxLength={80}
             className="text-lg"
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
           />
         </div>
         <p className="-mt-2 text-base text-(--color-fg-muted)">Имя и фамилия видны всем в гостиной.</p>
@@ -78,7 +99,16 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
           <label htmlFor="email" className="text-lg font-medium">
             Email
           </label>
-          <Input id="email" name="email" type="email" autoComplete="email" required className="text-lg" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="text-lg"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
         </div>
 
         <div className="flex flex-col gap-1">
@@ -121,7 +151,14 @@ export function LoungeRegisterForm({ next, mode = "page" }: LoungeRegisterFormPr
         </div>
 
         <label className="flex items-start gap-2 text-base text-(--color-fg-muted)">
-          <input type="checkbox" name="agreedToRules" required className="mt-1 h-4 w-4" />
+          <input
+            type="checkbox"
+            name="agreedToRules"
+            required
+            className="mt-1 h-4 w-4"
+            checked={agreedToRules}
+            onChange={(event) => setAgreedToRules(event.target.checked)}
+          />
           <span>
             Я ознакомился(ась) и принимаю{" "}
             {isModal ? (
